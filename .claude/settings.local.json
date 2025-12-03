@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "WebFetch(domain:www.figma.com)",
+      "Bash(rm:*)",
+      "WebSearch",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp:*)",
+      "Bash(claude doctor:*)",
+      "Bash(npm run build:*)",
+      "WebFetch(domain:github.com)",
+      "mcp__figma-desktop__get_design_context",
+      "mcp__figma-desktop__get_screenshot",
+      "Bash(curl:*)",
+      "Bash(del \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template1.png\")",
+      "Bash(del \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template2.png\")",
+      "Bash(del \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template3.png\")",
+      "Bash(del \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template4.png\")",
+      "Bash(ren \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template1-new.png\" template1.png)",
+      "Bash(ren \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template2-new.png\" template2.png)",
+      "Bash(ren \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template3-new.png\" template3.png)",
+      "Bash(ren \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template4-new.png\" template4.png)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "WebFetch(domain:localhost)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

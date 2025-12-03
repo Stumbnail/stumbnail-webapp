@@ -1,0 +1,420 @@
+/* Main Container */
+.container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Theme variants */
+.container.light {
+  background-color: #1a1a1a;
+}
+
+.container.dark {
+  background-color: #0c0b0b;
+}
+
+/* Background Grid */
+.backgroundGrid {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Dark Overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.light .overlay {
+  background-color: rgba(0, 0, 0, 0.65);
+}
+
+.dark .overlay {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Decorative Blur Elements */
+.blurBottom {
+  position: absolute;
+  bottom: -100px;
+  left: -50px;
+  width: 1560px;
+  height: 206px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 111, 97, 0.3) 0%,
+    rgba(255, 111, 97, 0.1) 50%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  z-index: 2;
+}
+
+.blurTop {
+  position: absolute;
+  top: -120px;
+  right: -120px;
+  width: 339px;
+  height: 339px;
+  background: radial-gradient(
+    circle at center,
+    rgba(138, 43, 226, 0.3) 0%,
+    rgba(138, 43, 226, 0.1) 50%,
+    transparent 70%
+  );
+  filter: blur(80px);
+  z-index: 2;
+}
+
+/* Login Card */
+.loginCard {
+  position: relative;
+  z-index: 10;
+  border-radius: 30px;
+  padding: 60px 50px;
+  width: 750px;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.light .loginCard {
+  background-color: #fffaff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.dark .loginCard {
+  background-color: #141414;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Theme Toggle Button */
+.themeToggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.light .themeToggle {
+  background: #f0f0f0;
+  color: #141414;
+  border: 1px solid #d5d5d5;
+}
+
+.dark .themeToggle {
+  background: #2d2d2d;
+  color: #ffeae8;
+  border: 1px solid #3d3d3d;
+}
+
+.themeToggle:hover {
+  opacity: 0.8;
+}
+
+
+/* Heading */
+.heading {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 50px;
+  text-align: center;
+  margin: 0;
+}
+
+.light .heading {
+  color: #141414;
+}
+
+.dark .heading {
+  color: #ffeae8;
+}
+
+.brandName {
+  color: #ff6f61;
+}
+
+/* Subtitle */
+.subtitle {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 40px;
+  text-align: center;
+  margin: 0;
+  margin-top: -12px;
+}
+
+.light .subtitle {
+  color: #141414;
+}
+
+.dark .subtitle {
+  color: #ffeae8;
+}
+
+/* Google Button */
+.googleButton {
+  width: 450px;
+  max-width: 100%;
+  height: 75px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.light .googleButton {
+  background-color: #f0f0f0;
+  border: 1px solid #d5d5d5;
+  color: #141414;
+}
+
+.dark .googleButton {
+  background-color: #2d2d2d;
+  border: 1px solid #3d3d3d;
+  color: #ffeae8;
+}
+
+.light .googleButton:hover:not(:disabled) {
+  background-color: #e8e8e8;
+  border-color: #c0c0c0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .googleButton:hover:not(:disabled) {
+  background-color: #3a3a3a;
+  border-color: #4a4a4a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.2);
+}
+
+.googleButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.googleButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.googleIcon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+/* Error Message */
+.error {
+  font-size: 16px;
+  text-align: center;
+  margin: -20px 0 0;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.light .error {
+  color: #ff4444;
+}
+
+.dark .error {
+  color: #ff6f61;
+}
+
+/* Trust Section */
+.trustSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.avatars {
+  position: relative;
+  width: 190px;
+  height: 65px;
+}
+
+.avatar {
+  position: absolute;
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.light .avatar {
+  border: 3px solid #fffaff;
+}
+
+.dark .avatar {
+  border: 3px solid #141414;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.trustText {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  line-height: 40px;
+  text-align: center;
+  margin: 0;
+}
+
+.light .trustText {
+  color: #797979;
+}
+
+.dark .trustText {
+  color: #ffeae8;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .loginCard {
+    padding: 60px 40px;
+    width: 700px;
+  }
+
+  .heading {
+    font-size: 40px;
+    line-height: 46px;
+  }
+
+  .subtitle {
+    font-size: 24px;
+    line-height: 36px;
+  }
+
+  .googleButton {
+    width: 420px;
+    height: 70px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .loginCard {
+    padding: 50px 30px;
+    width: 90%;
+    max-width: 500px;
+    gap: 28px;
+  }
+
+  .heading {
+    font-size: 32px;
+    line-height: 38px;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    line-height: 32px;
+    margin-top: -8px;
+  }
+
+  .googleButton {
+    width: 100%;
+    height: 64px;
+    font-size: 18px;
+    gap: 12px;
+  }
+
+  .googleIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .trustText {
+    font-size: 18px;
+    line-height: 32px;
+  }
+
+  .avatar {
+    width: 55px;
+    height: 55px;
+  }
+
+  .avatars {
+    width: 165px;
+    height: 55px;
+  }
+
+  .avatar:nth-child(1) { left: 0; }
+  .avatar:nth-child(2) { left: 32px; }
+  .avatar:nth-child(3) { left: 64px; }
+  .avatar:nth-child(4) { left: 96px; }
+}
+
+@media (max-width: 480px) {
+  .loginCard {
+    padding: 36px 24px;
+    border-radius: 20px;
+    gap: 22px;
+  }
+
+  .heading {
+    font-size: 26px;
+    line-height: 30px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    line-height: 24px;
+    margin-top: -6px;
+  }
+
+  .googleButton {
+    height: 56px;
+    font-size: 16px;
+    gap: 10px;
+    border-radius: 12px;
+  }
+
+  .googleIcon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .trustText {
+    font-size: 14px;
+    line-height: 24px;
+  }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-width: 2px;
+  }
+
+  .avatars {
+    width: 130px;
+    height: 44px;
+  }
+
+  .avatar:nth-child(1) { left: 0; }
+  .avatar:nth-child(2) { left: 26px; }
+  .avatar:nth-child(3) { left: 52px; }
+  .avatar:nth-child(4) { left: 78px; }
+}
