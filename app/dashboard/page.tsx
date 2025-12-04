@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
 
@@ -21,8 +21,24 @@ interface NavItem {
 export default function DashboardPage() {
   const [promptText, setPromptText] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const promptInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+      if (window.innerWidth > 768) {
+        setSidebarOpen(false);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '/assets/dashboard/icons/home-05-stroke-rounded 2-sidebar.svg', active: true },
@@ -73,8 +89,17 @@ export default function DashboardPage() {
       <div className={styles.blurBottom} />
       <div className={styles.blurSidebarBottom} />
 
+      {/* Mobile Overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className={styles.overlay} 
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         {/* Logo */}
         <div className={styles.logo}>
           <div className={styles.logoIcon}>
@@ -160,8 +185,24 @@ export default function DashboardPage() {
       <main className={styles.main}>
         {/* Header */}
         <header className={styles.header}>
+          {/* Mobile Menu Button */}
+          {isMobile && (
+            <button 
+              className={styles.menuButton}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle sidebar menu"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
+
           {/* Search Bar */}
-          <div className={styles.searchBar}>
+          <div 
+            className={styles.searchBar}
+            onClick={() => searchInputRef.current?.focus()}
+          >
             <Image
               src="/assets/dashboard/icons/search.svg"
               alt=""
@@ -171,6 +212,7 @@ export default function DashboardPage() {
               aria-hidden="true"
             />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search projects or templates..."
               className={styles.searchInput}

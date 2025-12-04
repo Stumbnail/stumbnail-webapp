@@ -73,8 +73,53 @@
   flex-direction: column;
   gap: 0;
   flex-shrink: 0;
-  z-index: 2;
+  z-index: 10;
   overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+/* Mobile Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Menu Button */
+.menuButton {
+  background: transparent;
+  border: none;
+  color: #141414;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.menuButton:hover {
+  background-color: rgba(255, 111, 97, 0.1);
+  color: #ff6f61;
+}
+
+.menuButton:active {
+  background-color: rgba(255, 111, 97, 0.15);
 }
 
 /* Logo */
@@ -366,14 +411,16 @@
   padding: 0 32px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 /* Search Bar */
 .searchBar {
   flex: 1;
   max-width: 500px;
+  min-width: 0;
   background-color: #ffffff;
   border-radius: 14px;
   height: 48px;
@@ -382,6 +429,7 @@
   align-items: center;
   gap: 10px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  cursor: text;
 }
 
 .searchIcon {
@@ -389,6 +437,7 @@
   height: 16px;
   flex-shrink: 0;
   filter: brightness(0) saturate(100%) invert(52%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(94%) contrast(89%);
+  pointer-events: none;
 }
 
 .searchInput {
@@ -399,6 +448,8 @@
   font-size: 14px;
   color: #141414;
   background: transparent;
+  width: 100%;
+  height: 100%;
 }
 
 .searchInput::placeholder {
@@ -422,6 +473,7 @@
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .createButton img {
@@ -592,17 +644,19 @@
   padding: 0 12px 0 16px;
   gap: 10px;
   cursor: text;
+  flex-wrap: nowrap;
 }
 
 .promptInput {
   flex: 1;
-  min-width: 80px;
+  min-width: 0;
   border: none;
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 14px;
   color: #141414;
   outline: none;
   background: transparent;
+  width: 100%;
 }
 
 .promptInput::placeholder {
@@ -747,12 +801,14 @@
 
 .linkInput {
   flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 14px;
   color: #141414;
   background: transparent;
+  width: 100%;
 }
 
 .linkInput::placeholder {
@@ -892,43 +948,115 @@
   .templatesGrid {
     grid-template-columns: repeat(3, 1fr);
   }
+  
+  .header {
+    padding: 0 24px;
+  }
+  
+  .content {
+    padding: 20px 24px 24px;
+  }
 }
 
 @media (max-width: 1024px) {
   .sidebar {
-    width: 180px;
-    padding: 12px 12px 12px 16px;
+    width: 220px;
+    padding: 14px 14px 14px 18px;
+  }
+
+  .logoTitle {
+    font-size: 20px;
+  }
+
+  .navItem {
+    font-size: 15px;
+    padding: 9px 10px;
+  }
+
+  .navItem img {
+    width: 22px;
+    height: 22px;
   }
 
   .createRow {
     flex-direction: column;
     gap: 16px;
+    align-items: stretch;
+  }
+
+  .createPromptWrapper,
+  .youtubeInputWrapper {
+    width: 100%;
   }
 
   .orDividerWrapper {
     padding: 0;
     text-align: center;
+    padding-bottom: 0;
   }
 
   .header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    padding: 12px 20px;
+    padding: 0 20px;
     height: auto;
+    min-height: 70px;
+    flex-wrap: wrap;
   }
 
   .searchBar {
-    max-width: 100%;
+    flex: 1;
+    min-width: 200px;
   }
 
   .createButton {
-    margin-left: 0;
-    justify-content: center;
+    white-space: nowrap;
   }
 
   .content {
-    padding: 16px 20px;
+    padding: 18px 20px 20px;
+  }
+
+  .templatesGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .sectionTitle {
+    font-size: 18px;
+  }
+
+  .promptOptions {
+    gap: 5px;
+  }
+
+  .dropdown {
+    padding: 0 9px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 900px) {
+  .createPrompt,
+  .youtubeInput {
+    height: 58px;
+  }
+
+  .promptOptions {
+    gap: 4px;
+  }
+
+  .dropdown {
+    padding: 0 8px;
+    height: 42px;
+  }
+
+  .dropdown span {
+    display: none;
+  }
+
+  .addButton,
+  .generateButton {
+    width: 42px;
+    height: 42px;
   }
 
   .templatesGrid {
@@ -937,75 +1065,226 @@
 }
 
 @media (max-width: 768px) {
-  .container {
-    flex-direction: column;
-  }
-
   .sidebar {
-    width: 100%;
-    height: auto;
-    padding: 12px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    transform: translateX(-100%);
+    z-index: 10;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
+    padding: 16px;
   }
 
-  .logo {
-    margin-bottom: 0;
-  }
-
-  .userProfile {
-    margin-bottom: 0;
-    flex: 1;
-    max-width: 180px;
-  }
-
-  .nav {
-    flex-direction: row;
-    gap: 6px;
-    width: 100%;
-    overflow-x: auto;
-    margin-bottom: 0;
-  }
-
-  .navItem {
-    flex-direction: column;
-    gap: 4px;
-    font-size: 11px;
-    padding: 8px 10px;
-    margin-right: 0;
-    white-space: nowrap;
-  }
-
-  .progressSection {
-    display: none;
-  }
-
-  .upgradeButton {
-    margin-right: 0;
-    padding: 8px 14px;
-    font-size: 13px;
-    height: 44px;
-  }
-
-  .content {
-    padding: 12px;
-    height: auto;
-    overflow-y: auto;
+  .sidebarOpen {
+    transform: translateX(0);
   }
 
   .main {
+    width: 100%;
     flex: 1;
-    overflow: auto;
   }
 
   .header {
-    padding: 10px 12px;
+    padding: 12px 16px;
+    gap: 10px;
+    height: auto;
+    min-height: auto;
+  }
+
+  .menuButton {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .searchBar {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    border-radius: 12px;
+    padding: 0 14px;
+  }
+
+  .createButton {
+    height: 44px;
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 12px;
+  }
+
+  .createButton span {
+    display: none;
+  }
+
+  .createButton img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .sectionTitle {
+    font-size: 17px;
+  }
+
+  .projectsSection {
+    margin-bottom: 16px;
+  }
+
+  .emptyState {
+    padding: 16px 12px 20px;
+    gap: 12px;
+  }
+
+  .emptyIconWrapper img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .emptyText {
+    font-size: 15px;
+  }
+
+  .startButton {
+    height: 46px;
+    padding: 0 24px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .createSection {
+    margin-bottom: 16px;
+  }
+
+  .createRow {
+    gap: 12px;
+  }
+
+  .createPromptWrapper,
+  .youtubeInputWrapper {
+    gap: 8px;
+  }
+
+  .createPrompt {
+    height: auto;
+    padding: 12px;
+    border-radius: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .promptInput {
+    height: 40px;
+    padding: 8px 0;
+  }
+
+  .promptOptions {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .dropdown {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 12px;
+    gap: 6px;
+    border-radius: 10px;
+    flex: 1;
+    min-width: 80px;
+    justify-content: center;
+  }
+
+  .dropdown span {
+    display: inline;
+  }
+
+  .dropdown img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .addButton {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .createPrompt .generateButton {
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  .youtubeInput {
+    height: auto;
+    padding: 12px;
+    border-radius: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .youtubeIconWrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .youtubeInput .linkInput {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+  }
+
+  .youtubeInput .generateButton {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  .orDividerWrapper {
+    padding: 4px 0;
+  }
+
+  .templatesSection {
+    margin-top: 4px;
+  }
+
+  .templatesHeader {
+    margin-bottom: 12px;
   }
 
   .templatesGrid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .templateCard {
+    gap: 6px;
+  }
+
+  .templateImage {
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+  }
+
+  .favoriteButton {
+    width: 26px;
+    height: 26px;
+    top: 6px;
+    right: 6px;
+  }
+
+  .templateTitle {
+    font-size: 13px;
+  }
+
+  .templateDescription {
+    font-size: 11px;
   }
 
   .blurTopRight,
@@ -1015,8 +1294,619 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
+  .header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .menuButton {
+    width: 40px;
+    height: 40px;
+  }
+
+  .searchBar {
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 10px;
+  }
+
+  .searchInput {
+    font-size: 13px;
+  }
+
+  .createButton {
+    height: 40px;
+    width: 40px;
+    border-radius: 10px;
+  }
+
+  .content {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .sectionTitle {
+    font-size: 16px;
+  }
+
+  .projectsSection {
+    margin-bottom: 12px;
+  }
+
+  .emptyState {
+    padding: 14px 10px 18px;
+    gap: 10px;
+  }
+
+  .emptyIconWrapper img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .emptyText {
+    font-size: 14px;
+  }
+
+  .startButton {
+    height: 44px;
+    padding: 0 22px;
+    font-size: 14px;
+  }
+
+  .createSection {
+    margin-bottom: 12px;
+  }
+
+  .createRow {
+    gap: 10px;
+  }
+
+  .createPromptWrapper,
+  .youtubeInputWrapper {
+    gap: 6px;
+  }
+
+  .createPrompt {
+    padding: 10px;
+    border-radius: 10px;
+    gap: 8px;
+  }
+
+  .promptInput {
+    height: 36px;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+
+  .promptOptions {
+    gap: 6px;
+  }
+
+  .dropdown {
+    height: 38px;
+    padding: 0 10px;
+    font-size: 11px;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 70px;
+  }
+
+  .dropdown img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .addButton {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+  }
+
+  .addButton img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .createPrompt .generateButton {
+    height: 42px;
+    border-radius: 8px;
+  }
+
+  .youtubeInput {
+    padding: 10px;
+    border-radius: 10px;
+    gap: 8px;
+  }
+
+  .youtubeIconWrapper {
+    width: 32px;
+    height: 32px;
+  }
+
+  .youtubeInput .linkInput {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .youtubeInput .generateButton {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+  }
+
+  .orDividerWrapper {
+    padding: 2px 0;
+  }
+
+  .orDivider {
+    font-size: 13px;
+  }
+
+  .templatesHeader {
+    margin-bottom: 10px;
+  }
+
+  .templatesSubtitle {
+    font-size: 12px;
+  }
+
+  .seeAll {
+    font-size: 13px;
+  }
+
   .templatesGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .templateCard {
+    gap: 4px;
+  }
+
+  .templateImage {
+    border-radius: 8px;
+  }
+
+  .favoriteButton {
+    width: 24px;
+    height: 24px;
+    top: 5px;
+    right: 5px;
+  }
+
+  .templateTitle {
+    font-size: 12px;
+  }
+
+  .templateDescription {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 85vw;
+    max-width: 280px;
+  }
+
+  .header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .menuButton {
+    width: 38px;
+    height: 38px;
+  }
+
+  .searchBar {
+    height: 38px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .searchIcon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .searchInput {
+    font-size: 12px;
+  }
+
+  .createButton {
+    height: 38px;
+    width: 38px;
+  }
+
+  .createButton img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .content {
+    padding: 10px;
+  }
+
+  .sectionTitle {
+    font-size: 15px;
+  }
+
+  .projectsSection {
+    margin-bottom: 10px;
+  }
+
+  .emptyState {
+    padding: 12px 8px 16px;
+    gap: 8px;
+  }
+
+  .emptyIconWrapper img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .emptyText {
+    font-size: 13px;
+  }
+
+  .startButton {
+    height: 42px;
+    padding: 0 20px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .createSection {
+    margin-bottom: 10px;
+  }
+
+  .createRow {
+    gap: 8px;
+  }
+
+  .createPromptWrapper,
+  .youtubeInputWrapper {
+    gap: 5px;
+  }
+
+  .createPrompt {
+    padding: 10px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .promptInput {
+    height: 34px;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+
+  .promptOptions {
+    gap: 6px;
+  }
+
+  .dropdown {
+    height: 36px;
+    padding: 0 8px;
+    font-size: 10px;
+    border-radius: 8px;
+    gap: 4px;
+  }
+
+  .dropdown img {
+    width: 14px;
+    height: 14px;
+  }
+
+  .addButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  .addButton img {
+    width: 14px;
+    height: 14px;
+  }
+
+  .createPrompt .generateButton {
+    height: 40px;
+    border-radius: 8px;
+  }
+
+  .youtubeInput {
+    padding: 10px;
+    gap: 8px;
+    border-radius: 10px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  .youtubeIconWrapper {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+  }
+
+  .youtubeIcon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .youtubeInput .linkInput {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .youtubeInput .generateButton {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .orDividerWrapper {
+    padding: 2px 0;
+  }
+
+  .orDivider {
+    font-size: 12px;
+  }
+
+  .templatesHeader {
+    margin-bottom: 8px;
+  }
+
+  .templatesSubtitle {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  .seeAll {
+    font-size: 12px;
+  }
+
+  .templatesGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .templateCard {
+    gap: 4px;
+  }
+
+  .templateImage {
+    border-radius: 8px;
+  }
+
+  .favoriteButton {
+    width: 22px;
+    height: 22px;
+    top: 4px;
+    right: 4px;
+  }
+
+  .templateTitle {
+    font-size: 11px;
+  }
+
+  .templateDescription {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 380px) {
+  .sidebar {
+    width: 90vw;
+    max-width: 260px;
+  }
+
+  .userEmail {
+    font-size: 9px;
+  }
+
+  .navItem {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  .header {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .menuButton {
+    width: 36px;
+    height: 36px;
+  }
+
+  .searchBar {
+    height: 36px;
+    padding: 0 10px;
+    gap: 6px;
+  }
+
+  .searchInput {
+    font-size: 11px;
+  }
+
+  .createButton {
+    height: 36px;
+    width: 36px;
+  }
+
+  .createButton img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .content {
+    padding: 8px;
+  }
+
+  .sectionTitle {
+    font-size: 14px;
+  }
+
+  .projectsSection {
+    margin-bottom: 8px;
+  }
+
+  .emptyState {
+    padding: 10px 6px 14px;
+    gap: 6px;
+  }
+
+  .emptyIconWrapper img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .emptyText {
+    font-size: 12px;
+  }
+
+  .startButton {
+    height: 40px;
+    padding: 0 18px;
+    font-size: 12px;
+    border-radius: 10px;
+  }
+
+  .createSection {
+    margin-bottom: 8px;
+  }
+
+  .createRow {
+    gap: 6px;
+  }
+
+  .createPromptWrapper,
+  .youtubeInputWrapper {
+    gap: 4px;
+  }
+
+  .createPrompt {
+    padding: 8px;
+    gap: 6px;
+    border-radius: 8px;
+  }
+
+  .promptInput {
+    height: 32px;
+    font-size: 11px;
+  }
+
+  .promptOptions {
+    gap: 4px;
+  }
+
+  .dropdown {
+    height: 34px;
+    padding: 0 6px;
+    font-size: 9px;
+    border-radius: 6px;
+    gap: 3px;
+  }
+
+  .dropdown svg {
+    display: none;
+  }
+
+  .dropdown img {
+    width: 12px;
+    height: 12px;
+  }
+
+  .addButton {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+  }
+
+  .addButton img {
+    width: 12px;
+    height: 12px;
+  }
+
+  .createPrompt .generateButton {
+    height: 38px;
+    border-radius: 6px;
+  }
+
+  .youtubeInput {
+    padding: 8px;
+    gap: 6px;
+    border-radius: 8px;
+  }
+
+  .youtubeIconWrapper {
+    width: 28px;
+    height: 28px;
+  }
+
+  .youtubeIcon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .youtubeInput .linkInput {
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .youtubeInput .generateButton {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+  }
+
+  .orDivider {
+    font-size: 11px;
+  }
+
+  .templatesHeader {
+    margin-bottom: 6px;
+  }
+
+  .templatesSubtitle {
+    font-size: 10px;
+  }
+
+  .seeAll {
+    font-size: 11px;
+  }
+
+  .templatesGrid {
+    gap: 6px;
+  }
+
+  .templateCard {
+    gap: 3px;
+  }
+
+  .templateImage {
+    border-radius: 6px;
+  }
+
+  .favoriteButton {
+    width: 20px;
+    height: 20px;
+    top: 3px;
+    right: 3px;
+  }
+
+  .templateTitle {
+    font-size: 10px;
+  }
+
+  .templateDescription {
+    font-size: 8px;
   }
 }
