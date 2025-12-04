@@ -12,16 +12,19 @@ interface ProjectNameModalProps {
 
 export default function ProjectNameModal({ isOpen, onClose, onCreateProject }: ProjectNameModalProps) {
   const [projectName, setProjectName] = useState('untitled');
-  const [isPublic, setIsPublic] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       // Reset to default when modal opens
       setProjectName('untitled');
-      setIsPublic(false);
-      // Focus input after a brief delay to ensure modal is rendered
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setIsPublic(true);
+      // Focus input and select all text after a brief delay to ensure modal is rendered
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 100);
     }
   }, [isOpen]);
 

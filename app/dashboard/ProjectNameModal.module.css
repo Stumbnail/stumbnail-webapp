@@ -26,14 +26,14 @@
 .modal {
   position: relative;
   background-color: #ffffff;
-  border-radius: 60px;
+  border-radius: 50px;
   width: 90%;
-  max-width: 806px;
-  padding: 60px 80px;
+  max-width: 680px;
+  padding: 50px 65px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   animation: slideUp 0.3s ease;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
@@ -52,8 +52,8 @@
 /* Close Button */
 .closeButton {
   position: absolute;
-  top: 40px;
-  right: 40px;
+  top: 32px;
+  right: 32px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -75,10 +75,10 @@
 /* Title */
 .title {
   font-family: var(--font-lexend), sans-serif;
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
   color: #141414;
-  margin: 0;
+  margin: 0 0 32px 0;
   line-height: 1.2;
   text-align: center;
 }
@@ -93,7 +93,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  max-width: 642px;
+  max-width: 550px;
 }
 
 .iconWrapper {
@@ -107,7 +107,7 @@
 
 .label {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 400;
   color: #141414;
   margin: 0;
@@ -117,18 +117,18 @@
 /* Input Container */
 .inputContainer {
   width: 100%;
-  max-width: 642px;
+  max-width: 550px;
 }
 
 .input {
   width: 100%;
-  height: 90px;
+  height: 60px;
   background-color: #ffffff;
   border: 1px solid #d5d5d5;
-  border-radius: 16px;
-  padding: 0 28px;
+  border-radius: 14px;
+  padding: 0 20px;
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   color: #141414;
   outline: none;
   transition: border-color 0.15s ease;
@@ -145,11 +145,11 @@
 /* Toggle Container */
 .toggleContainer {
   width: 100%;
-  max-width: 642px;
+  max-width: 550px;
   background-color: #f0f0f0;
-  border-radius: 16px;
-  height: 80px;
-  padding: 0 25px;
+  border-radius: 14px;
+  height: 60px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -157,7 +157,7 @@
 
 .toggleLabel {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 400;
   color: #797979;
   margin: 0;
@@ -208,20 +208,20 @@
 /* Actions */
 .actions {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
-  max-width: 642px;
-  margin-top: 16px;
+  max-width: 550px;
+  margin-top: 56px;
 }
 
 .cancelButton,
 .createButton {
   flex: 1;
-  height: 70px;
+  height: 56px;
   border: none;
-  border-radius: 16px;
+  border-radius: 14px;
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: box-shadow 0.15s ease, filter 0.15s ease, background-color 0.15s ease;
@@ -258,6 +258,7 @@
   .modal {
     padding: 50px 60px;
     border-radius: 40px;
+    gap: 18px;
   }
 
   .closeButton {
@@ -267,6 +268,7 @@
 
   .title {
     font-size: 32px;
+    margin-bottom: 28px;
   }
 
   .label {
@@ -274,28 +276,28 @@
   }
 
   .input {
-    height: 80px;
-    font-size: 18px;
-    padding: 0 24px;
+    height: 60px;
+    font-size: 16px;
+    padding: 0 20px;
   }
 
   .toggleContainer {
-    height: 70px;
+    height: 60px;
     padding: 0 20px;
   }
 
   .toggleLabel {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .actions {
-    margin-top: 12px;
+    margin-top: 48px;
   }
 
   .cancelButton,
   .createButton {
-    height: 60px;
-    font-size: 18px;
+    height: 56px;
+    font-size: 16px;
   }
 }
 
@@ -304,6 +306,7 @@
     padding: 40px 40px;
     border-radius: 30px;
     max-width: 90%;
+    gap: 16px;
   }
 
   .closeButton {
@@ -313,6 +316,7 @@
 
   .title {
     font-size: 28px;
+    margin-bottom: 24px;
   }
 
   .label {
@@ -320,7 +324,7 @@
   }
 
   .input {
-    height: 70px;
+    height: 60px;
     font-size: 16px;
     padding: 0 20px;
     border-radius: 12px;
@@ -352,7 +356,7 @@
 
   .actions {
     gap: 16px;
-    margin-top: 8px;
+    margin-top: 40px;
   }
 
   .cancelButton,
@@ -367,7 +371,7 @@
   .modal {
     padding: 32px 24px;
     border-radius: 24px;
-    gap: 20px;
+    gap: 14px;
   }
 
   .closeButton {
@@ -382,6 +386,7 @@
 
   .title {
     font-size: 24px;
+    margin-bottom: 18px;
   }
 
   .labelRow {
@@ -403,7 +408,7 @@
   }
 
   .input {
-    height: 60px;
+    height: 56px;
     font-size: 14px;
     padding: 0 16px;
     border-radius: 10px;
@@ -436,6 +441,7 @@
   .actions {
     gap: 12px;
     flex-direction: column;
+    margin-top: 28px;
   }
 
   .cancelButton,
