@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import styles from './dashboard.module.css';
 
 interface Template {
@@ -13,21 +14,19 @@ interface Template {
 interface NavItem {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  icon: string;
   active: boolean;
 }
 
 export default function DashboardPage() {
   const [promptText, setPromptText] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState('Style');
-  const [selectedRecraft, setSelectedRecraft] = useState('Recraft');
 
   const navItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: <img src="/assets/dashboard/icons/home-05-stroke-rounded 2-sidebar.svg" alt="" width="30" height="30" />, active: true },
-    { id: 'projects', label: 'Projects', icon: <img src="/assets/dashboard/icons/image-02-stroke-rounded 1-sidebar.svg" alt="" width="34" height="34" />, active: false },
-    { id: 'community', label: 'Community', icon: <img src="/assets/dashboard/icons/ai-cloud-stroke-rounded 1-sidebar.svg" alt="" width="34" height="34" />, active: false },
-    { id: 'favourites', label: 'Favourites', icon: <img src="/assets/dashboard/icons/play-list-favourite-02-stroke-rounded 1-sidebar.svg" alt="" width="34" height="34" />, active: false },
+    { id: 'dashboard', label: 'Dashboard', icon: '/assets/dashboard/icons/home-05-stroke-rounded 2-sidebar.svg', active: true },
+    { id: 'projects', label: 'Projects', icon: '/assets/dashboard/icons/image-02-stroke-rounded 1-sidebar.svg', active: false },
+    { id: 'community', label: 'Community', icon: '/assets/dashboard/icons/ai-cloud-stroke-rounded 1-sidebar.svg', active: false },
+    { id: 'favourites', label: 'Favourites', icon: '/assets/dashboard/icons/play-list-favourite-02-stroke-rounded 1-sidebar.svg', active: false },
   ];
 
   const templates: Template[] = [
@@ -86,21 +85,19 @@ export default function DashboardPage() {
 
         {/* User Profile */}
         <div className={styles.userProfile}>
-          <img
+          <Image
             src="/assets/dashboard/profile.png"
             alt="User avatar"
+            width={42}
+            height={42}
             className={styles.userAvatar}
           />
           <div className={styles.userInfo}>
             <p className={styles.userName}>Amelia Alex</p>
             <p className={styles.userEmail}>Amelia Alex123@gmail.com</p>
           </div>
-          <button className={styles.userMenu} aria-label="User menu">
-            <svg width="8" height="33" viewBox="0 0 8 33" fill="none">
-              <path d="M7.5 0.5V32.5" stroke="#141414" strokeWidth="0.5"/>
-              <path d="M3.5 16.5L7.5 12.5" stroke="#141414" strokeWidth="0.5"/>
-              <path d="M3.5 16.5L7.5 20.5" stroke="#141414" strokeWidth="0.5"/>
-            </svg>
+          <button className={styles.userMenu} aria-label="User menu options">
+            <span className={styles.userMenuDot} />
           </button>
         </div>
 
@@ -110,10 +107,15 @@ export default function DashboardPage() {
             <button
               key={item.id}
               className={`${styles.navItem} ${item.active ? styles.navItemActive : ''}`}
-              aria-label={item.label}
               aria-current={item.active ? 'page' : undefined}
             >
-              {item.icon}
+              <Image
+                src={item.icon}
+                alt=""
+                width={22}
+                height={22}
+                aria-hidden="true"
+              />
               <span>{item.label}</span>
             </button>
           ))}
@@ -122,19 +124,32 @@ export default function DashboardPage() {
         {/* Progress Section */}
         <div className={styles.progressSection}>
           <div className={styles.progressHeader}>
-            <img src="/assets/dashboard/icons/credits.svg" alt="" width="24" height="24" className={styles.progressIcon} />
+            <Image
+              src="/assets/dashboard/icons/credits.svg"
+              alt=""
+              width={20}
+              height={20}
+              className={styles.progressIcon}
+              aria-hidden="true"
+            />
             <p className={styles.progressText}>
               <span className={styles.progressCurrent}>7</span> / 10
             </p>
           </div>
           <div className={styles.progressBar}>
-            <div className={styles.progressFill} style={{ width: '74.8%' }} />
+            <div className={styles.progressFill} style={{ width: '70%' }} />
           </div>
         </div>
 
         {/* Upgrade Plan Button */}
         <button className={styles.upgradeButton}>
-          <img src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg" alt="" width="33" height="33" />
+          <Image
+            src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
+            alt=""
+            width={24}
+            height={24}
+            aria-hidden="true"
+          />
           <span>Upgrade Plan</span>
         </button>
       </aside>
@@ -145,7 +160,14 @@ export default function DashboardPage() {
         <header className={styles.header}>
           {/* Search Bar */}
           <div className={styles.searchBar}>
-            <img src="/assets/dashboard/icons/search.svg" alt="" width="24" height="24" className={styles.searchIcon} />
+            <Image
+              src="/assets/dashboard/icons/search.svg"
+              alt=""
+              width={18}
+              height={18}
+              className={styles.searchIcon}
+              aria-hidden="true"
+            />
             <input
               type="text"
               placeholder="Search projects or templates..."
@@ -156,7 +178,13 @@ export default function DashboardPage() {
 
           {/* Create New Project Button */}
           <button className={styles.createButton}>
-            <img src="/assets/dashboard/icons/create-new-project-icon.svg" alt="" width="30" height="30" />
+            <Image
+              src="/assets/dashboard/icons/create-new-project-icon.svg"
+              alt=""
+              width={20}
+              height={20}
+              aria-hidden="true"
+            />
             <span>Create New Project</span>
           </button>
         </header>
@@ -172,22 +200,23 @@ export default function DashboardPage() {
             {/* Empty State */}
             <div className={styles.emptyState}>
               <div className={styles.emptyIconWrapper}>
-                <img
+                <Image
                   src="/assets/dashboard/icons/project-section-youtube-with-sparkles.svg"
-                  alt="YouTube play icon"
-                  width="95"
-                  height="95"
+                  alt="No projects illustration"
+                  width={80}
+                  height={80}
                 />
               </div>
               <p className={styles.emptyText}>
-                No projects yet — let's create your first one!
+                No projects yet — let&apos;s create your first one!
               </p>
               <button className={styles.startButton}>
-                <img
+                <Image
                   src="/assets/dashboard/icons/star-for-start-creating-button.svg"
-                  alt="Star icon"
-                  width="27"
-                  height="27"
+                  alt=""
+                  width={20}
+                  height={20}
+                  aria-hidden="true"
                 />
                 <span>Start Creating</span>
               </button>
@@ -196,81 +225,118 @@ export default function DashboardPage() {
 
           {/* Create With Prompt Section */}
           <section className={styles.createSection}>
-            <div className={styles.createHeader}>
-              <h2 className={styles.sectionTitle}>
-                Create With <span className={styles.titleAccent}>Prompt</span>
-              </h2>
+            <div className={styles.createRow}>
+              <div className={styles.createPromptWrapper}>
+                <h2 className={styles.sectionTitle}>
+                  Create With <span className={styles.titleAccent}>Prompt</span>
+                </h2>
+                <div className={styles.createPrompt}>
+                  <input
+                    type="text"
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
+                    placeholder="Describe your thumbnail"
+                    className={styles.promptInput}
+                    aria-label="Describe your thumbnail"
+                  />
+
+                  <div className={styles.promptOptions}>
+                    <button className={styles.dropdown} aria-label="Select style">
+                      <Image
+                        src="/assets/dashboard/icons/style.svg"
+                        alt=""
+                        width={18}
+                        height={18}
+                        aria-hidden="true"
+                      />
+                      <span>Style</span>
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                        <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+
+                    <button className={styles.dropdown} aria-label="Select model">
+                      <Image
+                        src="/assets/dashboard/icons/model.svg"
+                        alt=""
+                        width={18}
+                        height={18}
+                        aria-hidden="true"
+                      />
+                      <span>Recraft</span>
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                        <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+
+                    <button className={styles.addButton} aria-label="Add image reference">
+                      <Image
+                        src="/assets/dashboard/icons/add-image.svg"
+                        alt=""
+                        width={20}
+                        height={20}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+
+                  <button
+                    className={styles.generateButton}
+                    onClick={handlePromptSubmit}
+                    aria-label="Generate thumbnail from prompt"
+                  >
+                    <Image
+                      src="/assets/dashboard/icons/send.svg"
+                      alt=""
+                      width={20}
+                      height={20}
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+              </div>
+
               <div className={styles.orDividerWrapper}>
                 <p className={styles.orDivider}>OR</p>
               </div>
-              <h2 className={styles.sectionTitle}>
-                Paste a <span className={styles.titleAccent}>Youtube Link</span>
-              </h2>
-            </div>
 
-            <div className={styles.createRow}>
-              <div className={styles.createPrompt}>
-                <input
-                  type="text"
-                  value={promptText}
-                  onChange={(e) => setPromptText(e.target.value)}
-                  placeholder="Describe your thumbnail"
-                  className={styles.promptInput}
-                  aria-label="Describe your thumbnail"
-                />
-
-                <div className={styles.promptOptions}>
-                  <button className={styles.dropdown}>
-                    <img src="/assets/dashboard/icons/credits.svg" alt="" width="24" height="24" />
-                    <span>{selectedStyle}</span>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-
-                  <button className={styles.dropdown}>
-                    <img src="/assets/dashboard/icons/credits.svg" alt="" width="20" height="20" />
-                    <span>{selectedRecraft}</span>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-
-                  <button className={styles.addButton} aria-label="Add option">
-                    <img src="/assets/dashboard/icons/add-image.svg" alt="" width="28" height="28" />
+              <div className={styles.youtubeInputWrapper}>
+                <h2 className={styles.sectionTitle}>
+                  Paste a <span className={styles.titleAccent}>Youtube Link</span>
+                </h2>
+                <div className={styles.youtubeInput}>
+                  <div className={styles.youtubeIconWrapper}>
+                    <Image
+                      src="/assets/dashboard/icons/attachment-02-stroke-rounded 1.svg"
+                      alt=""
+                      width={18}
+                      height={18}
+                      className={styles.youtubeIcon}
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={youtubeLink}
+                    onChange={(e) => setYoutubeLink(e.target.value)}
+                    placeholder="Paste a YouTube link to generate thumbnail"
+                    className={styles.linkInput}
+                    aria-label="Paste YouTube link"
+                  />
+                  <button
+                    className={styles.generateButton}
+                    onClick={handleYoutubeLinkSubmit}
+                    aria-label="Generate thumbnail from YouTube link"
+                  >
+                    <Image
+                      src="/assets/dashboard/icons/send.svg"
+                      alt=""
+                      width={20}
+                      height={20}
+                      aria-hidden="true"
+                    />
                   </button>
                 </div>
-
-                <button
-                  className={styles.generateButton}
-                  onClick={handlePromptSubmit}
-                  aria-label="Generate thumbnail from prompt"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 8L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-
-              <div className={styles.youtubeInput}>
-                <img src="/assets/dashboard/icons/attachment-02-stroke-rounded 1.svg" alt="" width="41" height="41" className={styles.youtubeIcon} />
-                <input
-                  type="text"
-                  value={youtubeLink}
-                  onChange={(e) => setYoutubeLink(e.target.value)}
-                  placeholder="Paste a YouTube link to generate thumbnail"
-                  className={styles.linkInput}
-                  aria-label="Paste YouTube link"
-                />
-                <button
-                  className={styles.generateButton}
-                  onClick={handleYoutubeLinkSubmit}
-                  aria-label="Generate thumbnail from YouTube link"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 8L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
               </div>
             </div>
           </section>
@@ -280,7 +346,7 @@ export default function DashboardPage() {
             <div className={styles.templatesHeader}>
               <div>
                 <h2 className={styles.sectionTitle}>Jumpstart your creativity</h2>
-                <p className={styles.templatesSubtitle}>YouTube's "Recommended</p>
+                <p className={styles.templatesSubtitle}>YouTube&apos;s &quot;Recommended</p>
               </div>
               <a href="#" className={styles.seeAll}>See all</a>
             </div>
@@ -289,24 +355,20 @@ export default function DashboardPage() {
               {templates.map((template) => (
                 <div key={template.id} className={styles.templateCard}>
                   <div className={styles.templateImage}>
-                    <img
+                    <Image
                       src={template.image}
                       alt={template.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      style={{ objectFit: 'cover' }}
                     />
-                    <button className={styles.favoriteButton} aria-label="Add to favourites">
-                      <img
+                    <button className={styles.favoriteButton} aria-label={`Add ${template.title} to favourites`}>
+                      <Image
                         src="/assets/dashboard/icons/heart-outline.svg"
                         alt=""
-                        width="32"
-                        height="32"
-                      />
-                    </button>
-                    <button className={styles.aiButton} aria-label="Generate with AI">
-                      <img
-                        src="/assets/dashboard/icons/credits.svg"
-                        alt=""
-                        width="32"
-                        height="32"
+                        width={24}
+                        height={24}
+                        aria-hidden="true"
                       />
                     </button>
                   </div>

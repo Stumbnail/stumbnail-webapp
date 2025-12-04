@@ -1,5 +1,18 @@
 import type { Metadata } from 'next';
+import { Space_Grotesk, Lexend } from 'next/font/google';
 import './globals.css';
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  display: 'swap',
+});
+
+const lexend = Lexend({
+  subsets: ['latin'],
+  variable: '--font-lexend',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Stumbnail - Create Stunning Thumbnails',
@@ -12,13 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${spaceGrotesk.variable} ${lexend.variable}`}>
       <body>{children}</body>
     </html>
   );
