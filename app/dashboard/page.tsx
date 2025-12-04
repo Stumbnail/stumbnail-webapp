@@ -363,13 +363,10 @@ export default function DashboardPage() {
                       style={{ objectFit: 'cover' }}
                     />
                     <button className={styles.favoriteButton} aria-label={`Add ${template.title} to favourites`}>
-                      <Image
-                        src="/assets/dashboard/icons/heart-outline.svg"
-                        alt=""
-                        width={24}
-                        height={24}
-                        aria-hidden="true"
-                      />
+                      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="15.719" cy="15.719" r="15.219" fill="white" fillOpacity="0.7" stroke="white"/>
+                        <path d="M10.1198 8.40026C9.29655 8.68744 8.59773 9.14694 8.05207 9.75004C6.11834 11.904 6.44382 15.2736 8.90406 18.5284C9.50716 19.323 11.393 21.228 12.3886 22.0417C12.8768 22.4438 13.815 23.1713 14.4947 23.6595L15.7104 24.5498L16.3422 24.1094C20.0661 21.4673 22.5551 18.9496 23.7038 16.6521C25.3025 13.4739 24.8239 10.5446 22.4498 8.96506C21.5499 8.36196 20.7554 8.16093 19.5109 8.2088C18.5632 8.24709 18.41 8.27581 17.7399 8.60129C17.2229 8.84061 16.7922 9.14694 16.3518 9.57773L15.7104 10.1904L15.1456 9.61602C14.7436 9.21395 14.3319 8.91719 13.7671 8.63958C12.9726 8.24709 12.9343 8.23751 11.8525 8.2088C10.9048 8.18965 10.6559 8.21837 10.1198 8.40026Z" fill="#FF6F61"/>
+                      </svg>
                     </button>
                   </div>
                   <h3 className={styles.templateTitle}>{template.title}</h3>

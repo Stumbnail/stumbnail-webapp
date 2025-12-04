@@ -200,19 +200,17 @@
 .light .googleButton:hover:not(:disabled) {
   background-color: #e8e8e8;
   border-color: #c0c0c0;
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .dark .googleButton:hover:not(:disabled) {
   background-color: #3a3a3a;
   border-color: #4a4a4a;
-  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 111, 97, 0.2);
 }
 
 .googleButton:active:not(:disabled) {
-  transform: translateY(0);
+  filter: brightness(0.95);
 }
 
 .googleButton:disabled {
