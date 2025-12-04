@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
 
@@ -21,6 +21,8 @@ interface NavItem {
 export default function DashboardPage() {
   const [promptText, setPromptText] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
+  const promptInputRef = useRef<HTMLInputElement>(null);
+  const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
 
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: '/assets/dashboard/icons/home-05-stroke-rounded 2-sidebar.svg', active: true },
@@ -230,8 +232,9 @@ export default function DashboardPage() {
                 <h2 className={styles.sectionTitle}>
                   Create With <span className={styles.titleAccent}>Prompt</span>
                 </h2>
-                <div className={styles.createPrompt}>
+                <div className={styles.createPrompt} onClick={() => promptInputRef.current?.focus()}>
                   <input
+                    ref={promptInputRef}
                     type="text"
                     value={promptText}
                     onChange={(e) => setPromptText(e.target.value)}
@@ -304,7 +307,7 @@ export default function DashboardPage() {
                 <h2 className={styles.sectionTitle}>
                   Paste a <span className={styles.titleAccent}>Youtube Link</span>
                 </h2>
-                <div className={styles.youtubeInput}>
+                <div className={styles.youtubeInput} onClick={() => youtubeLinkInputRef.current?.focus()}>
                   <div className={styles.youtubeIconWrapper}>
                     <Image
                       src="/assets/dashboard/icons/attachment-02-stroke-rounded 1.svg"
@@ -316,6 +319,7 @@ export default function DashboardPage() {
                     />
                   </div>
                   <input
+                    ref={youtubeLinkInputRef}
                     type="text"
                     value={youtubeLink}
                     onChange={(e) => setYoutubeLink(e.target.value)}
