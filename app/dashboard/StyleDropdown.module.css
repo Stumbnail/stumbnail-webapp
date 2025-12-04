@@ -1,0 +1,316 @@
+/* Container */
+.container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Trigger Button */
+.trigger {
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 10px;
+  height: 44px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  color: #797979;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.trigger img {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) saturate(100%) invert(52%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(94%) contrast(89%);
+}
+
+.trigger:hover {
+  background-color: #e8e8e8;
+}
+
+.trigger:active {
+  background-color: #e0e0e0;
+}
+
+.trigger svg {
+  width: 8px;
+  height: 8px;
+}
+
+/* Dropdown Menu */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 2px 13.6px 0 rgba(7, 7, 14, 0.2);
+  padding: 16px 0;
+  min-width: 239px;
+  z-index: 100;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Style List */
+.styleList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px;
+  margin-bottom: 12px;
+}
+
+/* Style Item */
+.styleItem {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 4px 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: opacity 0.15s ease;
+  width: 100%;
+}
+
+.styleItem:hover {
+  opacity: 0.7;
+}
+
+.styleItem:active {
+  opacity: 0.5;
+}
+
+/* Style Thumbnail */
+.styleThumbnail {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  flex-shrink: 0;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Style Info */
+.styleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.styleName {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #141414;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.styleId {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #797979;
+  margin: 0;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Divider */
+.divider {
+  width: 100%;
+  height: 1px;
+  background-color: #f0f0f0;
+  margin: 8px 0;
+}
+
+/* Action Button */
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #8d8d8d;
+  width: 100%;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.actionButton svg {
+  flex-shrink: 0;
+  width: 23px;
+  height: 23px;
+}
+
+.actionButton:hover {
+  background-color: #f8f8f8;
+}
+
+.actionButton:active {
+  background-color: #f0f0f0;
+}
+
+/* Clear Button */
+.clearButton {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #ff6f61;
+  width: 100%;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.clearButton:hover {
+  background-color: rgba(255, 111, 97, 0.05);
+}
+
+.clearButton:active {
+  background-color: rgba(255, 111, 97, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .trigger {
+    padding: 0 9px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .trigger {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 12px;
+    gap: 6px;
+    border-radius: 10px;
+    flex: 1;
+    min-width: 80px;
+    justify-content: center;
+  }
+
+  .trigger span {
+    display: inline;
+  }
+
+  .trigger img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .dropdown {
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 640px) {
+  .trigger {
+    height: 38px;
+    padding: 0 10px;
+    font-size: 11px;
+    border-radius: 8px;
+    gap: 4px;
+  }
+
+  .trigger img {
+    width: 16px;
+    height: 16px;
+  }
+
+  .dropdown {
+    min-width: 200px;
+    padding: 12px 0;
+  }
+
+  .styleList {
+    gap: 10px;
+    padding: 0 12px;
+    margin-bottom: 10px;
+  }
+
+  .styleName {
+    font-size: 13px;
+  }
+
+  .styleId {
+    font-size: 11px;
+  }
+
+  .actionButton,
+  .clearButton {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .trigger {
+    height: 36px;
+    padding: 0 8px;
+    font-size: 10px;
+    border-radius: 6px;
+    gap: 3px;
+  }
+
+  .trigger img {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .trigger {
+    height: 34px;
+    padding: 0 6px;
+    font-size: 9px;
+    border-radius: 6px;
+  }
+
+  .trigger svg {
+    display: none;
+  }
+
+  .trigger img {
+    width: 12px;
+    height: 12px;
+  }
+}

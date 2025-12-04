@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
 import ProjectNameModal from './ProjectNameModal';
+import StyleDropdown from './StyleDropdown';
+import ModelDropdown from './ModelDropdown';
 
 interface Template {
   id: number;
@@ -17,6 +19,22 @@ interface NavItem {
   label: string;
   icon: string;
   active: boolean;
+}
+
+interface Style {
+  id: string;
+  name: string;
+  styleId: string;
+  thumbnail: string;
+}
+
+interface Model {
+  id: string;
+  name: string;
+  description: string;
+  featureTag: string;
+  credits: number;
+  logo: string;
 }
 
 // Static data moved outside component to prevent recreation on every render
@@ -72,6 +90,15 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState<Style | null>(null);
+  const [selectedModel, setSelectedModel] = useState<Model>({
+    id: 'nano-banana-pro',
+    name: 'Nano Banana Pro',
+    description: 'Artistic style with custom text placement',
+    featureTag: 'Text Placement',
+    credits: 10,
+    logo: '/assets/dashboard/icons/nano-banana-model.webp'
+  });
   const promptInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -106,6 +133,21 @@ export default function DashboardPage() {
   const handleCreateProject = (name: string, isPublic: boolean) => {
     console.log('Creating project:', { name, isPublic });
     // TODO: Implement actual project creation logic
+  };
+
+  const handleSelectStyle = (style: Style | null) => {
+    setSelectedStyle(style);
+    console.log('Selected style:', style);
+  };
+
+  const handleCreateNewStyle = () => {
+    console.log('Create new style clicked');
+    // TODO: Implement create new style logic
+  };
+
+  const handleSelectModel = (model: Model) => {
+    setSelectedModel(model);
+    console.log('Selected model:', model);
   };
 
   return (
@@ -316,33 +358,16 @@ export default function DashboardPage() {
                   />
 
                   <div className={styles.promptOptions}>
-                    <button className={styles.dropdown} aria-label="Select style">
-                      <Image
-                        src="/assets/dashboard/icons/style.svg"
-                        alt=""
-                        width={24}
-                        height={24}
-                        aria-hidden="true"
-                      />
-                      <span>Style</span>
-                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                        <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
+                    <StyleDropdown
+                      selectedStyle={selectedStyle}
+                      onSelectStyle={handleSelectStyle}
+                      onCreateNew={handleCreateNewStyle}
+                    />
 
-                    <button className={styles.dropdown} aria-label="Select model">
-                      <Image
-                        src="/assets/dashboard/icons/model.svg"
-                        alt=""
-                        width={24}
-                        height={24}
-                        aria-hidden="true"
-                      />
-                      <span>Recraft</span>
-                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                        <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
+                    <ModelDropdown
+                      selectedModel={selectedModel}
+                      onSelectModel={handleSelectModel}
+                    />
 
                     <button className={styles.addButton} aria-label="Add image reference">
                       <Image
