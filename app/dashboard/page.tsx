@@ -88,8 +88,8 @@ export default function DashboardPage() {
           <Image
             src="/assets/dashboard/profile.png"
             alt="User avatar"
-            width={42}
-            height={42}
+            width={51}
+            height={51}
             className={styles.userAvatar}
           />
           <div className={styles.userInfo}>
@@ -112,8 +112,8 @@ export default function DashboardPage() {
               <Image
                 src={item.icon}
                 alt=""
-                width={22}
-                height={22}
+                width={29}
+                height={29}
                 aria-hidden="true"
               />
               <span>{item.label}</span>
@@ -146,8 +146,8 @@ export default function DashboardPage() {
           <Image
             src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
             alt=""
-            width={24}
-            height={24}
+            width={32}
+            height={32}
             aria-hidden="true"
           />
           <span>Upgrade Plan</span>
@@ -245,8 +245,8 @@ export default function DashboardPage() {
                       <Image
                         src="/assets/dashboard/icons/style.svg"
                         alt=""
-                        width={18}
-                        height={18}
+                        width={24}
+                        height={24}
                         aria-hidden="true"
                       />
                       <span>Style</span>
@@ -259,8 +259,8 @@ export default function DashboardPage() {
                       <Image
                         src="/assets/dashboard/icons/model.svg"
                         alt=""
-                        width={18}
-                        height={18}
+                        width={24}
+                        height={24}
                         aria-hidden="true"
                       />
                       <span>Recraft</span>
