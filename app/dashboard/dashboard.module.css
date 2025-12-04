@@ -76,6 +76,7 @@
   z-index: 10;
   overflow-y: auto;
   transition: transform 0.3s ease;
+  will-change: transform;
 }
 
 /* Mobile Overlay */
@@ -88,6 +89,7 @@
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 9;
   animation: fadeIn 0.3s ease;
+  will-change: transform, opacity;
 }
 
 @keyframes fadeIn {
@@ -326,9 +328,8 @@
 }
 
 .progressIcon {
-  width: 16px;
-  height: 16px;
-  filter: brightness(0) saturate(100%) invert(56%) sepia(88%) saturate(2044%) hue-rotate(329deg) brightness(101%) contrast(101%);
+  width: 24px;
+  height: 24px;
 }
 
 .progressText {
@@ -861,12 +862,14 @@
   gap: 16px;
   flex: 1;
   min-height: 0;
+  contain: layout;
 }
 
 .templateCard {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  contain: layout style paint;
 }
 
 .templateImage {

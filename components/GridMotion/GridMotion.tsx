@@ -87,7 +87,7 @@ const GridMotion = ({ items = [], gradientColor = 'black' }: GridMotionProps) =>
 
     const removeAnimationLoop = gsap.ticker.add(updateMotion);
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);

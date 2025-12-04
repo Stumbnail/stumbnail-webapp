@@ -1,0 +1,447 @@
+/* Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Container */
+.modal {
+  position: relative;
+  background-color: #ffffff;
+  border-radius: 60px;
+  width: 90%;
+  max-width: 806px;
+  padding: 60px 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  animation: slideUp 0.3s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Close Button */
+.closeButton {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease;
+}
+
+.closeButton:hover {
+  opacity: 0.7;
+}
+
+.closeButton:active {
+  opacity: 0.5;
+}
+
+/* Title */
+.title {
+  font-family: var(--font-lexend), sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #141414;
+  margin: 0;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.titleAccent {
+  color: #ff6f61;
+}
+
+/* Label Row */
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 642px;
+}
+
+.iconWrapper {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: #141414;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Input Container */
+.inputContainer {
+  width: 100%;
+  max-width: 642px;
+}
+
+.input {
+  width: 100%;
+  height: 90px;
+  background-color: #ffffff;
+  border: 1px solid #d5d5d5;
+  border-radius: 16px;
+  padding: 0 28px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 20px;
+  color: #141414;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input::placeholder {
+  color: #797979;
+}
+
+.input:focus {
+  border-color: #ff6f61;
+}
+
+/* Toggle Container */
+.toggleContainer {
+  width: 100%;
+  max-width: 642px;
+  background-color: #f0f0f0;
+  border-radius: 16px;
+  height: 80px;
+  padding: 0 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggleLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: #797979;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Toggle Switch */
+.toggle {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  background-color: #d5d5d5;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggle:hover {
+  background-color: #c5c5c5;
+}
+
+.toggleActive {
+  background-color: #ff6f61;
+}
+
+.toggleActive:hover {
+  background-color: #e85a4d;
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggleActive .toggleKnob {
+  transform: translateX(22px);
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  max-width: 642px;
+  margin-top: 16px;
+}
+
+.cancelButton,
+.createButton {
+  flex: 1;
+  height: 70px;
+  border: none;
+  border-radius: 16px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, filter 0.15s ease, background-color 0.15s ease;
+}
+
+.cancelButton {
+  background-color: #f0f0f0;
+  color: #797979;
+}
+
+.cancelButton:hover {
+  background-color: #e8e8e8;
+}
+
+.cancelButton:active {
+  background-color: #e0e0e0;
+}
+
+.createButton {
+  background-color: #ff6f61;
+  color: #ffffff;
+}
+
+.createButton:hover {
+  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
+}
+
+.createButton:active {
+  filter: brightness(0.95);
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .modal {
+    padding: 50px 60px;
+    border-radius: 40px;
+  }
+
+  .closeButton {
+    top: 30px;
+    right: 30px;
+  }
+
+  .title {
+    font-size: 32px;
+  }
+
+  .label {
+    font-size: 20px;
+  }
+
+  .input {
+    height: 80px;
+    font-size: 18px;
+    padding: 0 24px;
+  }
+
+  .toggleContainer {
+    height: 70px;
+    padding: 0 20px;
+  }
+
+  .toggleLabel {
+    font-size: 18px;
+  }
+
+  .actions {
+    margin-top: 12px;
+  }
+
+  .cancelButton,
+  .createButton {
+    height: 60px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal {
+    padding: 40px 40px;
+    border-radius: 30px;
+    max-width: 90%;
+  }
+
+  .closeButton {
+    top: 20px;
+    right: 20px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .label {
+    font-size: 18px;
+  }
+
+  .input {
+    height: 70px;
+    font-size: 16px;
+    padding: 0 20px;
+    border-radius: 12px;
+  }
+
+  .toggleContainer {
+    height: 60px;
+    padding: 0 18px;
+    border-radius: 12px;
+  }
+
+  .toggleLabel {
+    font-size: 16px;
+  }
+
+  .toggle {
+    width: 46px;
+    height: 26px;
+  }
+
+  .toggleKnob {
+    width: 20px;
+    height: 20px;
+  }
+
+  .toggleActive .toggleKnob {
+    transform: translateX(20px);
+  }
+
+  .actions {
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .cancelButton,
+  .createButton {
+    height: 56px;
+    font-size: 16px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 32px 24px;
+    border-radius: 24px;
+    gap: 20px;
+  }
+
+  .closeButton {
+    top: 16px;
+    right: 16px;
+  }
+
+  .closeButton svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .labelRow {
+    gap: 10px;
+  }
+
+  .iconWrapper {
+    width: 32px;
+    height: 32px;
+  }
+
+  .iconWrapper img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .label {
+    font-size: 16px;
+  }
+
+  .input {
+    height: 60px;
+    font-size: 14px;
+    padding: 0 16px;
+    border-radius: 10px;
+  }
+
+  .toggleContainer {
+    height: 56px;
+    padding: 0 16px;
+    border-radius: 10px;
+  }
+
+  .toggleLabel {
+    font-size: 14px;
+  }
+
+  .toggle {
+    width: 42px;
+    height: 24px;
+  }
+
+  .toggleKnob {
+    width: 18px;
+    height: 18px;
+  }
+
+  .toggleActive .toggleKnob {
+    transform: translateX(18px);
+  }
+
+  .actions {
+    gap: 12px;
+    flex-direction: column;
+  }
+
+  .cancelButton,
+  .createButton {
+    height: 52px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+}

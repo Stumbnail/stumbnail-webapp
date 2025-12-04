@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import styles from './dashboard.module.css';
+import ProjectNameModal from './ProjectNameModal';
 
 interface Template {
   id: number;
@@ -18,61 +19,81 @@ interface NavItem {
   active: boolean;
 }
 
+// Static data moved outside component to prevent recreation on every render
+const navItems: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: '/assets/dashboard/icons/home-05-stroke-rounded 2-sidebar.svg', active: true },
+  { id: 'projects', label: 'Projects', icon: '/assets/dashboard/icons/image-02-stroke-rounded 1-sidebar.svg', active: false },
+  { id: 'community', label: 'Community', icon: '/assets/dashboard/icons/ai-cloud-stroke-rounded 1-sidebar.svg', active: false },
+  { id: 'favourites', label: 'Favourites', icon: '/assets/dashboard/icons/play-list-favourite-02-stroke-rounded 1-sidebar.svg', active: false },
+];
+
+const templates: Template[] = [
+  {
+    id: 1,
+    title: 'Tech Review Template',
+    description: 'Generate instantly with AI',
+    image: '/assets/dashboard/template1.png'
+  },
+  {
+    id: 2,
+    title: 'Travel Vlog Template',
+    description: 'Generate instantly with AI',
+    image: '/assets/dashboard/template2.png'
+  },
+  {
+    id: 3,
+    title: 'Gaming Reaction Template',
+    description: 'Generate instantly with AI',
+    image: '/assets/dashboard/template3.png'
+  },
+  {
+    id: 4,
+    title: 'Cinematic Look',
+    description: 'Generate instantly with AI',
+    image: '/assets/dashboard/template4.png'
+  },
+];
+
+// Debounce utility for resize handler
+function debounce<T extends (...args: Parameters<T>) => void>(
+  fn: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+}
+
 export default function DashboardPage() {
   const [promptText, setPromptText] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const promptInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-      if (window.innerWidth > 768) {
-        setSidebarOpen(false);
-      }
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+  const checkMobile = useCallback(() => {
+    setIsMobile(window.innerWidth <= 768);
+    if (window.innerWidth > 768) {
+      setSidebarOpen(false);
+    }
   }, []);
 
-  const navItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: '/assets/dashboard/icons/home-05-stroke-rounded 2-sidebar.svg', active: true },
-    { id: 'projects', label: 'Projects', icon: '/assets/dashboard/icons/image-02-stroke-rounded 1-sidebar.svg', active: false },
-    { id: 'community', label: 'Community', icon: '/assets/dashboard/icons/ai-cloud-stroke-rounded 1-sidebar.svg', active: false },
-    { id: 'favourites', label: 'Favourites', icon: '/assets/dashboard/icons/play-list-favourite-02-stroke-rounded 1-sidebar.svg', active: false },
-  ];
-
-  const templates: Template[] = [
-    {
-      id: 1,
-      title: 'Tech Review Template',
-      description: 'Generate instantly with AI',
-      image: '/assets/dashboard/template1.png'
-    },
-    {
-      id: 2,
-      title: 'Travel Vlog Template',
-      description: 'Generate instantly with AI',
-      image: '/assets/dashboard/template2.png'
-    },
-    {
-      id: 3,
-      title: 'Gaming Reaction Template',
-      description: 'Generate instantly with AI',
-      image: '/assets/dashboard/template3.png'
-    },
-    {
-      id: 4,
-      title: 'Cinematic Look',
-      description: 'Generate instantly with AI',
-      image: '/assets/dashboard/template4.png'
-    },
-  ];
+  useEffect(() => {
+    // Initial check
+    checkMobile();
+    
+    // Debounced resize handler (150ms delay) for better performance
+    const debouncedCheckMobile = debounce(checkMobile, 150);
+    
+    // Use passive event listener for better scroll/resize performance
+    window.addEventListener('resize', debouncedCheckMobile, { passive: true });
+    return () => window.removeEventListener('resize', debouncedCheckMobile);
+  }, [checkMobile]);
 
   const handlePromptSubmit = () => {
     console.log('Generating with prompt:', promptText);
@@ -82,14 +103,23 @@ export default function DashboardPage() {
     console.log('Generating from YouTube:', youtubeLink);
   };
 
+  const handleCreateProject = (name: string, isPublic: boolean) => {
+    console.log('Creating project:', { name, isPublic });
+    // TODO: Implement actual project creation logic
+  };
+
   return (
     <div className={styles.container}>
-      {/* Decorative blur elements */}
-      <div className={styles.blurTopRight} />
-      <div className={styles.blurBottom} />
-      <div className={styles.blurSidebarBottom} />
+      {/* Decorative blur elements - only render on desktop to reduce DOM nodes on mobile */}
+      {!isMobile && (
+        <>
+          <div className={styles.blurTopRight} />
+          <div className={styles.blurBottom} />
+          <div className={styles.blurSidebarBottom} />
+        </>
+      )}
 
-      {/* Mobile Overlay */}
+      {/* Mobile Overlay - only renders when sidebar is open on mobile */}
       {isMobile && sidebarOpen && (
         <div 
           className={styles.overlay} 
@@ -154,8 +184,8 @@ export default function DashboardPage() {
             <Image
               src="/assets/dashboard/icons/credits.svg"
               alt=""
-              width={20}
-              height={20}
+              width={24}
+              height={24}
               className={styles.progressIcon}
               aria-hidden="true"
             />
@@ -221,7 +251,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Create New Project Button */}
-          <button className={styles.createButton}>
+          <button className={styles.createButton} onClick={() => setIsModalOpen(true)}>
             <Image
               src="/assets/dashboard/icons/create-new-project-icon.svg"
               alt=""
@@ -254,7 +284,7 @@ export default function DashboardPage() {
               <p className={styles.emptyText}>
                 No projects yet — let&apos;s create your first one!
               </p>
-              <button className={styles.startButton}>
+              <button className={styles.startButton} onClick={() => setIsModalOpen(true)}>
                 <Image
                   src="/assets/dashboard/icons/star-for-start-creating-button.svg"
                   alt=""
@@ -398,14 +428,15 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.templatesGrid}>
-              {templates.map((template) => (
+              {templates.map((template, index) => (
                 <div key={template.id} className={styles.templateCard}>
                   <div className={styles.templateImage}>
                     <Image
                       src={template.image}
                       alt={template.title}
                       fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px"
+                      priority={index === 0}
                       style={{ objectFit: 'cover' }}
                     />
                     <button className={styles.favoriteButton} aria-label={`Add ${template.title} to favourites`}>
@@ -423,6 +454,13 @@ export default function DashboardPage() {
           </section>
         </div>
       </main>
+
+      {/* Project Name Modal */}
+      <ProjectNameModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreateProject={handleCreateProject}
+      />
     </div>
   );
 }

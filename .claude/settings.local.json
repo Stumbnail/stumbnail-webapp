@@ -23,7 +23,8 @@
       "Bash(ren \"C:\\Users\\Ahdfa\\OneDrive\\Desktop\\Projects\\stumbnail-webapp\\public\\assets\\templates\\template4-new.png\" template4.png)",
       "Bash(mv:*)",
       "Bash(mkdir:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(if exist .next rmdir /s /q .next)"
     ],
     "deny": [],
     "ask": []
