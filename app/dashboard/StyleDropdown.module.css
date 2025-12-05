@@ -19,6 +19,12 @@
   color: #797979;
   cursor: pointer;
   transition: background-color 0.15s ease;
+  min-width: 44px;
+  justify-content: center;
+}
+
+.trigger span {
+  display: none;
 }
 
 .trigger img {
@@ -51,6 +57,8 @@
   box-shadow: 0 2px 13.6px 0 rgba(7, 7, 14, 0.2);
   padding: 16px 0;
   min-width: 239px;
+  max-height: 400px;
+  overflow-y: auto;
   z-index: 100;
   animation: slideDown 0.2s ease;
 }
@@ -209,27 +217,13 @@
 }
 
 /* Responsive Design */
-@media (max-width: 900px) {
-  .trigger {
-    padding: 0 9px;
-    font-size: 12px;
-  }
-}
-
 @media (max-width: 768px) {
   .trigger {
     height: 40px;
-    padding: 0 12px;
+    padding: 0 10px;
     font-size: 12px;
     gap: 6px;
     border-radius: 10px;
-    flex: 1;
-    min-width: 80px;
-    justify-content: center;
-  }
-
-  .trigger span {
-    display: inline;
   }
 
   .trigger img {

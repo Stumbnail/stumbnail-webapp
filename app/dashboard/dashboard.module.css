@@ -828,6 +828,7 @@
 
 /* Templates Section */
 .templatesSection {
+  margin-top: 32px;
   margin-bottom: 0;
   flex: 1;
   display: flex;
@@ -885,7 +886,7 @@
 .templateImage {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
@@ -961,11 +962,11 @@
   .templatesGrid {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .header {
     padding: 0 24px;
   }
-  
+
   .content {
     padding: 20px 24px 24px;
   }

@@ -117,18 +117,14 @@ export default function ModelDropdown({ selectedModel, onSelectModel }: ModelDro
                   />
                 </div>
                 <div className={styles.modelInfo}>
-                  <div className={styles.modelHeader}>
-                    <p className={styles.modelName}>{model.name}</p>
-                    <div className={styles.creditsContainer}>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28"/>
-                        <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-                      </svg>
-                      <span className={styles.credits}>{model.credits} Credits</span>
-                    </div>
-                  </div>
-                  <p className={styles.modelDescription}>{model.description}</p>
-                  <p className={styles.featureTag}>{model.featureTag}</p>
+                  <p className={styles.modelName}>{model.name}</p>
+                </div>
+                <div className={styles.creditsContainer}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28"/>
+                    <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+                  </svg>
+                  <span className={styles.credits}>{model.credits}</span>
                 </div>
               </button>
             ))}

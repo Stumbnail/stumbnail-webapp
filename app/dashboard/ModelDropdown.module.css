@@ -19,6 +19,12 @@
   color: #797979;
   cursor: pointer;
   transition: background-color 0.15s ease;
+  min-width: 44px;
+  justify-content: center;
+}
+
+.trigger span {
+  display: none;
 }
 
 .trigger img {
@@ -51,6 +57,8 @@
   box-shadow: 0 2px 13.6px 0 rgba(7, 7, 14, 0.2);
   padding: 16px;
   min-width: 256px;
+  max-height: 450px;
+  overflow-y: auto;
   z-index: 100;
   animation: slideDown 0.2s ease;
 }
@@ -103,9 +111,9 @@
 /* Model Item */
 .modelItem {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   background-color: #f0f0f0;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -113,7 +121,6 @@
   text-align: left;
   transition: background-color 0.15s ease, border-color 0.15s ease;
   width: 100%;
-  min-height: 94px;
 }
 
 .modelItem:hover {
@@ -155,17 +162,9 @@
 /* Model Info */
 .modelInfo {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
   flex: 1;
   min-width: 0;
-}
-
-.modelHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
 }
 
 .modelName {
@@ -194,56 +193,20 @@
 .credits {
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 500;
   color: #da9a28;
   line-height: 1.2;
   white-space: nowrap;
 }
 
-.modelDescription {
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  color: #797979;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.featureTag {
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  color: #ff6f61;
-  margin: 0;
-  line-height: 1.2;
-}
-
 /* Responsive Design */
-@media (max-width: 900px) {
-  .trigger {
-    padding: 0 9px;
-    font-size: 12px;
-  }
-
-  .dropdown {
-    min-width: 240px;
-  }
-}
-
 @media (max-width: 768px) {
   .trigger {
     height: 40px;
-    padding: 0 12px;
+    padding: 0 10px;
     font-size: 12px;
     gap: 6px;
     border-radius: 10px;
-    flex: 1;
-    min-width: 80px;
-    justify-content: center;
-  }
-
-  .trigger span {
-    display: inline;
   }
 
   .trigger img {
@@ -257,7 +220,6 @@
   }
 
   .modelItem {
-    min-height: 88px;
     padding: 10px;
   }
 }
@@ -286,21 +248,12 @@
   }
 
   .modelItem {
-    min-height: 82px;
-    padding: 10px;
-    gap: 10px;
+    padding: 8px 10px;
+    gap: 8px;
   }
 
   .modelName {
     font-size: 13px;
-  }
-
-  .modelDescription {
-    font-size: 11px;
-  }
-
-  .featureTag {
-    font-size: 11px;
   }
 
   .credits {
@@ -327,7 +280,6 @@
   }
 
   .modelItem {
-    min-height: 76px;
     padding: 8px;
   }
 
