@@ -70,12 +70,12 @@ export default function ProjectNameModal({ isOpen, onClose, onCreateProject }: P
             <Image
               src="/assets/dashboard/icons/pencil-edit.svg"
               alt=""
-              width={40}
-              height={40}
+              width={24}
+              height={24}
               aria-hidden="true"
             />
           </div>
-          <p className={styles.label}>Add name here</p>
+          <p className={styles.label}>Name your project</p>
         </div>
 
         {/* Input Field */}

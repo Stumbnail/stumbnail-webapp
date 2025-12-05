@@ -101,9 +101,15 @@ export default function DashboardPage() {
   });
   const [viewingAllTemplates, setViewingAllTemplates] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [promptInfoOpen, setPromptInfoOpen] = useState(false);
+  const [urlInfoOpen, setUrlInfoOpen] = useState(false);
   const promptInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const promptInfoRef = useRef<HTMLDivElement>(null);
+  const urlInfoRef = useRef<HTMLDivElement>(null);
 
   const TEMPLATES_PER_PAGE = 8;
   const totalPages = Math.ceil(templates.length / TEMPLATES_PER_PAGE);
@@ -168,6 +174,34 @@ export default function DashboardPage() {
     setCurrentPage(page);
   };
 
+  const handleSignOut = () => {
+    console.log('Sign out clicked');
+    // TODO: Implement sign out logic
+    setProfileMenuOpen(false);
+  };
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+      if (promptInfoRef.current && !promptInfoRef.current.contains(event.target as Node)) {
+        setPromptInfoOpen(false);
+      }
+      if (urlInfoRef.current && !urlInfoRef.current.contains(event.target as Node)) {
+        setUrlInfoOpen(false);
+      }
+    }
+
+    if (profileMenuOpen || promptInfoOpen || urlInfoOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [profileMenuOpen, promptInfoOpen, urlInfoOpen]);
+
   return (
     <div className={styles.container}>
       {/* Decorative blur elements - only render on desktop to reduce DOM nodes on mobile */}
@@ -201,7 +235,7 @@ export default function DashboardPage() {
         </div>
 
         {/* User Profile */}
-        <div className={styles.userProfile}>
+        <div className={styles.userProfile} ref={profileMenuRef}>
           <Image
             src="/assets/dashboard/profile.png"
             alt="User avatar"
@@ -213,9 +247,25 @@ export default function DashboardPage() {
             <p className={styles.userName}>Amelia Alex</p>
             <p className={styles.userEmail}>Amelia Alex123@gmail.com</p>
           </div>
-          <button className={styles.userMenu} aria-label="User menu options">
+          <button
+            className={styles.userMenu}
+            aria-label="User menu options"
+            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+            aria-expanded={profileMenuOpen}
+          >
             <span className={styles.userMenuDot} />
           </button>
+
+          {profileMenuOpen && (
+            <div className={styles.profileDropdown}>
+              <button className={styles.profileMenuItem} onClick={handleSignOut}>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M6.75 15.75H3.75C3.35218 15.75 2.97064 15.592 2.68934 15.3107C2.40804 15.0294 2.25 14.6478 2.25 14.25V3.75C2.25 3.35218 2.40804 2.97064 2.68934 2.68934C2.97064 2.40804 3.35218 2.25 3.75 2.25H6.75M12 12.75L15.75 9M15.75 9L12 5.25M15.75 9H6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
@@ -361,9 +411,28 @@ export default function DashboardPage() {
           <section className={styles.createSection}>
             <div className={styles.createRow}>
               <div className={styles.createPromptWrapper}>
-                <h2 className={styles.sectionTitle}>
-                  Create With <span className={styles.titleAccent}>Prompt</span>
-                </h2>
+                <div className={styles.sectionTitleWithInfo}>
+                  <h2 className={styles.sectionTitle}>
+                    Create With <span className={styles.titleAccent}>Prompt</span>
+                  </h2>
+                  <div className={styles.infoButtonWrapper} ref={promptInfoRef}>
+                    <button
+                      className={styles.infoButton}
+                      onClick={() => setPromptInfoOpen(!promptInfoOpen)}
+                      aria-label="Information about prompt creation"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                    {promptInfoOpen && (
+                      <div className={styles.infoTooltip}>
+                        <p>Enter a prompt to generate your original thumbnail. If you want your face in there, just attach it, or describe your thumbnail.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className={styles.createPrompt} onClick={() => promptInputRef.current?.focus()}>
                   <input
                     ref={promptInputRef}
@@ -419,9 +488,28 @@ export default function DashboardPage() {
               </div>
 
               <div className={styles.youtubeInputWrapper}>
-                <h2 className={styles.sectionTitle}>
-                  Paste a <span className={styles.titleAccent}>Youtube Link</span>
-                </h2>
+                <div className={styles.sectionTitleWithInfo}>
+                  <h2 className={styles.sectionTitle}>
+                    Paste a <span className={styles.titleAccent}>Youtube Link</span>
+                  </h2>
+                  <div className={styles.infoButtonWrapper} ref={urlInfoRef}>
+                    <button
+                      className={styles.infoButton}
+                      onClick={() => setUrlInfoOpen(!urlInfoOpen)}
+                      aria-label="Information about YouTube link"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                    {urlInfoOpen && (
+                      <div className={styles.infoTooltip}>
+                        <p>If you find a thumbnail on YouTube and really like it, just paste the link of the video and make the thumbnail yours by editing it directly.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className={styles.youtubeInput} onClick={() => youtubeLinkInputRef.current?.focus()}>
                   <div className={styles.youtubeIconWrapper}>
                     <Image
@@ -487,7 +575,7 @@ export default function DashboardPage() {
                     <button className={styles.favoriteButton} aria-label={`Add ${template.title} to favourites`}>
                       <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <circle cx="15.719" cy="15.719" r="15.219" fill="white" fillOpacity="0.7" stroke="white"/>
-                        <path d="M10.1198 8.40026C9.29655 8.68744 8.59773 9.14694 8.05207 9.75004C6.11834 11.904 6.44382 15.2736 8.90406 18.5284C9.50716 19.323 11.393 21.228 12.3886 22.0417C12.8768 22.4438 13.815 23.1713 14.4947 23.6595L15.7104 24.5498L16.3422 24.1094C20.0661 21.4673 22.5551 18.9496 23.7038 16.6521C25.3025 13.4739 24.8239 10.5446 22.4498 8.96506C21.5499 8.36196 20.7554 8.16093 19.5109 8.2088C18.5632 8.24709 18.41 8.27581 17.7399 8.60129C17.2229 8.84061 16.7922 9.14694 16.3518 9.57773L15.7104 10.1904L15.1456 9.61602C14.7436 9.21395 14.3319 8.91719 13.7671 8.63958C12.9726 8.24709 12.9343 8.23751 11.8525 8.2088C10.9048 8.18965 10.6559 8.21837 10.1198 8.40026Z" fill="#FF6F61"/>
+                        <path d="M10.1198 8.40026C9.29655 8.68744 8.59773 9.14694 8.05207 9.75004C6.11834 11.904 6.44382 15.2736 8.90406 18.5284C9.50716 19.323 11.393 21.228 12.3886 22.0417C12.8768 22.4438 13.815 23.1713 14.4947 23.6595L15.7104 24.5498L16.3422 24.1094C20.0661 21.4673 22.5551 18.9496 23.7038 16.6521C25.3025 13.4739 24.8239 10.5446 22.4498 8.96506C21.5499 8.36196 20.7554 8.16093 19.5109 8.2088C18.5632 8.24709 18.41 8.27581 17.7399 8.60129C17.2229 8.84061 16.7922 9.14694 16.3518 9.57773L15.7104 10.1904L15.1456 9.61602C14.7436 9.21395 14.3319 8.91719 13.7671 8.63958C12.9726 8.24709 12.9343 8.23751 11.8525 8.2088C10.9048 8.18965 10.6559 8.21837 10.1198 8.40026Z" fill="#FF6F61" stroke="#141414" strokeWidth="0.8"/>
                       </svg>
                     </button>
                   </div>
