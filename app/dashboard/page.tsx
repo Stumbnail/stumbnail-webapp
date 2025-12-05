@@ -72,6 +72,31 @@ const templates: Template[] = [
   },
 ];
 
+// Initial mock project data
+const initialMockProjects = [
+  {
+    id: 1,
+    name: 'Summer Vlog Thumbnail',
+    thumbnail: '/assets/dashboard/template1.png',
+    createdAt: '2 days ago',
+    isPublic: true
+  },
+  {
+    id: 2,
+    name: 'Gaming Stream Cover',
+    thumbnail: '/assets/dashboard/template2.png',
+    createdAt: '5 days ago',
+    isPublic: false
+  },
+  {
+    id: 3,
+    name: 'Product Review',
+    thumbnail: '/assets/dashboard/template3.png',
+    createdAt: '1 week ago',
+    isPublic: true
+  },
+];
+
 // Debounce utility for resize handler
 function debounce<T extends (...args: Parameters<T>) => void>(
   fn: T,
@@ -104,6 +129,9 @@ export default function DashboardPage() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [promptInfoOpen, setPromptInfoOpen] = useState(false);
   const [urlInfoOpen, setUrlInfoOpen] = useState(false);
+  const [creationContainerFocused, setCreationContainerFocused] = useState(false);
+  const [projects, setProjects] = useState(initialMockProjects);
+  const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -180,6 +208,34 @@ export default function DashboardPage() {
     setProfileMenuOpen(false);
   };
 
+  const handleProjectMenuClick = (projectId: number) => {
+    setProjectMenuOpen(projectMenuOpen === projectId ? null : projectId);
+  };
+
+  const handleEditProject = (projectId: number) => {
+    console.log('Edit project:', projectId);
+    setProjectMenuOpen(null);
+    // TODO: Implement edit logic
+  };
+
+  const handleDuplicateProject = (projectId: number) => {
+    console.log('Duplicate project:', projectId);
+    setProjectMenuOpen(null);
+    // TODO: Implement duplicate logic
+  };
+
+  const handleOpenProject = (projectId: number) => {
+    console.log('Open project:', projectId);
+    setProjectMenuOpen(null);
+    // TODO: Implement open project logic
+  };
+
+  const handleDeleteProject = (projectId: number) => {
+    console.log('Delete project:', projectId);
+    setProjectMenuOpen(null);
+    setProjects(projects.filter(project => project.id !== projectId));
+  };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -191,16 +247,29 @@ export default function DashboardPage() {
       if (urlInfoRef.current && !urlInfoRef.current.contains(event.target as Node)) {
         setUrlInfoOpen(false);
       }
+      // Close project menu when clicking outside
+      if (projectMenuOpen !== null) {
+        const menus = document.querySelectorAll('[data-project-menu]');
+        let clickedInside = false;
+        menus.forEach(menu => {
+          if (menu.contains(event.target as Node)) {
+            clickedInside = true;
+          }
+        });
+        if (!clickedInside) {
+          setProjectMenuOpen(null);
+        }
+      }
     }
 
-    if (profileMenuOpen || promptInfoOpen || urlInfoOpen) {
+    if (profileMenuOpen || promptInfoOpen || urlInfoOpen || projectMenuOpen !== null) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [profileMenuOpen, promptInfoOpen, urlInfoOpen]);
+  }, [profileMenuOpen, promptInfoOpen, urlInfoOpen, projectMenuOpen]);
 
   return (
     <div className={styles.container}>
@@ -381,168 +450,290 @@ export default function DashboardPage() {
               My <span className={styles.titleAccent}>Projects</span>
             </h2>
 
-            {/* Empty State */}
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIconWrapper}>
-                <Image
-                  src="/assets/dashboard/icons/project-section-youtube-with-sparkles.svg"
-                  alt="No projects illustration"
-                  width={80}
-                  height={80}
-                />
+            {projects.length === 0 ? (
+              /* Empty State */
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIconWrapper}>
+                  <Image
+                    src="/assets/dashboard/icons/project-section-youtube-with-sparkles.svg"
+                    alt="No projects illustration"
+                    width={80}
+                    height={80}
+                  />
+                </div>
+                <p className={styles.emptyText}>
+                  No projects yet — let&apos;s create your first one!
+                </p>
+                <button className={styles.startButton} onClick={() => setIsModalOpen(true)}>
+                  <Image
+                    src="/assets/dashboard/icons/star-for-start-creating-button.svg"
+                    alt=""
+                    width={20}
+                    height={20}
+                    aria-hidden="true"
+                  />
+                  <span>Start Creating</span>
+                </button>
               </div>
-              <p className={styles.emptyText}>
-                No projects yet — let&apos;s create your first one!
-              </p>
-              <button className={styles.startButton} onClick={() => setIsModalOpen(true)}>
-                <Image
-                  src="/assets/dashboard/icons/star-for-start-creating-button.svg"
-                  alt=""
-                  width={20}
-                  height={20}
-                  aria-hidden="true"
-                />
-                <span>Start Creating</span>
-              </button>
-            </div>
+            ) : (
+              /* Projects Grid */
+              <div className={styles.projectsGrid}>
+                {projects.map((project) => (
+                  <div key={project.id} className={styles.projectCard}>
+                    <div className={styles.projectThumbnail}>
+                      <Image
+                        src={project.thumbnail}
+                        alt={project.name}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div className={styles.projectInfo}>
+                      <div className={styles.projectHeader}>
+                        <h3 className={styles.projectName}>{project.name}</h3>
+                        <div className={styles.projectMenu} data-project-menu>
+                          <button
+                            className={styles.projectMenuButton}
+                            onClick={() => handleProjectMenuClick(project.id)}
+                            aria-label="Project options"
+                          >
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="10" cy="4" r="1.5" fill="currentColor"/>
+                              <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+                              <circle cx="10" cy="16" r="1.5" fill="currentColor"/>
+                            </svg>
+                          </button>
+                          {projectMenuOpen === project.id && (
+                            <div className={styles.projectDropdown}>
+                              <button
+                                className={styles.projectDropdownItem}
+                                onClick={() => handleEditProject(project.id)}
+                              >
+                                <Image
+                                  src="/assets/dashboard/icons/edit-01-stroke-rounded 1.svg"
+                                  alt=""
+                                  width={18}
+                                  height={18}
+                                  aria-hidden="true"
+                                />
+                                Edit
+                              </button>
+                              <button
+                                className={styles.projectDropdownItem}
+                                onClick={() => handleDuplicateProject(project.id)}
+                              >
+                                <Image
+                                  src="/assets/dashboard/icons/copy-01-stroke-rounded 1.svg"
+                                  alt=""
+                                  width={18}
+                                  height={18}
+                                  aria-hidden="true"
+                                />
+                                Duplicate
+                              </button>
+                              <button
+                                className={styles.projectDropdownItem}
+                                onClick={() => handleOpenProject(project.id)}
+                              >
+                                <Image
+                                  src="/assets/dashboard/icons/link-square-02-stroke-rounded 1.svg"
+                                  alt=""
+                                  width={18}
+                                  height={18}
+                                  aria-hidden="true"
+                                />
+                                Open project
+                              </button>
+                              <button
+                                className={`${styles.projectDropdownItem} ${styles.projectDropdownItemDanger}`}
+                                onClick={() => handleDeleteProject(project.id)}
+                              >
+                                <Image
+                                  src="/assets/dashboard/icons/delete-02-stroke-rounded 1.svg"
+                                  alt=""
+                                  width={18}
+                                  height={18}
+                                  aria-hidden="true"
+                                />
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className={styles.projectMeta}>
+                        <span className={styles.projectDate}>{project.createdAt}</span>
+                        <span className={styles.projectVisibility}>
+                          {project.isPublic ? (
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M1.33331 8C1.33331 8 3.33331 3.33334 7.99998 3.33334C12.6666 3.33334 14.6666 8 14.6666 8C14.6666 8 12.6666 12.6667 7.99998 12.6667C3.33331 12.6667 1.33331 8 1.33331 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M8 10C9.10457 10 10 9.10457 10 8C10 6.89543 9.10457 6 8 6C6.89543 6 6 6.89543 6 8C6 9.10457 6.89543 10 8 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M11.96 11.96C10.8204 12.8286 9.43255 13.305 8.00004 13.3133C3.33337 13.3133 1.33337 8.64666 1.33337 8.64666C2.12568 7.06819 3.24126 5.66931 4.60671 4.53332M6.60004 3.42666C7.05891 3.29806 7.52858 3.23294 8.00004 3.23332C12.6667 3.23332 14.6667 7.89999 14.6667 7.89999C14.2474 8.75709 13.7458 9.56973 13.1694 10.3233M9.41337 9.41332C9.23022 9.61117 9.00942 9.76969 8.76424 9.87911C8.51905 9.98852 8.25445 10.0467 7.98614 10.0496C7.71783 10.0526 7.45199 9.99998 7.20453 9.89552C6.95707 9.79107 6.73296 9.63697 6.54532 9.44267C6.35768 9.24838 6.21019 9.01773 6.11291 8.76451C6.01563 8.51129 5.97061 8.24113 5.9804 7.97027C5.99019 7.69941 6.05458 7.43349 6.17002 7.18801C6.28545 6.94252 6.44968 6.72294 6.65337 6.54332" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M1.33337 1.33334L14.6667 14.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                          {project.isPublic ? 'Public' : 'Private'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Create With Prompt Section */}
           <section className={styles.createSection}>
-            <div className={styles.createRow}>
-              <div className={styles.createPromptWrapper}>
-                <div className={styles.sectionTitleWithInfo}>
-                  <h2 className={styles.sectionTitle}>
-                    Create With <span className={styles.titleAccent}>Prompt</span>
-                  </h2>
-                  <div className={styles.infoButtonWrapper} ref={promptInfoRef}>
-                    <button
-                      className={styles.infoButton}
-                      onClick={() => setPromptInfoOpen(!promptInfoOpen)}
-                      aria-label="Information about prompt creation"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
-                        <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    </button>
-                    {promptInfoOpen && (
-                      <div className={styles.infoTooltip}>
-                        <p>Enter a prompt to generate your original thumbnail. If you want your face in there, just attach it, or describe your thumbnail.</p>
+            <div 
+              className={`${styles.creationContainer} ${creationContainerFocused ? styles.creationContainerFocused : ''}`}
+              onFocus={() => setCreationContainerFocused(true)}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setCreationContainerFocused(false);
+                }
+              }}
+            >
+              <div className={styles.creationContainerInner}>
+                <div className={styles.createRow}>
+                  <div className={styles.createPromptWrapper}>
+                    <div className={styles.sectionTitleWithInfo}>
+                      <h2 className={styles.sectionTitle}>
+                        Create With <span className={styles.titleAccent}>Prompt</span>
+                      </h2>
+                      <div className={styles.infoButtonWrapper} ref={promptInfoRef}>
+                        <button
+                          className={styles.infoButton}
+                          onClick={() => setPromptInfoOpen(!promptInfoOpen)}
+                          aria-label="Information about prompt creation"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                            <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        </button>
+                        {promptInfoOpen && (
+                          <div className={styles.infoTooltip}>
+                            <p>Enter a prompt to generate your original thumbnail. If you want your face in there, just attach it, or describe your thumbnail.</p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-                <div className={styles.createPrompt} onClick={() => promptInputRef.current?.focus()}>
-                  <input
-                    ref={promptInputRef}
-                    type="text"
-                    value={promptText}
-                    onChange={(e) => setPromptText(e.target.value)}
-                    placeholder="Describe your thumbnail"
-                    className={styles.promptInput}
-                    aria-label="Describe your thumbnail"
-                  />
-
-                  <div className={styles.promptOptions}>
-                    <StyleDropdown
-                      selectedStyle={selectedStyle}
-                      onSelectStyle={handleSelectStyle}
-                      onCreateNew={handleCreateNewStyle}
-                    />
-
-                    <ModelDropdown
-                      selectedModel={selectedModel}
-                      onSelectModel={handleSelectModel}
-                    />
-
-                    <button className={styles.addButton} aria-label="Add image reference">
-                      <Image
-                        src="/assets/dashboard/icons/add-image.svg"
-                        alt=""
-                        width={20}
-                        height={20}
-                        aria-hidden="true"
+                    </div>
+                    <div className={styles.createPrompt} onClick={() => promptInputRef.current?.focus()}>
+                      <input
+                        ref={promptInputRef}
+                        type="text"
+                        value={promptText}
+                        onChange={(e) => setPromptText(e.target.value)}
+                        placeholder="Describe your thumbnail"
+                        className={styles.promptInput}
+                        aria-label="Describe your thumbnail"
                       />
-                    </button>
-                  </div>
 
-                  <button
-                    className={styles.generateButton}
-                    onClick={handlePromptSubmit}
-                    aria-label="Generate thumbnail from prompt"
-                  >
-                    <Image
-                      src="/assets/dashboard/icons/send.svg"
-                      alt=""
-                      width={20}
-                      height={20}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </div>
-              </div>
+                      <div className={styles.promptOptions}>
+                        <StyleDropdown
+                          selectedStyle={selectedStyle}
+                          onSelectStyle={handleSelectStyle}
+                          onCreateNew={handleCreateNewStyle}
+                        />
 
-              <div className={styles.orDividerWrapper}>
-                <p className={styles.orDivider}>OR</p>
-              </div>
+                        <ModelDropdown
+                          selectedModel={selectedModel}
+                          onSelectModel={handleSelectModel}
+                        />
 
-              <div className={styles.youtubeInputWrapper}>
-                <div className={styles.sectionTitleWithInfo}>
-                  <h2 className={styles.sectionTitle}>
-                    Paste a <span className={styles.titleAccent}>Youtube Link</span>
-                  </h2>
-                  <div className={styles.infoButtonWrapper} ref={urlInfoRef}>
-                    <button
-                      className={styles.infoButton}
-                      onClick={() => setUrlInfoOpen(!urlInfoOpen)}
-                      aria-label="Information about YouTube link"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
-                        <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    </button>
-                    {urlInfoOpen && (
-                      <div className={styles.infoTooltip}>
-                        <p>If you find a thumbnail on YouTube and really like it, just paste the link of the video and make the thumbnail yours by editing it directly.</p>
+                        <button className={styles.addButton} aria-label="Add image reference">
+                          <Image
+                            src="/assets/dashboard/icons/add-image.svg"
+                            alt=""
+                            width={20}
+                            height={20}
+                            aria-hidden="true"
+                          />
+                        </button>
                       </div>
-                    )}
+
+                      <button
+                        className={styles.generateButton}
+                        onClick={handlePromptSubmit}
+                        aria-label="Generate thumbnail from prompt"
+                      >
+                        <Image
+                          src="/assets/dashboard/icons/send.svg"
+                          alt=""
+                          width={20}
+                          height={20}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className={styles.youtubeInput} onClick={() => youtubeLinkInputRef.current?.focus()}>
-                  <div className={styles.youtubeIconWrapper}>
-                    <Image
-                      src="/assets/dashboard/icons/attachment-02-stroke-rounded 1.svg"
-                      alt=""
-                      width={18}
-                      height={18}
-                      className={styles.youtubeIcon}
-                      aria-hidden="true"
-                    />
+
+                  <div className={styles.orDividerWrapper}>
+                    <p className={styles.orDivider}>OR</p>
                   </div>
-                  <input
-                    ref={youtubeLinkInputRef}
-                    type="text"
-                    value={youtubeLink}
-                    onChange={(e) => setYoutubeLink(e.target.value)}
-                    placeholder="Paste a YouTube link to generate thumbnail"
-                    className={styles.linkInput}
-                    aria-label="Paste YouTube link"
-                  />
-                  <button
-                    className={styles.generateButton}
-                    onClick={handleYoutubeLinkSubmit}
-                    aria-label="Generate thumbnail from YouTube link"
-                  >
-                    <Image
-                      src="/assets/dashboard/icons/send.svg"
-                      alt=""
-                      width={20}
-                      height={20}
-                      aria-hidden="true"
-                    />
-                  </button>
+
+                  <div className={styles.youtubeInputWrapper}>
+                    <div className={styles.sectionTitleWithInfo}>
+                      <h2 className={styles.sectionTitle}>
+                        Paste a <span className={styles.titleAccent}>Youtube Link</span>
+                      </h2>
+                      <div className={styles.infoButtonWrapper} ref={urlInfoRef}>
+                        <button
+                          className={styles.infoButton}
+                          onClick={() => setUrlInfoOpen(!urlInfoOpen)}
+                          aria-label="Information about YouTube link"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                            <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        </button>
+                        {urlInfoOpen && (
+                          <div className={styles.infoTooltip}>
+                            <p>If you find a thumbnail on YouTube and really like it, just paste the link of the video and make the thumbnail yours by editing it directly.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.youtubeInput} onClick={() => youtubeLinkInputRef.current?.focus()}>
+                      <div className={styles.youtubeIconWrapper}>
+                        <Image
+                          src="/assets/dashboard/icons/attachment-02-stroke-rounded 1.svg"
+                          alt=""
+                          width={18}
+                          height={18}
+                          className={styles.youtubeIcon}
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <input
+                        ref={youtubeLinkInputRef}
+                        type="text"
+                        value={youtubeLink}
+                        onChange={(e) => setYoutubeLink(e.target.value)}
+                        placeholder="Paste a YouTube link to generate thumbnail"
+                        className={styles.linkInput}
+                        aria-label="Paste YouTube link"
+                      />
+                      <button
+                        className={styles.generateButton}
+                        onClick={handleYoutubeLinkSubmit}
+                        aria-label="Generate thumbnail from YouTube link"
+                      >
+                        <Image
+                          src="/assets/dashboard/icons/send.svg"
+                          alt=""
+                          width={20}
+                          height={20}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
