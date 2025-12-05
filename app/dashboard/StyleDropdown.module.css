@@ -42,6 +42,16 @@
   background-color: #e0e0e0;
 }
 
+/* Selected trigger state - just show the thumbnail without extra highlight */
+.triggerSelected img {
+  filter: none;
+}
+
+.selectedThumbnail {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .trigger svg {
   width: 8px;
   height: 8px;
@@ -103,6 +113,24 @@
 
 .styleItem:active {
   opacity: 0.5;
+}
+
+/* Selected style item */
+.styleItemSelected {
+  background-color: rgba(255, 111, 97, 0.1);
+  border-radius: 8px;
+  padding: 8px;
+  margin: -4px;
+}
+
+.styleItemSelected:hover {
+  opacity: 1;
+  background-color: rgba(255, 111, 97, 0.15);
+}
+
+.checkIcon {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* Style Thumbnail */

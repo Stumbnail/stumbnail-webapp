@@ -70,18 +70,29 @@ export default function StyleDropdown({ selectedStyle, onSelectStyle, onCreateNe
   return (
     <div className={styles.container} ref={dropdownRef}>
       <button
-        className={styles.trigger}
+        className={`${styles.trigger} ${selectedStyle ? styles.triggerSelected : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Select style"
         aria-expanded={isOpen}
       >
-        <Image
-          src="/assets/dashboard/icons/style.svg"
-          alt=""
-          width={24}
-          height={24}
-          aria-hidden="true"
-        />
+        {selectedStyle ? (
+          <Image
+            src={selectedStyle.thumbnail}
+            alt=""
+            width={24}
+            height={24}
+            className={styles.selectedThumbnail}
+            aria-hidden="true"
+          />
+        ) : (
+          <Image
+            src="/assets/dashboard/icons/style.svg"
+            alt=""
+            width={24}
+            height={24}
+            aria-hidden="true"
+          />
+        )}
         <span>{selectedStyle ? selectedStyle.name : 'Style'}</span>
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -95,7 +106,7 @@ export default function StyleDropdown({ selectedStyle, onSelectStyle, onCreateNe
             {SAMPLE_STYLES.map((style) => (
               <button
                 key={style.id}
-                className={styles.styleItem}
+                className={`${styles.styleItem} ${selectedStyle?.id === style.id ? styles.styleItemSelected : ''}`}
                 onClick={() => handleSelectStyle(style)}
               >
                 <div className={styles.styleThumbnail}>
@@ -111,6 +122,11 @@ export default function StyleDropdown({ selectedStyle, onSelectStyle, onCreateNe
                   <p className={styles.styleName}>{style.name}</p>
                   <p className={styles.styleId}>{style.styleId}</p>
                 </div>
+                {selectedStyle?.id === style.id && (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={styles.checkIcon} aria-hidden="true">
+                    <path d="M13.3334 4L6.00008 11.3333L2.66675 8" stroke="#ff6f61" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
               </button>
             ))}
           </div>

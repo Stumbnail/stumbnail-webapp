@@ -42,6 +42,16 @@
   background-color: #e0e0e0;
 }
 
+/* Selected trigger state - just show the logo without extra highlight */
+.triggerSelected img {
+  filter: none;
+}
+
+.selectedLogo {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .trigger svg {
   width: 8px;
   height: 8px;
@@ -138,6 +148,11 @@
 
 .modelItemSelected:hover {
   background-color: #f0f0f0;
+}
+
+.checkIcon {
+  flex-shrink: 0;
+  margin-left: 4px;
 }
 
 /* Model Logo */

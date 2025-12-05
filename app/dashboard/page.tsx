@@ -8,6 +8,7 @@ import { auth, logOut } from '@/lib/firebase';
 import styles from './dashboard.module.css';
 import ProjectNameModal from './ProjectNameModal';
 import ProjectActionModal from './ProjectActionModal';
+import CreateStyleModal from './CreateStyleModal';
 import StyleDropdown from './StyleDropdown';
 import ModelDropdown from './ModelDropdown';
 
@@ -134,6 +135,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateStyleModalOpen, setIsCreateStyleModalOpen] = useState(false);
   const [editProjectModal, setEditProjectModal] = useState<{
     isOpen: boolean;
     projectId: number | null;
@@ -271,8 +273,13 @@ export default function DashboardPage() {
   };
 
   const handleCreateNewStyle = () => {
-    console.log('Create new style clicked');
-    // TODO: Implement create new style logic
+    setIsCreateStyleModalOpen(true);
+  };
+
+  const handleCreateStyleConfirm = (name: string, images: File[]) => {
+    console.log('Creating style:', name, 'with', images.length, 'images');
+    // TODO: Implement actual style creation logic with API call
+    setIsCreateStyleModalOpen(false);
   };
 
   const handleSelectModel = (model: Model) => {
@@ -1150,6 +1157,13 @@ export default function DashboardPage() {
         onConfirm={handleProjectActionConfirm}
         type={projectActionModal.type}
         projectName={projectActionModal.projectName}
+      />
+
+      {/* Create Style Modal */}
+      <CreateStyleModal
+        isOpen={isCreateStyleModalOpen}
+        onClose={() => setIsCreateStyleModalOpen(false)}
+        onCreateStyle={handleCreateStyleConfirm}
       />
     </div>
   );

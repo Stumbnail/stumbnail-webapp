@@ -73,18 +73,29 @@ export default function ModelDropdown({ selectedModel, onSelectModel }: ModelDro
   return (
     <div className={styles.container} ref={dropdownRef}>
       <button
-        className={styles.trigger}
+        className={`${styles.trigger} ${selectedModel ? styles.triggerSelected : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Select model"
         aria-expanded={isOpen}
       >
-        <Image
-          src="/assets/dashboard/icons/model.svg"
-          alt=""
-          width={24}
-          height={24}
-          aria-hidden="true"
-        />
+        {selectedModel ? (
+          <Image
+            src={selectedModel.logo}
+            alt=""
+            width={24}
+            height={24}
+            className={styles.selectedLogo}
+            aria-hidden="true"
+          />
+        ) : (
+          <Image
+            src="/assets/dashboard/icons/model.svg"
+            alt=""
+            width={24}
+            height={24}
+            aria-hidden="true"
+          />
+        )}
         <span>{selectedModel ? selectedModel.name : 'Model'}</span>
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -126,6 +137,11 @@ export default function ModelDropdown({ selectedModel, onSelectModel }: ModelDro
                   </svg>
                   <span className={styles.credits}>{model.credits}</span>
                 </div>
+                {selectedModel?.id === model.id && (
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={styles.checkIcon} aria-hidden="true">
+                    <path d="M13.3334 4L6.00008 11.3333L2.66675 8" stroke="#ff6f61" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
               </button>
             ))}
           </div>
