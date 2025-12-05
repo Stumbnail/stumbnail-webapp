@@ -99,9 +99,18 @@ export default function DashboardPage() {
     credits: 10,
     logo: '/assets/dashboard/icons/nano-banana-model.webp'
   });
+  const [viewingAllTemplates, setViewingAllTemplates] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const promptInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const TEMPLATES_PER_PAGE = 8;
+  const totalPages = Math.ceil(templates.length / TEMPLATES_PER_PAGE);
+
+  const displayedTemplates = viewingAllTemplates
+    ? templates.slice((currentPage - 1) * TEMPLATES_PER_PAGE, currentPage * TEMPLATES_PER_PAGE)
+    : templates;
 
   const checkMobile = useCallback(() => {
     setIsMobile(window.innerWidth <= 768);
@@ -148,6 +157,15 @@ export default function DashboardPage() {
   const handleSelectModel = (model: Model) => {
     setSelectedModel(model);
     console.log('Selected model:', model);
+  };
+
+  const handleSeeAllClick = () => {
+    setViewingAllTemplates(!viewingAllTemplates);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -443,17 +461,19 @@ export default function DashboardPage() {
           </section>
 
           {/* Templates Section */}
-          <section className={styles.templatesSection}>
+          <section className={`${styles.templatesSection} ${viewingAllTemplates ? styles.viewingAll : ''}`}>
             <div className={styles.templatesHeader}>
               <div>
                 <h2 className={styles.sectionTitle}>Jumpstart your creativity</h2>
                 <p className={styles.templatesSubtitle}>YouTube&apos;s &quot;Recommended</p>
               </div>
-              <a href="#" className={styles.seeAll}>See all</a>
+              <button onClick={handleSeeAllClick} className={styles.seeAll}>
+                {viewingAllTemplates ? 'Show less' : 'See all'}
+              </button>
             </div>
 
             <div className={styles.templatesGrid}>
-              {templates.map((template, index) => (
+              {displayedTemplates.map((template, index) => (
                 <div key={template.id} className={styles.templateCard}>
                   <div className={styles.templateImage}>
                     <Image
@@ -476,6 +496,36 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+
+            {viewingAllTemplates && totalPages > 1 && (
+              <div className={styles.paginationControls}>
+                <button
+                  className={styles.paginationButton}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+
+                <span className={styles.paginationInfo}>
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  className={styles.paginationButton}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  aria-label="Next page"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            )}
           </section>
         </div>
       </main>

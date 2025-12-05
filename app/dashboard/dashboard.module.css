@@ -861,10 +861,65 @@
   transition: opacity 0.15s ease;
   align-self: flex-start;
   margin-top: 0;
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .seeAll:hover {
   opacity: 0.8;
+}
+
+/* Pagination Controls */
+.paginationControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px 0;
+}
+
+.paginationButton {
+  background-color: #f0f0f0;
+  border: 1px solid #d5d5d5;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #141414;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+  color: #ffffff;
+}
+
+.paginationButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paginationButton.active {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+  color: #ffffff;
+}
+
+.paginationInfo {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #797979;
+  margin: 0 8px;
 }
 
 .templatesGrid {
@@ -877,6 +932,7 @@
 }
 
 .templateCard {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -901,6 +957,25 @@
 
 .templateImage:hover img {
   filter: brightness(0.95);
+}
+
+/* White fade overlay for first row thumbnails - covers entire card */
+.templateCard:nth-child(-n+4)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255, 0.6) 60%, rgba(255, 255, 255, 0.75) 100%);
+  pointer-events: none;
+  border-radius: 14px;
+  z-index: 1;
+}
+
+/* Hide fade when viewing all templates */
+.templatesSection.viewingAll .templateCard::after {
+  display: none;
 }
 
 .favoriteButton {
@@ -969,6 +1044,15 @@
 
   .content {
     padding: 20px 24px 24px;
+  }
+
+  /* Adjust fade for 3-column grid */
+  .templateCard:nth-child(-n+4)::after {
+    display: none;
+  }
+
+  .templateCard:nth-child(-n+3)::after {
+    display: block;
   }
 }
 
@@ -1045,6 +1129,15 @@
   .dropdown {
     padding: 0 9px;
     font-size: 12px;
+  }
+
+  /* Adjust fade for 2-column grid */
+  .templateCard:nth-child(-n+3)::after {
+    display: none;
+  }
+
+  .templateCard:nth-child(-n+2)::after {
+    display: block;
   }
 }
 
