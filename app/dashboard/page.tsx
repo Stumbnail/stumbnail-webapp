@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth, logOut } from '@/lib/firebase';
 import styles from './dashboard.module.css';
 import ProjectNameModal from './ProjectNameModal';
+import ProjectActionModal from './ProjectActionModal';
 import StyleDropdown from './StyleDropdown';
 import ModelDropdown from './ModelDropdown';
 
@@ -35,6 +39,14 @@ interface Model {
   featureTag: string;
   credits: number;
   logo: string;
+}
+
+interface Project {
+  id: number;
+  name: string;
+  thumbnail: string;
+  createdAt: string;
+  isPublic: boolean;
 }
 
 // Static data moved outside component to prevent recreation on every render
@@ -73,7 +85,7 @@ const templates: Template[] = [
 ];
 
 // Initial mock project data
-const initialMockProjects = [
+const initialMockProjects: Project[] = [
   {
     id: 1,
     name: 'Summer Vlog Thumbnail',
@@ -110,11 +122,40 @@ function debounce<T extends (...args: Parameters<T>) => void>(
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
+  
+  // Auth state
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  
+  // UI state
   const [promptText, setPromptText] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editProjectModal, setEditProjectModal] = useState<{
+    isOpen: boolean;
+    projectId: number | null;
+    projectName: string;
+    isPublic: boolean;
+  }>({
+    isOpen: false,
+    projectId: null,
+    projectName: '',
+    isPublic: true
+  });
+  const [projectActionModal, setProjectActionModal] = useState<{
+    isOpen: boolean;
+    type: 'delete' | 'duplicate';
+    projectId: number | null;
+    projectName: string;
+  }>({
+    isOpen: false,
+    type: 'delete',
+    projectId: null,
+    projectName: ''
+  });
   const [selectedStyle, setSelectedStyle] = useState<Style | null>(null);
   const [selectedModel, setSelectedModel] = useState<Model>({
     id: 'nano-banana-pro',
@@ -130,14 +171,27 @@ export default function DashboardPage() {
   const [promptInfoOpen, setPromptInfoOpen] = useState(false);
   const [urlInfoOpen, setUrlInfoOpen] = useState(false);
   const [creationContainerFocused, setCreationContainerFocused] = useState(false);
-  const [projects, setProjects] = useState(initialMockProjects);
+  const [projects, setProjects] = useState<Project[]>(initialMockProjects);
   const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Edit project state
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
+  
+  // Image attachment state
+  const [attachedImages, setAttachedImages] = useState<{ id: string; file: File; preview: string }[]>([]);
+  
   const promptInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const promptInfoRef = useRef<HTMLDivElement>(null);
   const urlInfoRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   const TEMPLATES_PER_PAGE = 8;
   const totalPages = Math.ceil(templates.length / TEMPLATES_PER_PAGE);
@@ -146,12 +200,37 @@ export default function DashboardPage() {
     ? templates.slice((currentPage - 1) * TEMPLATES_PER_PAGE, currentPage * TEMPLATES_PER_PAGE)
     : templates;
 
+  // Filter projects based on search query
+  const filteredProjects = projects.filter(project =>
+    project.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Calculate max projects to show (2 rows based on grid - typically 4 per row on desktop)
+  const MAX_PROJECTS_DISPLAY = 8;
+  const displayedProjects = filteredProjects.slice(0, MAX_PROJECTS_DISPLAY);
+  const hasMoreProjects = filteredProjects.length > MAX_PROJECTS_DISPLAY;
+
   const checkMobile = useCallback(() => {
     setIsMobile(window.innerWidth <= 768);
     if (window.innerWidth > 768) {
       setSidebarOpen(false);
     }
   }, []);
+
+  // Auth state listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        // Redirect to login if not authenticated
+        router.push('/login');
+      }
+      setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   useEffect(() => {
     // Initial check
@@ -164,6 +243,14 @@ export default function DashboardPage() {
     window.addEventListener('resize', debouncedCheckMobile, { passive: true });
     return () => window.removeEventListener('resize', debouncedCheckMobile);
   }, [checkMobile]);
+
+  // Focus edit input when editing starts
+  useEffect(() => {
+    if (editingProjectId !== null && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingProjectId]);
 
   const handlePromptSubmit = () => {
     console.log('Generating with prompt:', promptText);
@@ -202,10 +289,14 @@ export default function DashboardPage() {
     setCurrentPage(page);
   };
 
-  const handleSignOut = () => {
-    console.log('Sign out clicked');
-    // TODO: Implement sign out logic
-    setProfileMenuOpen(false);
+  const handleSignOut = async () => {
+    try {
+      await logOut();
+      setProfileMenuOpen(false);
+      router.push('/login');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const handleProjectMenuClick = (projectId: number) => {
@@ -213,28 +304,166 @@ export default function DashboardPage() {
   };
 
   const handleEditProject = (projectId: number) => {
-    console.log('Edit project:', projectId);
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      setEditProjectModal({
+        isOpen: true,
+        projectId,
+        projectName: project.name,
+        isPublic: project.isPublic
+      });
+    }
     setProjectMenuOpen(null);
-    // TODO: Implement edit logic
+  };
+
+  const handleSaveProjectName = (projectId: number) => {
+    if (editingProjectName.trim()) {
+      setProjects(projects.map(project =>
+        project.id === projectId
+          ? { ...project, name: editingProjectName.trim() }
+          : project
+      ));
+    }
+    setEditingProjectId(null);
+    setEditingProjectName('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProjectId(null);
+    setEditingProjectName('');
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent, projectId: number) => {
+    if (e.key === 'Enter') {
+      handleSaveProjectName(projectId);
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
   };
 
   const handleDuplicateProject = (projectId: number) => {
-    console.log('Duplicate project:', projectId);
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      setProjectActionModal({
+        isOpen: true,
+        type: 'duplicate',
+        projectId,
+        projectName: project.name
+      });
+    }
     setProjectMenuOpen(null);
-    // TODO: Implement duplicate logic
   };
 
   const handleOpenProject = (projectId: number) => {
     console.log('Open project:', projectId);
     setProjectMenuOpen(null);
-    // TODO: Implement open project logic
+    // TODO: Navigate to project editor when implemented
   };
 
   const handleDeleteProject = (projectId: number) => {
-    console.log('Delete project:', projectId);
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      setProjectActionModal({
+        isOpen: true,
+        type: 'delete',
+        projectId,
+        projectName: project.name
+      });
+    }
     setProjectMenuOpen(null);
-    setProjects(projects.filter(project => project.id !== projectId));
   };
+
+  const handleEditProjectConfirm = (name: string, isPublic: boolean) => {
+    if (editProjectModal.projectId === null) return;
+
+    setProjects(projects.map(project =>
+      project.id === editProjectModal.projectId
+        ? { ...project, name, isPublic }
+        : project
+    ));
+
+    setEditProjectModal({
+      isOpen: false,
+      projectId: null,
+      projectName: '',
+      isPublic: true
+    });
+  };
+
+  const handleProjectActionConfirm = () => {
+    if (projectActionModal.projectId === null) return;
+
+    const projectId = projectActionModal.projectId;
+
+    switch (projectActionModal.type) {
+      case 'delete':
+        setProjects(projects.filter(project => project.id !== projectId));
+        break;
+
+      case 'duplicate':
+        const projectToDuplicate = projects.find(p => p.id === projectId);
+        if (projectToDuplicate) {
+          const newProject: Project = {
+            ...projectToDuplicate,
+            id: Math.max(...projects.map(p => p.id)) + 1,
+            name: `${projectToDuplicate.name} (Copy)`,
+            createdAt: 'Just now'
+          };
+          setProjects([newProject, ...projects]);
+        }
+        break;
+    }
+
+    setProjectActionModal({
+      isOpen: false,
+      type: 'delete',
+      projectId: null,
+      projectName: ''
+    });
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleImageAttach = () => {
+    imageInputRef.current?.click();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newImages = Array.from(files).map(file => ({
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setAttachedImages(prev => [...prev, ...newImages]);
+    
+    // Reset input so same file can be selected again
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = (imageId: string) => {
+    setAttachedImages(prev => {
+      const imageToRemove = prev.find(img => img.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      return prev.filter(img => img.id !== imageId);
+    });
+  };
+
+  // Cleanup image previews on unmount
+  useEffect(() => {
+    return () => {
+      attachedImages.forEach(img => URL.revokeObjectURL(img.preview));
+    };
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -271,6 +500,21 @@ export default function DashboardPage() {
     };
   }, [profileMenuOpen, promptInfoOpen, urlInfoOpen, projectMenuOpen]);
 
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingSpinner} />
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className={styles.container}>
       {/* Decorative blur elements - only render on desktop to reduce DOM nodes on mobile */}
@@ -305,16 +549,23 @@ export default function DashboardPage() {
 
         {/* User Profile */}
         <div className={styles.userProfile} ref={profileMenuRef}>
-          <Image
-            src="/assets/dashboard/profile.png"
-            alt="User avatar"
-            width={51}
-            height={51}
-            className={styles.userAvatar}
-          />
+          {user?.photoURL ? (
+            <Image
+              src={user.photoURL}
+              alt="User avatar"
+              width={51}
+              height={51}
+              className={styles.userAvatar}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className={styles.userAvatarPlaceholder}>
+              {user?.displayName?.charAt(0) || user?.email?.charAt(0) || '?'}
+            </div>
+          )}
           <div className={styles.userInfo}>
-            <p className={styles.userName}>Amelia Alex</p>
-            <p className={styles.userEmail}>Amelia Alex123@gmail.com</p>
+            <p className={styles.userName}>{user?.displayName || 'User'}</p>
+            <p className={styles.userEmail}>{user?.email || ''}</p>
           </div>
           <button
             className={styles.userMenu}
@@ -423,6 +674,8 @@ export default function DashboardPage() {
             <input
               ref={searchInputRef}
               type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
               placeholder="Search projects or templates..."
               className={styles.searchInput}
               aria-label="Search projects or templates"
@@ -450,7 +703,7 @@ export default function DashboardPage() {
               My <span className={styles.titleAccent}>Projects</span>
             </h2>
 
-            {projects.length === 0 ? (
+            {filteredProjects.length === 0 ? (
               /* Empty State */
               <div className={styles.emptyState}>
                 <div className={styles.emptyIconWrapper}>
@@ -462,23 +715,28 @@ export default function DashboardPage() {
                   />
                 </div>
                 <p className={styles.emptyText}>
-                  No projects yet — let&apos;s create your first one!
+                  {searchQuery
+                    ? `No projects found for "${searchQuery}"`
+                    : "No projects yet — let's create your first one!"}
                 </p>
-                <button className={styles.startButton} onClick={() => setIsModalOpen(true)}>
-                  <Image
-                    src="/assets/dashboard/icons/star-for-start-creating-button.svg"
-                    alt=""
-                    width={20}
-                    height={20}
-                    aria-hidden="true"
-                  />
-                  <span>Start Creating</span>
-                </button>
+                {!searchQuery && (
+                  <button className={styles.startButton} onClick={() => setIsModalOpen(true)}>
+                    <Image
+                      src="/assets/dashboard/icons/star-for-start-creating-button.svg"
+                      alt=""
+                      width={20}
+                      height={20}
+                      aria-hidden="true"
+                    />
+                    <span>Start Creating</span>
+                  </button>
+                )}
               </div>
             ) : (
               /* Projects Grid */
+              <>
               <div className={styles.projectsGrid}>
-                {projects.map((project) => (
+                {displayedProjects.map((project) => (
                   <div key={project.id} className={styles.projectCard}>
                     <div className={styles.projectThumbnail}>
                       <Image
@@ -491,7 +749,20 @@ export default function DashboardPage() {
                     </div>
                     <div className={styles.projectInfo}>
                       <div className={styles.projectHeader}>
-                        <h3 className={styles.projectName}>{project.name}</h3>
+                        {editingProjectId === project.id ? (
+                          <input
+                            ref={editInputRef}
+                            type="text"
+                            value={editingProjectName}
+                            onChange={(e) => setEditingProjectName(e.target.value)}
+                            onBlur={() => handleSaveProjectName(project.id)}
+                            onKeyDown={(e) => handleEditKeyDown(e, project.id)}
+                            className={styles.projectNameInput}
+                            aria-label="Edit project name"
+                          />
+                        ) : (
+                          <h3 className={styles.projectName}>{project.name}</h3>
+                        )}
                         <div className={styles.projectMenu} data-project-menu>
                           <button
                             className={styles.projectMenuButton}
@@ -583,6 +854,12 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
+              {hasMoreProjects && (
+                <button className={styles.viewAllProjectsButton} onClick={() => console.log('Navigate to Projects page')}>
+                  Go to Projects to see all ({filteredProjects.length})
+                </button>
+              )}
+              </>
             )}
           </section>
 
@@ -645,7 +922,11 @@ export default function DashboardPage() {
                           onSelectModel={handleSelectModel}
                         />
 
-                        <button className={styles.addButton} aria-label="Add image reference">
+                        <button 
+                          className={styles.addButton} 
+                          aria-label="Add image reference"
+                          onClick={handleImageAttach}
+                        >
                           <Image
                             src="/assets/dashboard/icons/add-image.svg"
                             alt=""
@@ -654,6 +935,15 @@ export default function DashboardPage() {
                             aria-hidden="true"
                           />
                         </button>
+                        <input
+                          ref={imageInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageChange}
+                          className={styles.hiddenInput}
+                          aria-label="Upload image"
+                        />
                       </div>
 
                       <button
@@ -670,6 +960,33 @@ export default function DashboardPage() {
                         />
                       </button>
                     </div>
+                    
+                    {/* Attached Images Preview */}
+                    {attachedImages.length > 0 && (
+                      <div className={styles.attachedImagesContainer}>
+                        {attachedImages.map((img) => (
+                          <div key={img.id} className={styles.attachedImageWrapper}>
+                            <Image
+                              src={img.preview}
+                              alt={`Attached: ${img.file.name}`}
+                              width={60}
+                              height={60}
+                              className={styles.attachedImagePreview}
+                            />
+                            <button
+                              className={styles.removeImageButton}
+                              onClick={() => handleRemoveImage(img.id)}
+                              aria-label={`Remove ${img.file.name}`}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </button>
+                            <span className={styles.attachedImageName}>{img.file.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className={styles.orDividerWrapper}>
@@ -809,11 +1126,30 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Project Name Modal */}
+      {/* Project Name Modal - Create */}
       <ProjectNameModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreateProject={handleCreateProject}
+      />
+
+      {/* Project Name Modal - Edit */}
+      <ProjectNameModal
+        isOpen={editProjectModal.isOpen}
+        onClose={() => setEditProjectModal({ ...editProjectModal, isOpen: false })}
+        onCreateProject={handleEditProjectConfirm}
+        editMode={true}
+        initialName={editProjectModal.projectName}
+        initialIsPublic={editProjectModal.isPublic}
+      />
+
+      {/* Project Action Modal - Delete/Duplicate */}
+      <ProjectActionModal
+        isOpen={projectActionModal.isOpen}
+        onClose={() => setProjectActionModal({ ...projectActionModal, isOpen: false })}
+        onConfirm={handleProjectActionConfirm}
+        type={projectActionModal.type}
+        projectName={projectActionModal.projectName}
       />
     </div>
   );

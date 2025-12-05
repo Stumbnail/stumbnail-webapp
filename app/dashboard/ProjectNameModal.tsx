@@ -8,25 +8,35 @@ interface ProjectNameModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateProject: (name: string, isPublic: boolean) => void;
+  editMode?: boolean;
+  initialName?: string;
+  initialIsPublic?: boolean;
 }
 
-export default function ProjectNameModal({ isOpen, onClose, onCreateProject }: ProjectNameModalProps) {
-  const [projectName, setProjectName] = useState('untitled');
-  const [isPublic, setIsPublic] = useState(true);
+export default function ProjectNameModal({
+  isOpen,
+  onClose,
+  onCreateProject,
+  editMode = false,
+  initialName = 'untitled',
+  initialIsPublic = true
+}: ProjectNameModalProps) {
+  const [projectName, setProjectName] = useState(initialName);
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      // Reset to default when modal opens
-      setProjectName('untitled');
-      setIsPublic(true);
+      // Set initial values based on edit mode
+      setProjectName(editMode ? initialName : 'untitled');
+      setIsPublic(editMode ? initialIsPublic : true);
       // Focus input and select all text after a brief delay to ensure modal is rendered
       setTimeout(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
       }, 100);
     }
-  }, [isOpen]);
+  }, [isOpen, editMode, initialName, initialIsPublic]);
 
   const handleSubmit = () => {
     if (projectName.trim()) {
@@ -61,7 +71,7 @@ export default function ProjectNameModal({ isOpen, onClose, onCreateProject }: P
 
         {/* Title */}
         <h2 className={styles.title}>
-          Name your <span className={styles.titleAccent}>Project</span>
+          {editMode ? 'Edit your' : 'Name your'} <span className={styles.titleAccent}>Project</span>
         </h2>
 
         {/* Icon and Label */}
@@ -75,7 +85,7 @@ export default function ProjectNameModal({ isOpen, onClose, onCreateProject }: P
               aria-hidden="true"
             />
           </div>
-          <p className={styles.label}>Name your project</p>
+          <p className={styles.label}>{editMode ? 'Edit your project' : 'Name your project'}</p>
         </div>
 
         {/* Input Field */}
@@ -118,7 +128,7 @@ export default function ProjectNameModal({ isOpen, onClose, onCreateProject }: P
             className={styles.createButton}
             onClick={handleSubmit}
           >
-            Create Project
+            {editMode ? 'Save Changes' : 'Create Project'}
           </button>
         </div>
       </div>
