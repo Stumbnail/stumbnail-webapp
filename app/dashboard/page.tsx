@@ -186,6 +186,9 @@ export default function DashboardPage() {
   // Image attachment state
   const [attachedImages, setAttachedImages] = useState<{ id: string; file: File; preview: string }[]>([]);
   
+  // YouTube link validation state
+  const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
+  
   const promptInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
@@ -258,8 +261,45 @@ export default function DashboardPage() {
     console.log('Generating with prompt:', promptText);
   };
 
+  const validateYoutubeLink = (url: string): boolean => {
+    if (!url.trim()) {
+      setYoutubeLinkError('Please enter a YouTube link');
+      return false;
+    }
+    
+    // YouTube URL patterns
+    const youtubePatterns = [
+      /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/,
+      /^(https?:\/\/)?(www\.)?youtube\.com\/embed\/[\w-]+/,
+      /^(https?:\/\/)?(www\.)?youtube\.com\/v\/[\w-]+/,
+      /^(https?:\/\/)?youtu\.be\/[\w-]+/,
+      /^(https?:\/\/)?(www\.)?youtube\.com\/shorts\/[\w-]+/,
+    ];
+    
+    const isValid = youtubePatterns.some(pattern => pattern.test(url.trim()));
+    
+    if (!isValid) {
+      setYoutubeLinkError('Please enter a valid YouTube link');
+      return false;
+    }
+    
+    setYoutubeLinkError(null);
+    return true;
+  };
+
+  const handleYoutubeLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setYoutubeLink(e.target.value);
+    // Clear error when user starts typing
+    if (youtubeLinkError) {
+      setYoutubeLinkError(null);
+    }
+  };
+
   const handleYoutubeLinkSubmit = () => {
-    console.log('Generating from YouTube:', youtubeLink);
+    if (validateYoutubeLink(youtubeLink)) {
+      console.log('Generating from YouTube:', youtubeLink);
+      // TODO: Implement actual YouTube thumbnail generation
+    }
   };
 
   const handleCreateProject = (name: string, isPublic: boolean) => {
@@ -1023,7 +1063,10 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </div>
-                    <div className={styles.youtubeInput} onClick={() => youtubeLinkInputRef.current?.focus()}>
+                    <div 
+                      className={`${styles.youtubeInput} ${youtubeLinkError ? styles.youtubeInputError : ''}`} 
+                      onClick={() => youtubeLinkInputRef.current?.focus()}
+                    >
                       <div className={styles.youtubeIconWrapper}>
                         <Image
                           src="/assets/dashboard/icons/attachment-02-stroke-rounded 1.svg"
@@ -1038,10 +1081,12 @@ export default function DashboardPage() {
                         ref={youtubeLinkInputRef}
                         type="text"
                         value={youtubeLink}
-                        onChange={(e) => setYoutubeLink(e.target.value)}
+                        onChange={handleYoutubeLinkChange}
                         placeholder="Paste a YouTube link to generate thumbnail"
                         className={styles.linkInput}
                         aria-label="Paste YouTube link"
+                        aria-invalid={!!youtubeLinkError}
+                        aria-describedby={youtubeLinkError ? "youtube-error" : undefined}
                       />
                       <button
                         className={styles.generateButton}
@@ -1057,6 +1102,9 @@ export default function DashboardPage() {
                         />
                       </button>
                     </div>
+                    {youtubeLinkError && (
+                      <p id="youtube-error" className={styles.inputError}>{youtubeLinkError}</p>
+                    )}
                   </div>
                 </div>
               </div>

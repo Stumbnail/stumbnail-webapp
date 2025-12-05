@@ -26,7 +26,7 @@
 .modal {
   position: relative;
   background-color: #ffffff;
-  border-radius: 50px;
+  border-radius: 24px;
   width: 90%;
   max-width: 680px;
   padding: 50px 65px;
@@ -257,7 +257,7 @@
 @media (max-width: 900px) {
   .modal {
     padding: 50px 60px;
-    border-radius: 40px;
+    border-radius: 24px;
     gap: 18px;
   }
 
@@ -309,7 +309,7 @@
 @media (max-width: 768px) {
   .modal {
     padding: 40px 40px;
-    border-radius: 30px;
+    border-radius: 20px;
     max-width: 90%;
     gap: 16px;
   }
@@ -380,7 +380,7 @@
 @media (max-width: 480px) {
   .modal {
     padding: 32px 24px;
-    border-radius: 24px;
+    border-radius: 18px;
     gap: 14px;
   }
 
