@@ -16,6 +16,7 @@ interface Model {
 interface ModelDropdownProps {
   selectedModel: Model | null;
   onSelectModel: (model: Model) => void;
+  theme?: 'light' | 'dark';
 }
 
 const MODELS: Model[] = [
@@ -45,7 +46,7 @@ const MODELS: Model[] = [
   }
 ];
 
-export default function ModelDropdown({ selectedModel, onSelectModel }: ModelDropdownProps) {
+export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'light' }: ModelDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -71,7 +72,7 @@ export default function ModelDropdown({ selectedModel, onSelectModel }: ModelDro
   };
 
   return (
-    <div className={styles.container} ref={dropdownRef}>
+    <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : ''}`} ref={dropdownRef}>
       <button
         className={`${styles.trigger} ${selectedModel ? styles.triggerSelected : ''}`}
         onClick={() => setIsOpen(!isOpen)}

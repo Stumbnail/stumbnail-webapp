@@ -336,3 +336,71 @@
     height: 12px;
   }
 }
+
+/* Dark Theme */
+.darkTheme .trigger {
+  background-color: #252525;
+  color: #a3a3a3;
+}
+
+.darkTheme .trigger:hover {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .trigger:active {
+  background-color: #1c1c1c;
+}
+
+.darkTheme .dropdown {
+  background-color: #1c1c1c;
+  box-shadow: 0 2px 13.6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.darkTheme .styleThumbnail {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .styleName {
+  color: #ffeae8;
+}
+
+.darkTheme .styleId {
+  color: #a3a3a3;
+}
+
+.darkTheme .styleItemSelected {
+  background-color: rgba(255, 111, 97, 0.15);
+}
+
+.darkTheme .styleItemSelected:hover {
+  background-color: rgba(255, 111, 97, 0.2);
+}
+
+.darkTheme .divider {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .actionButton {
+  color: #a3a3a3;
+}
+
+.darkTheme .actionButton:hover {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .actionButton:active {
+  background-color: #252525;
+}
+
+.darkTheme .actionButton svg circle,
+.darkTheme .actionButton svg path {
+  stroke: #a3a3a3;
+}
+
+.darkTheme .clearButton:hover {
+  background-color: rgba(255, 111, 97, 0.1);
+}
+
+.darkTheme .clearButton:active {
+  background-color: rgba(255, 111, 97, 0.15);
+}

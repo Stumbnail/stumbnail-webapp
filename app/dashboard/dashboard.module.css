@@ -125,6 +125,11 @@
   background-color: rgba(255, 111, 97, 0.15);
 }
 
+.menuButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
 /* Logo */
 .logo {
   display: flex;
@@ -216,6 +221,12 @@
 
 .profileMenuItem:active {
   background-color: #f0f0f0;
+}
+
+.profileMenuItem:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: -2px;
+  background-color: #f8f8f8;
 }
 
 .profileMenuItem svg {
@@ -342,6 +353,11 @@
   background-color: rgba(255, 111, 97, 0.15);
 }
 
+.navItem:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: -2px;
+}
+
 .navItemActive {
   background-color: #ff6f61;
   color: #ffffff;
@@ -360,6 +376,11 @@
 .navItemActive img {
   filter: brightness(0) saturate(100%) invert(100%);
   opacity: 1;
+}
+
+.navItemActive:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
 }
 
 /* Progress Section */
@@ -443,6 +464,11 @@
   filter: brightness(0.95);
 }
 
+.upgradeButton:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
 /* Main Content */
 .main {
   position: relative;
@@ -506,6 +532,14 @@
   color: #a3a3a3;
 }
 
+.searchInput:focus {
+  outline: none;
+}
+
+.searchBar:focus-within {
+  box-shadow: 0 0 0 2px rgba(255, 111, 97, 0.3);
+}
+
 /* Create Button */
 .createButton {
   background-color: #ffffff;
@@ -545,6 +579,11 @@
 
 .createButton:active {
   background-color: #e85a4d;
+}
+
+.createButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
 }
 
 /* Content */
@@ -604,6 +643,11 @@
 .infoButton svg {
   width: 16px;
   height: 16px;
+}
+
+.infoButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
 }
 
 /* Info Tooltip */
@@ -754,6 +798,12 @@
   height: 18px;
 }
 
+.projectMenuButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 /* Project Dropdown */
 .projectDropdown {
   position: absolute;
@@ -807,6 +857,12 @@
 
 .projectDropdownItemDanger:hover {
   background-color: rgba(255, 111, 97, 0.1);
+}
+
+.projectDropdownItem:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: -2px;
+  background-color: #f8f8f8;
 }
 
 /* Project Meta */
@@ -904,6 +960,11 @@
   filter: brightness(0.95);
 }
 
+.startButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
 .startButton img {
   flex-shrink: 0;
   width: 18px;
@@ -916,22 +977,19 @@
   margin-bottom: 40px;
 }
 
-/* Creation Container with Animated Gradient Border */
+/* Creation Container with Shaded Background */
 .creationContainer {
   position: relative;
-  padding: 1px;
   border-radius: 18px;
-  background: #e0e0e0;
-  transition: background 0.3s ease;
 }
 
 .creationContainerFocused {
-  background: rgba(255, 111, 97, 0.35);
+  /* No visual change on focus */
 }
 
 .creationContainerInner {
-  background: #ffffff;
-  border-radius: 17px;
+  background: #f8f8f8;
+  border-radius: 18px;
   padding: 24px;
 }
 
@@ -1002,6 +1060,15 @@
 
 .promptInput::placeholder {
   color: #a3a3a3;
+}
+
+.promptInput:focus {
+  outline: none;
+}
+
+.createPrompt:focus-within {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 1px #ff6f61;
 }
 
 .promptOptions {
@@ -1081,6 +1148,11 @@
   background-color: #e0e0e0;
 }
 
+.addButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
 .generateButton {
   background-color: #ff6f61;
   border: none;
@@ -1093,7 +1165,7 @@
   color: #ffffff;
   cursor: pointer;
   flex-shrink: 0;
-  transition: box-shadow 0.15s ease, filter 0.15s ease;
+  transition: box-shadow 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
 }
 
 .generateButton img {
@@ -1101,12 +1173,22 @@
   height: 18px;
 }
 
-.generateButton:hover {
+.generateButton:hover:not(:disabled) {
   box-shadow: 0 4px 12px rgba(255, 111, 97, 0.4);
 }
 
-.generateButton:active {
+.generateButton:active:not(:disabled) {
   filter: brightness(0.95);
+}
+
+.generateButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.generateButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
 }
 
 /* YouTube Section */
@@ -1161,6 +1243,15 @@
   color: #a3a3a3;
 }
 
+.linkInput:focus {
+  outline: none;
+}
+
+.youtubeInput:focus-within {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 1px #ff6f61;
+}
+
 /* Templates Section */
 .templatesSection {
   margin-top: 32px;
@@ -1202,6 +1293,12 @@
 
 .seeAll:hover {
   opacity: 0.8;
+}
+
+.seeAll:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* Pagination Controls */
@@ -1246,6 +1343,11 @@
   background-color: #ff6f61;
   border-color: #ff6f61;
   color: #ffffff;
+}
+
+.paginationButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
 }
 
 .paginationInfo {
@@ -1335,6 +1437,12 @@
 
 .favoriteButton:active {
   opacity: 0.7;
+}
+
+.favoriteButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+  border-radius: 50%;
 }
 
 .favoriteButton img {
@@ -2659,6 +2767,11 @@
   background-color: #e85a4d;
 }
 
+.viewAllProjectsButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
 /* Hidden file input */
 .hiddenInput {
   position: absolute;
@@ -2730,6 +2843,11 @@
 .removeImageButton svg {
   width: 10px;
   height: 10px;
+}
+
+.removeImageButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
 }
 
 /* Attached Image Name */
@@ -2824,4 +2942,489 @@
   background-repeat: no-repeat;
   background-position: center;
   flex-shrink: 0;
+}
+
+/* Theme Section in Profile Dropdown */
+.themeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 12px;
+}
+
+.themeSectionLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #a3a3a3;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.themeToggle {
+  display: flex;
+  gap: 8px;
+}
+
+.themeButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #797979;
+  transition: all 0.15s ease;
+}
+
+.themeButton:hover {
+  background-color: #f0f0f0;
+  border-color: #d5d5d5;
+}
+
+.themeButton svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.themeButtonActive {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+  color: #ffffff;
+}
+
+.themeButtonActive:hover {
+  background-color: #e85a4d;
+  border-color: #e85a4d;
+}
+
+.themeButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
+.profileMenuDivider {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 6px 0;
+}
+
+/* Dark Theme Styles */
+.darkTheme {
+  background-color: #0c0b0b;
+}
+
+/* Dark Theme - Sidebar */
+.darkTheme .sidebar {
+  background-color: #141414;
+}
+
+.darkTheme .logoTitle {
+  color: #ffeae8;
+}
+
+.darkTheme .userProfile {
+  background-color: #1c1c1c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.darkTheme .userName {
+  color: #ffeae8;
+}
+
+.darkTheme .userEmail {
+  color: #a3a3a3;
+}
+
+.darkTheme .userMenu::before,
+.darkTheme .userMenu::after,
+.darkTheme .userMenuDot {
+  background-color: #a3a3a3;
+}
+
+.darkTheme .navItem {
+  color: #a3a3a3;
+}
+
+.darkTheme .navItem:hover {
+  background-color: rgba(255, 111, 97, 0.15);
+  color: #ff6f61;
+}
+
+.darkTheme .navItem:active {
+  background-color: rgba(255, 111, 97, 0.2);
+}
+
+.darkTheme .navItemActive {
+  background-color: #ff6f61;
+  color: #ffffff;
+}
+
+.darkTheme .progressText {
+  color: #ffeae8;
+}
+
+.darkTheme .progressCurrent {
+  color: #a3a3a3;
+}
+
+.darkTheme .progressBar {
+  background-color: #100d0c;
+  border-color: #ff6f61;
+}
+
+.darkTheme .menuButton {
+  color: #ffeae8;
+}
+
+.darkTheme .menuButton:hover {
+  background-color: rgba(255, 111, 97, 0.15);
+}
+
+.darkTheme .menuButton:active {
+  background-color: rgba(255, 111, 97, 0.2);
+}
+
+/* Dark Theme - Header */
+.darkTheme .header {
+  background-color: #141414;
+}
+
+.darkTheme .searchBar {
+  background-color: #2d2d2d;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.darkTheme .searchInput {
+  color: #ffeae8;
+  background: transparent;
+}
+
+.darkTheme .searchInput::placeholder {
+  color: #a3a3a3;
+}
+
+.darkTheme .searchBar:focus-within {
+  box-shadow: 0 0 0 2px rgba(255, 111, 97, 0.4);
+}
+
+.darkTheme .createButton {
+  background-color: #2d2d2d;
+  border-color: #ff6f61;
+  color: #a3a3a3;
+}
+
+.darkTheme .createButton:hover {
+  background-color: #ff6f61;
+  color: #ffffff;
+}
+
+/* Dark Theme - Content */
+.darkTheme .sectionTitle {
+  color: #ffeae8;
+}
+
+.darkTheme .projectCard {
+  background-color: #1c1c1c;
+  border-color: #2d2d2d;
+}
+
+.darkTheme .projectThumbnail {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .projectName {
+  color: #ffeae8;
+}
+
+.darkTheme .projectDate {
+  color: #a3a3a3;
+}
+
+.darkTheme .projectVisibility {
+  color: #a3a3a3;
+}
+
+.darkTheme .projectMenuButton {
+  color: #a3a3a3;
+}
+
+.darkTheme .projectMenuButton:hover {
+  background-color: #2d2d2d;
+  color: #ffeae8;
+}
+
+.darkTheme .projectDropdown {
+  background-color: #1c1c1c;
+  box-shadow: 0 2px 13.6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.darkTheme .projectDropdownItem {
+  color: #ffeae8;
+}
+
+.darkTheme .projectDropdownItem:hover {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .projectDropdownItem:active {
+  background-color: #252525;
+}
+
+.darkTheme .projectDropdownItemDanger {
+  color: #ff6f61;
+}
+
+.darkTheme .projectDropdownItemDanger:hover {
+  background-color: rgba(255, 111, 97, 0.15);
+}
+
+/* Dark Theme - Profile Dropdown */
+.darkTheme .profileDropdown {
+  background-color: #1c1c1c;
+  box-shadow: 0 2px 13.6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.darkTheme .profileMenuItem {
+  color: #ffeae8;
+}
+
+.darkTheme .profileMenuItem:hover {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .profileMenuItem:active {
+  background-color: #252525;
+}
+
+.darkTheme .profileMenuItem:focus-visible {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .profileMenuItem svg {
+  color: #a3a3a3;
+}
+
+.darkTheme .profileMenuDivider {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .themeSectionLabel {
+  color: #a3a3a3;
+}
+
+.darkTheme .themeButton {
+  background-color: #2d2d2d;
+  border-color: #2d2d2d;
+  color: #a3a3a3;
+}
+
+.darkTheme .themeButton:hover {
+  background-color: #252525;
+  border-color: #252525;
+}
+
+.darkTheme .themeButtonActive {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+  color: #ffffff;
+}
+
+.darkTheme .themeButtonActive:hover {
+  background-color: #e85a4d;
+  border-color: #e85a4d;
+}
+
+/* Dark Theme - Creation Section */
+.darkTheme .creationContainerInner {
+  background: #1c1c1c;
+}
+
+.darkTheme .createPrompt {
+  background-color: #2d2d2d;
+  border-color: #2d2d2d;
+}
+
+.darkTheme .createPrompt:focus-within {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 1px #ff6f61;
+}
+
+.darkTheme .promptInput {
+  color: #ffeae8;
+  background: transparent;
+}
+
+.darkTheme .promptInput::placeholder {
+  color: #a3a3a3;
+}
+
+.darkTheme .dropdown {
+  background-color: #252525;
+  color: #a3a3a3;
+}
+
+.darkTheme .dropdown:hover {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .dropdown:active {
+  background-color: #1c1c1c;
+}
+
+.darkTheme .addButton {
+  background-color: #252525;
+  color: #a3a3a3;
+}
+
+.darkTheme .addButton:hover {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .addButton:active {
+  background-color: #1c1c1c;
+}
+
+.darkTheme .youtubeInput {
+  background-color: #2d2d2d;
+  border-color: #2d2d2d;
+}
+
+.darkTheme .youtubeInput:focus-within {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 1px #ff6f61;
+}
+
+.darkTheme .linkInput {
+  color: #ffeae8;
+  background: transparent;
+}
+
+.darkTheme .linkInput::placeholder {
+  color: #a3a3a3;
+}
+
+.darkTheme .youtubeInputError {
+  border-color: #ff6f61;
+}
+
+.darkTheme .orDivider {
+  color: #a3a3a3;
+}
+
+/* Dark Theme - Templates Section */
+.darkTheme .templatesSubtitle {
+  color: #a3a3a3;
+}
+
+.darkTheme .templateCard {
+  background-color: transparent;
+}
+
+.darkTheme .templateThumbnail {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .templateTitle {
+  color: #ffeae8;
+}
+
+.darkTheme .templateDescription {
+  color: #a3a3a3;
+}
+
+/* Dark Theme - Empty State */
+.darkTheme .emptyText {
+  color: #a3a3a3;
+}
+
+/* Dark Theme - Info Tooltip */
+.darkTheme .infoButton {
+  color: #a3a3a3;
+}
+
+.darkTheme .infoButton:hover {
+  color: #ff6f61;
+  background-color: rgba(255, 111, 97, 0.15);
+}
+
+.darkTheme .infoTooltip {
+  background-color: #1c1c1c;
+  box-shadow: 0 2px 13.6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.darkTheme .infoTooltip p {
+  color: #a3a3a3;
+}
+
+.darkTheme .infoTooltip::before {
+  background-color: #1c1c1c;
+  box-shadow: -2px -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark Theme - Attached Images */
+.darkTheme .attachedImagesContainer {
+  background-color: #1c1c1c;
+  border-color: #2d2d2d;
+}
+
+.darkTheme .attachedImageName {
+  color: #a3a3a3;
+}
+
+/* Dark Theme - Loading State */
+.darkTheme .loadingContainer {
+  background-color: #0c0b0b;
+}
+
+.darkTheme .loadingContainer p {
+  color: #a3a3a3;
+}
+
+.darkTheme .loadingSpinner {
+  border-color: #252525;
+  border-top-color: #ff6f61;
+}
+
+/* Dark Theme - Pagination */
+.darkTheme .paginationButton {
+  background-color: #2d2d2d;
+  border-color: #2d2d2d;
+  color: #ffeae8;
+}
+
+.darkTheme .paginationButton:hover:not(:disabled) {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+  color: #ffffff;
+}
+
+.darkTheme .paginationButton.active {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+  color: #ffffff;
+}
+
+.darkTheme .paginationInfo {
+  color: #a3a3a3;
+}
+
+/* Dark Theme - View All Projects Button */
+.darkTheme .viewAllProjectsButton {
+  border-color: #ff6f61;
+  color: #ff6f61;
+  background: transparent;
+}
+
+.darkTheme .viewAllProjectsButton:hover {
+  background-color: #ff6f61;
+  color: #ffffff;
 }

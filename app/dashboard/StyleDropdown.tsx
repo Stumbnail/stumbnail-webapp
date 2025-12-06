@@ -15,6 +15,7 @@ interface StyleDropdownProps {
   selectedStyle: Style | null;
   onSelectStyle: (style: Style | null) => void;
   onCreateNew: () => void;
+  theme?: 'light' | 'dark';
 }
 
 const SAMPLE_STYLES: Style[] = [
@@ -32,7 +33,7 @@ const SAMPLE_STYLES: Style[] = [
   }
 ];
 
-export default function StyleDropdown({ selectedStyle, onSelectStyle, onCreateNew }: StyleDropdownProps) {
+export default function StyleDropdown({ selectedStyle, onSelectStyle, onCreateNew, theme = 'light' }: StyleDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +69,7 @@ export default function StyleDropdown({ selectedStyle, onSelectStyle, onCreateNe
   };
 
   return (
-    <div className={styles.container} ref={dropdownRef}>
+    <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : ''}`} ref={dropdownRef}>
       <button
         className={`${styles.trigger} ${selectedStyle ? styles.triggerSelected : ''}`}
         onClick={() => setIsOpen(!isOpen)}

@@ -8,12 +8,14 @@ interface CreateStyleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateStyle: (name: string, images: File[]) => void;
+  theme?: 'light' | 'dark';
 }
 
 export default function CreateStyleModal({
   isOpen,
   onClose,
-  onCreateStyle
+  onCreateStyle,
+  theme = 'light'
 }: CreateStyleModalProps) {
   const [styleName, setStyleName] = useState('');
   const [uploadedImages, setUploadedImages] = useState<{ id: string; file: File; preview: string }[]>([]);
@@ -140,7 +142,7 @@ export default function CreateStyleModal({
   };
 
   return (
-    <div className={styles.overlay} onClick={handleClose}>
+    <div className={`${styles.overlay} ${theme === 'dark' ? styles.darkTheme : ''}`} onClick={handleClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <button
           className={styles.closeButton}

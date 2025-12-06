@@ -240,3 +240,48 @@
     font-size: 16px;
   }
 }
+
+/* Dark Theme */
+.darkTheme .overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.darkTheme .modal {
+  background-color: #1c1c1c;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.darkTheme .closeButton {
+  color: #a3a3a3;
+}
+
+.darkTheme .closeButton:hover {
+  background-color: #2d2d2d;
+  color: #ffeae8;
+}
+
+.darkTheme .closeButton:active {
+  background-color: #252525;
+}
+
+.darkTheme .title {
+  color: #ffeae8;
+}
+
+.darkTheme .description {
+  color: #a3a3a3;
+}
+
+.darkTheme .cancelButton {
+  background-color: #2d2d2d;
+  color: #a3a3a3;
+}
+
+.darkTheme .cancelButton:hover {
+  background-color: #3d3d3d;
+  color: #ffeae8;
+}
+
+.darkTheme .cancelButton:active {
+  background-color: #252525;
+}

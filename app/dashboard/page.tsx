@@ -188,7 +188,10 @@ export default function DashboardPage() {
   
   // YouTube link validation state
   const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
-  
+
+  // Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
   const promptInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
@@ -221,6 +224,39 @@ export default function DashboardPage() {
       setSidebarOpen(false);
     }
   }, []);
+
+  // Theme initialization - fetch from database or fallback to localStorage/system preference
+  useEffect(() => {
+    const initializeTheme = async () => {
+      // First, check localStorage for immediate UI update
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else {
+        // Check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark ? 'dark' : 'light');
+      }
+
+      // Then fetch from database if user is authenticated
+      if (user) {
+        try {
+          const response = await fetch(`/api/user/theme?userId=${user.uid}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.theme && (data.theme === 'light' || data.theme === 'dark')) {
+              setTheme(data.theme);
+              localStorage.setItem('theme', data.theme);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching theme from database:', error);
+        }
+      }
+    };
+
+    initializeTheme();
+  }, [user]);
 
   // Auth state listener
   useEffect(() => {
@@ -258,7 +294,15 @@ export default function DashboardPage() {
   }, [editingProjectId]);
 
   const handlePromptSubmit = () => {
+    if (!promptText.trim()) return;
     console.log('Generating with prompt:', promptText);
+  };
+
+  const handlePromptKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handlePromptSubmit();
+    }
   };
 
   const validateYoutubeLink = (url: string): boolean => {
@@ -299,6 +343,13 @@ export default function DashboardPage() {
     if (validateYoutubeLink(youtubeLink)) {
       console.log('Generating from YouTube:', youtubeLink);
       // TODO: Implement actual YouTube thumbnail generation
+    }
+  };
+
+  const handleYoutubeLinkKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleYoutubeLinkSubmit();
     }
   };
 
@@ -343,6 +394,33 @@ export default function DashboardPage() {
       router.push('/login');
     } catch (error) {
       console.error('Sign out error:', error);
+    }
+  };
+
+  const handleThemeToggle = async (newTheme: 'light' | 'dark') => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+
+    // Persist theme to database for cross-device sync
+    if (user) {
+      try {
+        const response = await fetch('/api/user/theme', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            theme: newTheme,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to update theme in database');
+        }
+      } catch (error) {
+        console.error('Error updating theme:', error);
+      }
     }
   };
 
@@ -563,7 +641,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : styles.lightTheme}`}>
       {/* Decorative blur elements - only render on desktop to reduce DOM nodes on mobile */}
       {!isMobile && (
         <>
@@ -624,6 +702,35 @@ export default function DashboardPage() {
 
           {profileMenuOpen && (
             <div className={styles.profileDropdown}>
+              <div className={styles.themeSection}>
+                <span className={styles.themeSectionLabel}>Theme</span>
+                <div className={styles.themeToggle}>
+                  <button
+                    className={`${styles.themeButton} ${theme === 'light' ? styles.themeButtonActive : ''}`}
+                    onClick={() => handleThemeToggle('light')}
+                    aria-label="Switch to light theme"
+                    aria-pressed={theme === 'light'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M8 1V2M8 14V15M15 8H14M2 8H1M12.95 12.95L12.24 12.24M3.76 3.76L3.05 3.05M12.95 3.05L12.24 3.76M3.76 12.24L3.05 12.95" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <span>Light</span>
+                  </button>
+                  <button
+                    className={`${styles.themeButton} ${theme === 'dark' ? styles.themeButtonActive : ''}`}
+                    onClick={() => handleThemeToggle('dark')}
+                    aria-label="Switch to dark theme"
+                    aria-pressed={theme === 'dark'}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path d="M14 8.5C13.3 10.5 11.4 12 9 12C6.2 12 4 9.8 4 7C4 4.6 5.5 2.7 7.5 2C4.7 2.3 2.5 4.6 2.5 7.5C2.5 10.5 5 13 8 13C10.9 13 13.2 10.8 13.5 8C13.7 8.2 13.9 8.3 14 8.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span>Dark</span>
+                  </button>
+                </div>
+              </div>
+              <div className={styles.profileMenuDivider} />
               <button className={styles.profileMenuItem} onClick={handleSignOut}>
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M6.75 15.75H3.75C3.35218 15.75 2.97064 15.592 2.68934 15.3107C2.40804 15.0294 2.25 14.6478 2.25 14.25V3.75C2.25 3.35218 2.40804 2.97064 2.68934 2.68934C2.97064 2.40804 3.35218 2.25 3.75 2.25H6.75M12 12.75L15.75 9M15.75 9L12 5.25M15.75 9H6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -641,6 +748,7 @@ export default function DashboardPage() {
               key={item.id}
               className={`${styles.navItem} ${item.active ? styles.navItemActive : ''}`}
               aria-current={item.active ? 'page' : undefined}
+              aria-label={`Navigate to ${item.label}`}
             >
               <Image
                 src={item.icon}
@@ -675,7 +783,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Upgrade Plan Button */}
-        <button className={styles.upgradeButton}>
+        <button className={styles.upgradeButton} aria-label="Upgrade to premium plan">
           <Image
             src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
             alt=""
@@ -729,7 +837,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Create New Project Button */}
-          <button className={styles.createButton} onClick={() => setIsModalOpen(true)}>
+          <button
+            className={styles.createButton}
+            onClick={() => setIsModalOpen(true)}
+            aria-label="Create new thumbnail project"
+          >
             <Image
               src="/assets/dashboard/icons/create-new-project-icon.svg"
               alt=""
@@ -766,7 +878,11 @@ export default function DashboardPage() {
                     : "No projects yet — let's create your first one!"}
                 </p>
                 {!searchQuery && (
-                  <button className={styles.startButton} onClick={() => setIsModalOpen(true)}>
+                  <button
+                    className={styles.startButton}
+                    onClick={() => setIsModalOpen(true)}
+                    aria-label="Start creating your first thumbnail project"
+                  >
                     <Image
                       src="/assets/dashboard/icons/star-for-start-creating-button.svg"
                       alt=""
@@ -951,9 +1067,10 @@ export default function DashboardPage() {
                         type="text"
                         value={promptText}
                         onChange={(e) => setPromptText(e.target.value)}
+                        onKeyDown={handlePromptKeyDown}
                         placeholder="Describe your thumbnail"
                         className={styles.promptInput}
-                        aria-label="Describe your thumbnail"
+                        aria-label="Describe your thumbnail to generate"
                       />
 
                       <div className={styles.promptOptions}>
@@ -961,17 +1078,20 @@ export default function DashboardPage() {
                           selectedStyle={selectedStyle}
                           onSelectStyle={handleSelectStyle}
                           onCreateNew={handleCreateNewStyle}
+                          theme={theme}
                         />
 
                         <ModelDropdown
                           selectedModel={selectedModel}
                           onSelectModel={handleSelectModel}
+                          theme={theme}
                         />
 
-                        <button 
-                          className={styles.addButton} 
-                          aria-label="Add image reference"
+                        <button
+                          className={styles.addButton}
+                          aria-label="Attach image references for AI generation"
                           onClick={handleImageAttach}
+                          type="button"
                         >
                           <Image
                             src="/assets/dashboard/icons/add-image.svg"
@@ -995,7 +1115,9 @@ export default function DashboardPage() {
                       <button
                         className={styles.generateButton}
                         onClick={handlePromptSubmit}
-                        aria-label="Generate thumbnail from prompt"
+                        aria-label="Generate thumbnail from description"
+                        type="button"
+                        disabled={!promptText.trim()}
                       >
                         <Image
                           src="/assets/dashboard/icons/send.svg"
@@ -1078,19 +1200,22 @@ export default function DashboardPage() {
                       </div>
                       <input
                         ref={youtubeLinkInputRef}
-                        type="text"
+                        type="url"
                         value={youtubeLink}
                         onChange={handleYoutubeLinkChange}
+                        onKeyDown={handleYoutubeLinkKeyDown}
                         placeholder="Paste a YouTube link to generate thumbnail"
                         className={styles.linkInput}
-                        aria-label="Paste YouTube link"
+                        aria-label="Paste YouTube video URL to generate thumbnail"
                         aria-invalid={!!youtubeLinkError}
                         aria-describedby={youtubeLinkError ? "youtube-error" : undefined}
                       />
                       <button
                         className={styles.generateButton}
                         onClick={handleYoutubeLinkSubmit}
-                        aria-label="Generate thumbnail from YouTube link"
+                        aria-label="Generate thumbnail from YouTube video"
+                        type="button"
+                        disabled={!youtubeLink.trim()}
                       >
                         <Image
                           src="/assets/dashboard/icons/send.svg"
@@ -1120,7 +1245,12 @@ export default function DashboardPage() {
                 <h2 className={styles.sectionTitle}>Jumpstart your creativity</h2>
                 <p className={styles.templatesSubtitle}>YouTube&apos;s &quot;Recommended</p>
               </div>
-              <button onClick={handleSeeAllClick} className={styles.seeAll}>
+              <button
+                onClick={handleSeeAllClick}
+                className={styles.seeAll}
+                aria-label={viewingAllTemplates ? 'Show less templates' : 'See all templates'}
+                aria-expanded={viewingAllTemplates}
+              >
                 {viewingAllTemplates ? 'Show less' : 'See all'}
               </button>
             </div>
@@ -1137,7 +1267,11 @@ export default function DashboardPage() {
                       priority={index === 0}
                       style={{ objectFit: 'cover' }}
                     />
-                    <button className={styles.favoriteButton} aria-label={`Add ${template.title} to favourites`}>
+                    <button
+                      className={styles.favoriteButton}
+                      aria-label={`Add ${template.title} to favourites`}
+                      type="button"
+                    >
                       <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <circle cx="15.719" cy="15.719" r="15.219" fill="white" fillOpacity="0.7" stroke="white"/>
                         <path d="M10.1198 8.40026C9.29655 8.68744 8.59773 9.14694 8.05207 9.75004C6.11834 11.904 6.44382 15.2736 8.90406 18.5284C9.50716 19.323 11.393 21.228 12.3886 22.0417C12.8768 22.4438 13.815 23.1713 14.4947 23.6595L15.7104 24.5498L16.3422 24.1094C20.0661 21.4673 22.5551 18.9496 23.7038 16.6521C25.3025 13.4739 24.8239 10.5446 22.4498 8.96506C21.5499 8.36196 20.7554 8.16093 19.5109 8.2088C18.5632 8.24709 18.41 8.27581 17.7399 8.60129C17.2229 8.84061 16.7922 9.14694 16.3518 9.57773L15.7104 10.1904L15.1456 9.61602C14.7436 9.21395 14.3319 8.91719 13.7671 8.63958C12.9726 8.24709 12.9343 8.23751 11.8525 8.2088C10.9048 8.18965 10.6559 8.21837 10.1198 8.40026Z" fill="#FF6F61" stroke="#141414" strokeWidth="0.8"/>
@@ -1188,6 +1322,7 @@ export default function DashboardPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreateProject={handleCreateProject}
+        theme={theme}
       />
 
       {/* Project Name Modal - Edit */}
@@ -1198,6 +1333,7 @@ export default function DashboardPage() {
         editMode={true}
         initialName={editProjectModal.projectName}
         initialIsPublic={editProjectModal.isPublic}
+        theme={theme}
       />
 
       {/* Project Action Modal - Delete/Duplicate */}
@@ -1207,6 +1343,7 @@ export default function DashboardPage() {
         onConfirm={handleProjectActionConfirm}
         type={projectActionModal.type}
         projectName={projectActionModal.projectName}
+        theme={theme}
       />
 
       {/* Create Style Modal */}
@@ -1214,6 +1351,7 @@ export default function DashboardPage() {
         isOpen={isCreateStyleModalOpen}
         onClose={() => setIsCreateStyleModalOpen(false)}
         onCreateStyle={handleCreateStyleConfirm}
+        theme={theme}
       />
     </div>
   );

@@ -580,3 +580,167 @@
     font-size: 14px;
   }
 }
+
+/* Dark Theme */
+.darkTheme .overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.darkTheme .modal {
+  background-color: #1c1c1c;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+}
+
+.darkTheme .closeButton {
+  color: #a3a3a3;
+}
+
+.darkTheme .closeButton:hover {
+  background-color: #2d2d2d;
+  color: #ffeae8;
+}
+
+.darkTheme .closeButton:active {
+  background-color: #252525;
+}
+
+.darkTheme .title {
+  color: #ffeae8;
+}
+
+.darkTheme .sectionHeader svg {
+  color: #a3a3a3;
+}
+
+.darkTheme .sectionTitle {
+  color: #ffeae8;
+}
+
+.darkTheme .progress {
+  color: #a3a3a3;
+}
+
+.darkTheme .input {
+  background-color: #2d2d2d;
+  border-color: #2d2d2d;
+  color: #ffeae8;
+}
+
+.darkTheme .input::placeholder {
+  color: #a3a3a3;
+}
+
+.darkTheme .input:focus {
+  border-color: #ff6f61;
+}
+
+.darkTheme .modeButton {
+  background-color: #2d2d2d;
+  border-color: #2d2d2d;
+  color: #a3a3a3;
+}
+
+.darkTheme .modeButton:hover {
+  background-color: #3d3d3d;
+  border-color: #3d3d3d;
+}
+
+.darkTheme .modeButton svg {
+  color: #a3a3a3;
+}
+
+.darkTheme .modeButtonActive {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+  color: #ffffff;
+}
+
+.darkTheme .modeButtonActive:hover {
+  background-color: #e85a4d;
+  border-color: #e85a4d;
+}
+
+.darkTheme .modeButtonActive svg {
+  color: #ffffff;
+}
+
+.darkTheme .modeIcon {
+  background-color: transparent;
+}
+
+.darkTheme .modeButtonActive .modeIcon {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.darkTheme .modeDescription {
+  background-color: #2d2d2d;
+}
+
+.darkTheme .modeDescriptionText {
+  color: #a3a3a3;
+}
+
+.darkTheme .modeDescriptionText svg {
+  color: #a3a3a3;
+}
+
+.darkTheme .uploadHint {
+  color: #a3a3a3;
+}
+
+.darkTheme .addMoreButton {
+  background-color: #2d2d2d;
+  border-color: #2d2d2d;
+  color: #a3a3a3;
+}
+
+.darkTheme .addMoreButton:hover {
+  background-color: #3d3d3d;
+  border-color: #3d3d3d;
+}
+
+.darkTheme .addMoreButton:active {
+  background-color: #252525;
+}
+
+.darkTheme .dropZone {
+  background-color: #2d2d2d;
+  border-color: #3d3d3d;
+  color: #a3a3a3;
+}
+
+.darkTheme .dropZone:hover {
+  background-color: #3d3d3d;
+  border-color: #4d4d4d;
+}
+
+.darkTheme .dropZoneDragging {
+  background-color: rgba(255, 111, 97, 0.1);
+  border-color: #ff6f61;
+}
+
+.darkTheme .dropZoneText {
+  color: #a3a3a3;
+}
+
+.darkTheme .removeButton {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.darkTheme .removeButton:hover {
+  background-color: rgba(0, 0, 0, 0.85);
+}
+
+.darkTheme .cancelButton {
+  background-color: #2d2d2d;
+  color: #a3a3a3;
+}
+
+.darkTheme .cancelButton:hover {
+  background-color: #3d3d3d;
+  color: #ffeae8;
+}
+
+.darkTheme .cancelButton:active {
+  background-color: #252525;
+}

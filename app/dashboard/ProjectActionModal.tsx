@@ -9,6 +9,7 @@ interface ProjectActionModalProps {
   onConfirm: () => void;
   type: 'delete' | 'duplicate';
   projectName: string;
+  theme?: 'light' | 'dark';
 }
 
 export default function ProjectActionModal({
@@ -16,7 +17,8 @@ export default function ProjectActionModal({
   onClose,
   onConfirm,
   type,
-  projectName
+  projectName,
+  theme = 'light'
 }: ProjectActionModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -83,7 +85,7 @@ export default function ProjectActionModal({
   };
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={`${styles.overlay} ${theme === 'dark' ? styles.darkTheme : ''}`} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <button
           className={styles.closeButton}

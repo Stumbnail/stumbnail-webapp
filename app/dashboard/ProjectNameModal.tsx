@@ -11,6 +11,7 @@ interface ProjectNameModalProps {
   editMode?: boolean;
   initialName?: string;
   initialIsPublic?: boolean;
+  theme?: 'light' | 'dark';
 }
 
 export default function ProjectNameModal({
@@ -19,7 +20,8 @@ export default function ProjectNameModal({
   onCreateProject,
   editMode = false,
   initialName = 'untitled',
-  initialIsPublic = true
+  initialIsPublic = true,
+  theme = 'light'
 }: ProjectNameModalProps) {
   const [projectName, setProjectName] = useState(initialName);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
@@ -56,7 +58,7 @@ export default function ProjectNameModal({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={`${styles.overlay} ${theme === 'dark' ? styles.darkTheme : ''}`} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Close Button */}
         <button
