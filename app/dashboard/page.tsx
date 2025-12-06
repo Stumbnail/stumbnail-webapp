@@ -568,7 +568,6 @@ export default function DashboardPage() {
       {!isMobile && (
         <>
           <div className={styles.blurTopRight} />
-          <div className={styles.blurBottom} />
           <div className={styles.blurSidebarBottom} />
         </>
       )}
@@ -1110,6 +1109,9 @@ export default function DashboardPage() {
               </div>
             </div>
           </section>
+
+          {/* Decorative Blur Below Creation Container */}
+          {!isMobile && <div className={styles.blurBottom} />}
 
           {/* Templates Section */}
           <section className={`${styles.templatesSection} ${viewingAllTemplates ? styles.viewingAll : ''}`}>

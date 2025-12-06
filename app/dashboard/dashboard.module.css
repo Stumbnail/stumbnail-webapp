@@ -12,37 +12,38 @@
 /* Decorative Blur Elements */
 .blurTopRight {
   position: absolute;
-  top: -50px;
-  right: 0;
-  width: 600px;
-  height: 300px;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90%, 1324px);
+  height: 380px;
   background: radial-gradient(
     ellipse at center,
-    rgba(255, 200, 180, 0.4) 0%,
-    rgba(255, 180, 160, 0.2) 40%,
+    rgba(255, 200, 200, 0.25) 0%,
+    rgba(255, 180, 180, 0.15) 30%,
+    rgba(255, 160, 160, 0.08) 50%,
     transparent 70%
   );
-  filter: blur(60px);
+  filter: blur(80px);
   pointer-events: none;
   z-index: 1;
 }
 
 .blurBottom {
-  position: absolute;
-  bottom: -50px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  height: 150px;
+  position: relative;
+  width: min(85%, 1143px);
+  height: 70px;
+  margin: 0 auto;
   background: radial-gradient(
     ellipse at center,
-    rgba(255, 111, 97, 0.15) 0%,
-    rgba(255, 111, 97, 0.08) 50%,
-    transparent 70%
+    rgba(255, 220, 210, 0.35) 0%,
+    rgba(255, 200, 190, 0.2) 40%,
+    rgba(255, 180, 170, 0.12) 60%,
+    transparent 75%
   );
-  filter: blur(60px);
+  filter: blur(90px);
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
 .blurSidebarBottom {
@@ -646,7 +647,7 @@
 /* Projects Section */
 .projectsSection {
   margin-top: 0;
-  margin-bottom: 20px;
+  margin-bottom: 40px;
   overflow: visible;
 }
 
@@ -911,8 +912,8 @@
 
 /* Create Section */
 .createSection {
-  margin-top: 32px;
-  margin-bottom: 20px;
+  margin-top: 0;
+  margin-bottom: 40px;
 }
 
 /* Creation Container with Animated Gradient Border */
@@ -1519,6 +1520,51 @@
   }
 }
 
+@media (max-width: 1400px) {
+  .blurTopRight {
+    width: min(92%, 1100px);
+    height: 320px;
+    top: -80px;
+    filter: blur(70px);
+  }
+
+  .blurBottom {
+    width: min(88%, 950px);
+    height: 60px;
+    filter: blur(75px);
+  }
+}
+
+@media (max-width: 1200px) {
+  .blurTopRight {
+    width: min(94%, 900px);
+    height: 280px;
+    top: -60px;
+    filter: blur(60px);
+  }
+
+  .blurBottom {
+    width: min(90%, 800px);
+    height: 50px;
+    filter: blur(65px);
+  }
+}
+
+@media (max-width: 1024px) {
+  .blurTopRight {
+    width: min(95%, 700px);
+    height: 240px;
+    top: -50px;
+    filter: blur(50px);
+  }
+
+  .blurBottom {
+    width: min(92%, 650px);
+    height: 45px;
+    filter: blur(55px);
+  }
+}
+
 @media (max-width: 768px) {
   .projectsGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -1779,8 +1825,44 @@
     font-size: 11px;
   }
 
-  .blurTopRight,
-  .blurBottom,
+  /* Scale down blur elements on tablet */
+  .blurTopRight {
+    width: min(96%, 500px);
+    height: 200px;
+    top: -40px;
+    filter: blur(45px);
+  }
+
+  .blurBottom {
+    width: min(94%, 450px);
+    height: 40px;
+    filter: blur(50px);
+  }
+
+  .blurSidebarBottom {
+    width: 150px;
+    height: 150px;
+    filter: blur(40px);
+  }
+}
+
+@media (max-width: 640px) {
+  /* Further reduce blur elements on mobile */
+  .blurTopRight {
+    width: min(98%, 400px);
+    height: 150px;
+    top: -30px;
+    filter: blur(35px);
+    opacity: 0.7;
+  }
+
+  .blurBottom {
+    width: min(96%, 350px);
+    height: 30px;
+    filter: blur(40px);
+    opacity: 0.7;
+  }
+
   .blurSidebarBottom {
     display: none;
   }
