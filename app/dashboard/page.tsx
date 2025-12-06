@@ -48,6 +48,7 @@ interface Project {
   thumbnail: string;
   createdAt: string;
   isPublic: boolean;
+  isFavorite: boolean;
 }
 
 // Static data moved outside component to prevent recreation on every render
@@ -92,21 +93,24 @@ const initialMockProjects: Project[] = [
     name: 'Summer Vlog Thumbnail',
     thumbnail: '/assets/dashboard/template1.png',
     createdAt: '2 days ago',
-    isPublic: true
+    isPublic: true,
+    isFavorite: false
   },
   {
     id: 2,
     name: 'Gaming Stream Cover',
     thumbnail: '/assets/dashboard/template2.png',
     createdAt: '5 days ago',
-    isPublic: false
+    isPublic: false,
+    isFavorite: true
   },
   {
     id: 3,
     name: 'Product Review',
     thumbnail: '/assets/dashboard/template3.png',
     createdAt: '1 week ago',
-    isPublic: true
+    isPublic: true,
+    isFavorite: false
   },
 ];
 
@@ -124,11 +128,11 @@ function debounce<T extends (...args: Parameters<T>) => void>(
 
 export default function DashboardPage() {
   const router = useRouter();
-  
+
   // Auth state
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  
+
   // UI state
   const [promptText, setPromptText] = useState('');
   const [youtubeLink, setYoutubeLink] = useState('');
@@ -175,17 +179,17 @@ export default function DashboardPage() {
   const [creationContainerFocused, setCreationContainerFocused] = useState(false);
   const [projects, setProjects] = useState<Project[]>(initialMockProjects);
   const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
-  
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Edit project state
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
-  
+
   // Image attachment state
   const [attachedImages, setAttachedImages] = useState<{ id: string; file: File; preview: string }[]>([]);
-  
+
   // YouTube link validation state
   const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
 
@@ -276,10 +280,10 @@ export default function DashboardPage() {
   useEffect(() => {
     // Initial check
     checkMobile();
-    
+
     // Debounced resize handler (150ms delay) for better performance
     const debouncedCheckMobile = debounce(checkMobile, 150);
-    
+
     // Use passive event listener for better scroll/resize performance
     window.addEventListener('resize', debouncedCheckMobile, { passive: true });
     return () => window.removeEventListener('resize', debouncedCheckMobile);
@@ -310,7 +314,7 @@ export default function DashboardPage() {
       setYoutubeLinkError('Please enter a YouTube link');
       return false;
     }
-    
+
     // YouTube URL patterns
     const youtubePatterns = [
       /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/,
@@ -319,14 +323,14 @@ export default function DashboardPage() {
       /^(https?:\/\/)?youtu\.be\/[\w-]+/,
       /^(https?:\/\/)?(www\.)?youtube\.com\/shorts\/[\w-]+/,
     ];
-    
+
     const isValid = youtubePatterns.some(pattern => pattern.test(url.trim()));
-    
+
     if (!isValid) {
       setYoutubeLinkError('Please enter a valid YouTube link');
       return false;
     }
-    
+
     setYoutubeLinkError(null);
     return true;
   };
@@ -381,6 +385,11 @@ export default function DashboardPage() {
   const handleSeeAllClick = () => {
     setViewingAllTemplates(!viewingAllTemplates);
     setCurrentPage(1);
+  };
+
+  const handleTemplateClick = (templateId: number) => {
+    console.log('Selected template:', templateId);
+    // TODO: Navigate to editor with this template or open template preview
   };
 
   const handlePageChange = (page: number) => {
@@ -466,16 +475,10 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDuplicateProject = (projectId: number) => {
-    const project = projects.find(p => p.id === projectId);
-    if (project) {
-      setProjectActionModal({
-        isOpen: true,
-        type: 'duplicate',
-        projectId,
-        projectName: project.name
-      });
-    }
+  const handleToggleFavorite = (projectId: number) => {
+    setProjects(projects.map(p =>
+      p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p
+    ));
     setProjectMenuOpen(null);
   };
 
@@ -566,7 +569,7 @@ export default function DashboardPage() {
     }));
 
     setAttachedImages(prev => [...prev, ...newImages]);
-    
+
     // Reset input so same file can be selected again
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
@@ -652,8 +655,8 @@ export default function DashboardPage() {
 
       {/* Mobile Overlay - only renders when sidebar is open on mobile */}
       {isMobile && sidebarOpen && (
-        <div 
-          className={styles.overlay} 
+        <div
+          className={styles.overlay}
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -712,8 +715,8 @@ export default function DashboardPage() {
                     aria-pressed={theme === 'light'}
                   >
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5"/>
-                      <path d="M8 1V2M8 14V15M15 8H14M2 8H1M12.95 12.95L12.24 12.24M3.76 3.76L3.05 3.05M12.95 3.05L12.24 3.76M3.76 12.24L3.05 12.95" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M8 1V2M8 14V15M15 8H14M2 8H1M12.95 12.95L12.24 12.24M3.76 3.76L3.05 3.05M12.95 3.05L12.24 3.76M3.76 12.24L3.05 12.95" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                     <span>Light</span>
                   </button>
@@ -724,7 +727,7 @@ export default function DashboardPage() {
                     aria-pressed={theme === 'dark'}
                   >
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path d="M14 8.5C13.3 10.5 11.4 12 9 12C6.2 12 4 9.8 4 7C4 4.6 5.5 2.7 7.5 2C4.7 2.3 2.5 4.6 2.5 7.5C2.5 10.5 5 13 8 13C10.9 13 13.2 10.8 13.5 8C13.7 8.2 13.9 8.3 14 8.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M14 8.5C13.3 10.5 11.4 12 9 12C6.2 12 4 9.8 4 7C4 4.6 5.5 2.7 7.5 2C4.7 2.3 2.5 4.6 2.5 7.5C2.5 10.5 5 13 8 13C10.9 13 13.2 10.8 13.5 8C13.7 8.2 13.9 8.3 14 8.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Dark</span>
                   </button>
@@ -733,7 +736,7 @@ export default function DashboardPage() {
               <div className={styles.profileMenuDivider} />
               <button className={styles.profileMenuItem} onClick={handleSignOut}>
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M6.75 15.75H3.75C3.35218 15.75 2.97064 15.592 2.68934 15.3107C2.40804 15.0294 2.25 14.6478 2.25 14.25V3.75C2.25 3.35218 2.40804 2.97064 2.68934 2.68934C2.97064 2.40804 3.35218 2.25 3.75 2.25H6.75M12 12.75L15.75 9M15.75 9L12 5.25M15.75 9H6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M6.75 15.75H3.75C3.35218 15.75 2.97064 15.592 2.68934 15.3107C2.40804 15.0294 2.25 14.6478 2.25 14.25V3.75C2.25 3.35218 2.40804 2.97064 2.68934 2.68934C2.97064 2.40804 3.35218 2.25 3.75 2.25H6.75M12 12.75L15.75 9M15.75 9L12 5.25M15.75 9H6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span>Sign Out</span>
               </button>
@@ -749,6 +752,15 @@ export default function DashboardPage() {
               className={`${styles.navItem} ${item.active ? styles.navItemActive : ''}`}
               aria-current={item.active ? 'page' : undefined}
               aria-label={`Navigate to ${item.label}`}
+              onClick={() => {
+                if (item.id === 'projects') {
+                  router.push('/projects');
+                } else if (item.id === 'community') {
+                  router.push('/community');
+                } else if (item.id === 'favourites') {
+                  router.push('/favourites');
+                }
+              }}
             >
               <Image
                 src={item.icon}
@@ -801,19 +813,19 @@ export default function DashboardPage() {
         <header className={styles.header}>
           {/* Mobile Menu Button */}
           {isMobile && (
-            <button 
+            <button
               className={styles.menuButton}
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="Toggle sidebar menu"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           )}
 
           {/* Search Bar */}
-          <div 
+          <div
             className={styles.searchBar}
             onClick={() => searchInputRef.current?.focus()}
           >
@@ -897,137 +909,162 @@ export default function DashboardPage() {
             ) : (
               /* Projects Grid */
               <>
-              <div className={styles.projectsGrid}>
-                {displayedProjects.map((project) => (
-                  <div key={project.id} className={styles.projectCard}>
-                    <div className={styles.projectThumbnail}>
-                      <Image
-                        src={project.thumbnail}
-                        alt={project.name}
-                        fill
-                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                        style={{ objectFit: 'cover' }}
-                      />
-                    </div>
-                    <div className={styles.projectInfo}>
-                      <div className={styles.projectHeader}>
-                        {editingProjectId === project.id ? (
-                          <input
-                            ref={editInputRef}
-                            type="text"
-                            value={editingProjectName}
-                            onChange={(e) => setEditingProjectName(e.target.value)}
-                            onBlur={() => handleSaveProjectName(project.id)}
-                            onKeyDown={(e) => handleEditKeyDown(e, project.id)}
-                            className={styles.projectNameInput}
-                            aria-label="Edit project name"
-                          />
-                        ) : (
-                          <h3 className={styles.projectName}>{project.name}</h3>
-                        )}
-                        <div className={styles.projectMenu} data-project-menu>
-                          <button
-                            className={styles.projectMenuButton}
-                            onClick={() => handleProjectMenuClick(project.id)}
-                            aria-label="Project options"
-                          >
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="10" cy="4" r="1.5" fill="currentColor"/>
-                              <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
-                              <circle cx="10" cy="16" r="1.5" fill="currentColor"/>
-                            </svg>
-                          </button>
-                          {projectMenuOpen === project.id && (
-                            <div className={styles.projectDropdown}>
-                              <button
-                                className={styles.projectDropdownItem}
-                                onClick={() => handleEditProject(project.id)}
-                              >
-                                <Image
-                                  src="/assets/dashboard/icons/edit-01-stroke-rounded 1.svg"
-                                  alt=""
-                                  width={18}
-                                  height={18}
-                                  aria-hidden="true"
-                                />
-                                Edit
-                              </button>
-                              <button
-                                className={styles.projectDropdownItem}
-                                onClick={() => handleDuplicateProject(project.id)}
-                              >
-                                <Image
-                                  src="/assets/dashboard/icons/copy-01-stroke-rounded 1.svg"
-                                  alt=""
-                                  width={18}
-                                  height={18}
-                                  aria-hidden="true"
-                                />
-                                Duplicate
-                              </button>
-                              <button
-                                className={styles.projectDropdownItem}
-                                onClick={() => handleOpenProject(project.id)}
-                              >
-                                <Image
-                                  src="/assets/dashboard/icons/link-square-02-stroke-rounded 1.svg"
-                                  alt=""
-                                  width={18}
-                                  height={18}
-                                  aria-hidden="true"
-                                />
-                                Open project
-                              </button>
-                              <button
-                                className={`${styles.projectDropdownItem} ${styles.projectDropdownItemDanger}`}
-                                onClick={() => handleDeleteProject(project.id)}
-                              >
-                                <Image
-                                  src="/assets/dashboard/icons/delete-02-stroke-rounded 1.svg"
-                                  alt=""
-                                  width={18}
-                                  height={18}
-                                  aria-hidden="true"
-                                />
-                                Delete
-                              </button>
-                            </div>
+                <div className={styles.projectsGrid}>
+                  {/* Create Project Placeholder Card */}
+                  {filteredProjects.length > 0 && (
+                    <button
+                      className={styles.createProjectCard}
+                      onClick={() => setIsModalOpen(true)}
+                      aria-label="Create new project"
+                    >
+                      <div className={styles.createProjectIcon}>
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16 8V24M8 16H24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <span className={styles.createProjectText}>New Project</span>
+                    </button>
+                  )}
+                  {displayedProjects.map((project) => (
+                    <div key={project.id} className={styles.projectCard}>
+                      <div className={styles.projectThumbnail}>
+                        <Image
+                          src={project.thumbnail}
+                          alt={project.name}
+                          fill
+                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                          style={{ objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div className={styles.projectInfo}>
+                        <div className={styles.projectHeader}>
+                          {editingProjectId === project.id ? (
+                            <input
+                              ref={editInputRef}
+                              type="text"
+                              value={editingProjectName}
+                              onChange={(e) => setEditingProjectName(e.target.value)}
+                              onBlur={() => handleSaveProjectName(project.id)}
+                              onKeyDown={(e) => handleEditKeyDown(e, project.id)}
+                              className={styles.projectNameInput}
+                              aria-label="Edit project name"
+                            />
+                          ) : (
+                            <h3 className={styles.projectName}>{project.name}</h3>
                           )}
+                          <div className={styles.projectMenu} data-project-menu>
+                            <button
+                              className={styles.projectMenuButton}
+                              onClick={() => handleProjectMenuClick(project.id)}
+                              aria-label="Project options"
+                            >
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="10" cy="4" r="1.5" fill="currentColor" />
+                                <circle cx="10" cy="10" r="1.5" fill="currentColor" />
+                                <circle cx="10" cy="16" r="1.5" fill="currentColor" />
+                              </svg>
+                            </button>
+                            {projectMenuOpen === project.id && (
+                              <div className={styles.projectDropdown}>
+                                <button
+                                  className={styles.projectDropdownItem}
+                                  onClick={() => handleEditProject(project.id)}
+                                >
+                                  <Image
+                                    src="/assets/dashboard/icons/edit-01-stroke-rounded 1.svg"
+                                    alt=""
+                                    width={18}
+                                    height={18}
+                                    aria-hidden="true"
+                                  />
+                                  Edit
+                                </button>
+                                <button
+                                  className={styles.projectDropdownItem}
+                                  onClick={() => handleToggleFavorite(project.id)}
+                                >
+                                  <Image
+                                    src={project.isFavorite ? '/assets/dashboard/icons/heart-filled.svg' : '/assets/dashboard/icons/heart-outline.svg'}
+                                    alt=""
+                                    width={18}
+                                    height={18}
+                                    aria-hidden="true"
+                                  />
+                                  {project.isFavorite ? 'Unfavorite' : 'Favorite'}
+                                </button>
+                                <button
+                                  className={styles.projectDropdownItem}
+                                  onClick={() => handleOpenProject(project.id)}
+                                >
+                                  <Image
+                                    src="/assets/dashboard/icons/link-square-02-stroke-rounded 1.svg"
+                                    alt=""
+                                    width={18}
+                                    height={18}
+                                    aria-hidden="true"
+                                  />
+                                  Open project
+                                </button>
+                                <button
+                                  className={`${styles.projectDropdownItem} ${styles.projectDropdownItemDanger}`}
+                                  onClick={() => handleDeleteProject(project.id)}
+                                >
+                                  <Image
+                                    src="/assets/dashboard/icons/delete-02-stroke-rounded 1.svg"
+                                    alt=""
+                                    width={18}
+                                    height={18}
+                                    aria-hidden="true"
+                                  />
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className={styles.projectMeta}>
+                          <span className={styles.projectDate}>{project.createdAt}</span>
+                          <span className={styles.projectVisibility}>
+                            {project.isPublic ? (
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1.33331 8C1.33331 8 3.33331 3.33334 7.99998 3.33334C12.6666 3.33334 14.6666 8 14.6666 8C14.6666 8 12.6666 12.6667 7.99998 12.6667C3.33331 12.6667 1.33331 8 1.33331 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M8 10C9.10457 10 10 9.10457 10 8C10 6.89543 9.10457 6 8 6C6.89543 6 6 6.89543 6 8C6 9.10457 6.89543 10 8 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11.96 11.96C10.8204 12.8286 9.43255 13.305 8.00004 13.3133C3.33337 13.3133 1.33337 8.64666 1.33337 8.64666C2.12568 7.06819 3.24126 5.66931 4.60671 4.53332M6.60004 3.42666C7.05891 3.29806 7.52858 3.23294 8.00004 3.23332C12.6667 3.23332 14.6667 7.89999 14.6667 7.89999C14.2474 8.75709 13.7458 9.56973 13.1694 10.3233M9.41337 9.41332C9.23022 9.61117 9.00942 9.76969 8.76424 9.87911C8.51905 9.98852 8.25445 10.0467 7.98614 10.0496C7.71783 10.0526 7.45199 9.99998 7.20453 9.89552C6.95707 9.79107 6.73296 9.63697 6.54532 9.44267C6.35768 9.24838 6.21019 9.01773 6.11291 8.76451C6.01563 8.51129 5.97061 8.24113 5.9804 7.97027C5.99019 7.69941 6.05458 7.43349 6.17002 7.18801C6.28545 6.94252 6.44968 6.72294 6.65337 6.54332" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M1.33337 1.33334L14.6667 14.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                            {project.isPublic ? 'Public' : 'Private'}
+                          </span>
                         </div>
                       </div>
-                      <div className={styles.projectMeta}>
-                        <span className={styles.projectDate}>{project.createdAt}</span>
-                        <span className={styles.projectVisibility}>
-                          {project.isPublic ? (
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M1.33331 8C1.33331 8 3.33331 3.33334 7.99998 3.33334C12.6666 3.33334 14.6666 8 14.6666 8C14.6666 8 12.6666 12.6667 7.99998 12.6667C3.33331 12.6667 1.33331 8 1.33331 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M8 10C9.10457 10 10 9.10457 10 8C10 6.89543 9.10457 6 8 6C6.89543 6 6 6.89543 6 8C6 9.10457 6.89543 10 8 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M11.96 11.96C10.8204 12.8286 9.43255 13.305 8.00004 13.3133C3.33337 13.3133 1.33337 8.64666 1.33337 8.64666C2.12568 7.06819 3.24126 5.66931 4.60671 4.53332M6.60004 3.42666C7.05891 3.29806 7.52858 3.23294 8.00004 3.23332C12.6667 3.23332 14.6667 7.89999 14.6667 7.89999C14.2474 8.75709 13.7458 9.56973 13.1694 10.3233M9.41337 9.41332C9.23022 9.61117 9.00942 9.76969 8.76424 9.87911C8.51905 9.98852 8.25445 10.0467 7.98614 10.0496C7.71783 10.0526 7.45199 9.99998 7.20453 9.89552C6.95707 9.79107 6.73296 9.63697 6.54532 9.44267C6.35768 9.24838 6.21019 9.01773 6.11291 8.76451C6.01563 8.51129 5.97061 8.24113 5.9804 7.97027C5.99019 7.69941 6.05458 7.43349 6.17002 7.18801C6.28545 6.94252 6.44968 6.72294 6.65337 6.54332" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M1.33337 1.33334L14.6667 14.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          )}
-                          {project.isPublic ? 'Public' : 'Private'}
-                        </span>
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              {hasMoreProjects && (
-                <button className={styles.viewAllProjectsButton} onClick={() => console.log('Navigate to Projects page')}>
-                  Go to Projects to see all ({filteredProjects.length})
-                </button>
-              )}
+                  ))}
+                </div>
+                {hasMoreProjects && (
+                  <button className={styles.viewAllProjectsButton} onClick={() => router.push('/projects')}>
+                    Go to Projects to see all ({filteredProjects.length})
+                  </button>
+                )}
               </>
             )}
           </section>
 
-          {/* Create With Prompt Section */}
+          {/* Quick Create Section */}
           <section className={styles.createSection}>
-            <div 
+            {/* Section Header - Outside container */}
+            <div className={styles.quickCreateHeader}>
+              <h2 className={styles.sectionTitle}>
+                Quick <span className={styles.titleAccent}>Create</span>
+              </h2>
+              <p className={styles.quickCreateSubtitle}>
+                Start creating instantly
+              </p>
+            </div>
+
+            <div
               className={`${styles.creationContainer} ${creationContainerFocused ? styles.creationContainerFocused : ''}`}
               onFocus={() => setCreationContainerFocused(true)}
               onBlur={(e) => {
@@ -1050,8 +1087,8 @@ export default function DashboardPage() {
                           aria-label="Information about prompt creation"
                         >
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
-                            <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                           </svg>
                         </button>
                         {promptInfoOpen && (
@@ -1128,7 +1165,7 @@ export default function DashboardPage() {
                         />
                       </button>
                     </div>
-                    
+
                     {/* Attached Images Preview */}
                     {attachedImages.length > 0 && (
                       <div className={styles.attachedImagesContainer}>
@@ -1147,7 +1184,7 @@ export default function DashboardPage() {
                               aria-label={`Remove ${img.file.name}`}
                             >
                               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>
                             </button>
                             <span className={styles.attachedImageName}>{img.file.name}</span>
@@ -1173,8 +1210,8 @@ export default function DashboardPage() {
                           aria-label="Information about YouTube link"
                         >
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
-                            <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+                            <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                           </svg>
                         </button>
                         {urlInfoOpen && (
@@ -1184,8 +1221,8 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </div>
-                    <div 
-                      className={`${styles.youtubeInput} ${youtubeLinkError ? styles.youtubeInputError : ''}`} 
+                    <div
+                      className={`${styles.youtubeInput} ${youtubeLinkError ? styles.youtubeInputError : ''}`}
                       onClick={() => youtubeLinkInputRef.current?.focus()}
                     >
                       <div className={styles.youtubeIconWrapper}>
@@ -1242,8 +1279,8 @@ export default function DashboardPage() {
           <section className={`${styles.templatesSection} ${viewingAllTemplates ? styles.viewingAll : ''}`}>
             <div className={styles.templatesHeader}>
               <div>
-                <h2 className={styles.sectionTitle}>Jumpstart your creativity</h2>
-                <p className={styles.templatesSubtitle}>YouTube&apos;s &quot;Recommended</p>
+                <h2 className={styles.sectionTitle}>Jumpstart Your Creativity</h2>
+                <p className={styles.templatesSubtitle}>Hand-picked templates curated by our team, ready to use</p>
               </div>
               <button
                 onClick={handleSeeAllClick}
@@ -1257,7 +1294,20 @@ export default function DashboardPage() {
 
             <div className={styles.templatesGrid}>
               {displayedTemplates.map((template, index) => (
-                <div key={template.id} className={styles.templateCard}>
+                <article
+                  key={template.id}
+                  className={styles.templateCard}
+                  onClick={() => handleTemplateClick(template.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleTemplateClick(template.id);
+                    }
+                  }}
+                  aria-label={`Use ${template.title} template`}
+                >
                   <div className={styles.templateImage}>
                     <Image
                       src={template.image}
@@ -1267,20 +1317,10 @@ export default function DashboardPage() {
                       priority={index === 0}
                       style={{ objectFit: 'cover' }}
                     />
-                    <button
-                      className={styles.favoriteButton}
-                      aria-label={`Add ${template.title} to favourites`}
-                      type="button"
-                    >
-                      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <circle cx="15.719" cy="15.719" r="15.219" fill="white" fillOpacity="0.7" stroke="white"/>
-                        <path d="M10.1198 8.40026C9.29655 8.68744 8.59773 9.14694 8.05207 9.75004C6.11834 11.904 6.44382 15.2736 8.90406 18.5284C9.50716 19.323 11.393 21.228 12.3886 22.0417C12.8768 22.4438 13.815 23.1713 14.4947 23.6595L15.7104 24.5498L16.3422 24.1094C20.0661 21.4673 22.5551 18.9496 23.7038 16.6521C25.3025 13.4739 24.8239 10.5446 22.4498 8.96506C21.5499 8.36196 20.7554 8.16093 19.5109 8.2088C18.5632 8.24709 18.41 8.27581 17.7399 8.60129C17.2229 8.84061 16.7922 9.14694 16.3518 9.57773L15.7104 10.1904L15.1456 9.61602C14.7436 9.21395 14.3319 8.91719 13.7671 8.63958C12.9726 8.24709 12.9343 8.23751 11.8525 8.2088C10.9048 8.18965 10.6559 8.21837 10.1198 8.40026Z" fill="#FF6F61" stroke="#141414" strokeWidth="0.8"/>
-                      </svg>
-                    </button>
                   </div>
                   <h3 className={styles.templateTitle}>{template.title}</h3>
                   <p className={styles.templateDescription}>{template.description}</p>
-                </div>
+                </article>
               ))}
             </div>
 
@@ -1293,7 +1333,7 @@ export default function DashboardPage() {
                   aria-label="Previous page"
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
 
@@ -1308,7 +1348,7 @@ export default function DashboardPage() {
                   aria-label="Next page"
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               </div>

@@ -17,13 +17,11 @@
   transform: translateX(-50%);
   width: min(90%, 1324px);
   height: 380px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 200, 200, 0.25) 0%,
-    rgba(255, 180, 180, 0.15) 30%,
-    rgba(255, 160, 160, 0.08) 50%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(255, 200, 200, 0.25) 0%,
+      rgba(255, 180, 180, 0.15) 30%,
+      rgba(255, 160, 160, 0.08) 50%,
+      transparent 70%);
   filter: blur(80px);
   pointer-events: none;
   z-index: 1;
@@ -34,13 +32,11 @@
   width: min(85%, 1143px);
   height: 70px;
   margin: 0 auto;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 220, 210, 0.35) 0%,
-    rgba(255, 200, 190, 0.2) 40%,
-    rgba(255, 180, 170, 0.12) 60%,
-    transparent 75%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(255, 220, 210, 0.35) 0%,
+      rgba(255, 200, 190, 0.2) 40%,
+      rgba(255, 180, 170, 0.12) 60%,
+      transparent 75%);
   filter: blur(90px);
   pointer-events: none;
   z-index: 0;
@@ -50,14 +46,12 @@
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 220px;
+  width: 240px;
   height: 200px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 111, 97, 0.25) 0%,
-    rgba(255, 111, 97, 0.1) 50%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(255, 111, 97, 0.25) 0%,
+      rgba(255, 111, 97, 0.1) 50%,
+      transparent 70%);
   filter: blur(50px);
   pointer-events: none;
   z-index: 1;
@@ -66,7 +60,7 @@
 /* Sidebar */
 .sidebar {
   position: relative;
-  width: 250px;
+  width: 290px;
   height: 100vh;
   background-color: #f0f0f0;
   padding: 16px 16px 16px 20px;
@@ -97,6 +91,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -335,7 +330,9 @@
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-  opacity: 0.7;
+  /* Gray filter for inactive nav items to ensure visibility */
+  filter: brightness(0) saturate(100%) invert(55%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
+  opacity: 1;
   transition: filter 0.15s ease, opacity 0.15s ease;
 }
 
@@ -345,7 +342,8 @@
 }
 
 .navItem:hover img {
-  filter: brightness(0) saturate(100%) invert(56%) sepia(88%) saturate(2044%) hue-rotate(329deg) brightness(101%) contrast(101%);
+  /* Darker coral filter for better visibility on hover - closer to #e85a4d */
+  filter: brightness(0) saturate(100%) invert(45%) sepia(70%) saturate(1500%) hue-rotate(329deg) brightness(95%) contrast(105%);
   opacity: 1;
 }
 
@@ -373,7 +371,10 @@
   background-color: #e85a4d;
 }
 
-.navItemActive img {
+.navItemActive img,
+.navItemActive:hover img,
+.navItemActive:active img {
+  /* Keep icon white on active state (including hover/active) */
   filter: brightness(0) saturate(100%) invert(100%);
   opacity: 1;
 }
@@ -704,6 +705,66 @@
   overflow: visible;
 }
 
+/* Create Project Placeholder Card */
+.createProjectCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  background-color: transparent;
+  border: 2px dashed #d5d5d5;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 24px;
+}
+
+.createProjectCard:hover {
+  border-color: #ff6f61;
+  background-color: rgba(255, 111, 97, 0.04);
+}
+
+.createProjectCard:active {
+  background-color: rgba(255, 111, 97, 0.08);
+}
+
+.createProjectCard:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
+.createProjectIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  color: #797979;
+  transition: all 0.2s ease;
+}
+
+.createProjectCard:hover .createProjectIcon {
+  background-color: #ff6f61;
+  color: #ffffff;
+}
+
+.createProjectText {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #797979;
+  transition: color 0.2s ease;
+}
+
+.createProjectCard:hover .createProjectText {
+  color: #ff6f61;
+}
+
+
 .projectCard {
   position: relative;
   display: flex;
@@ -771,7 +832,7 @@
 /* Project Menu */
 .projectMenu {
   position: relative;
-  z-index: 10;
+  z-index: 50;
 }
 
 .projectMenuButton {
@@ -811,10 +872,10 @@
   right: 0;
   background-color: #ffffff;
   border-radius: 10px;
-  box-shadow: 0 2px 13.6px 0 rgba(7, 7, 14, 0.2);
+  box-shadow: 0 4px 20px 0 rgba(7, 7, 14, 0.25);
   padding: 6px;
   min-width: 160px;
-  z-index: 100;
+  z-index: 1000;
   animation: slideDown 0.2s ease;
 }
 
@@ -991,6 +1052,19 @@
   background: #f8f8f8;
   border-radius: 18px;
   padding: 24px;
+}
+
+/* Quick Create Header */
+.quickCreateHeader {
+  margin-bottom: 16px;
+}
+
+.quickCreateSubtitle {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #797979;
+  margin: 6px 0 0 0;
 }
 
 .createRow {
@@ -1360,22 +1434,35 @@
 
 .templatesGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
 }
 
 .templateCard {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease;
+  outline: none;
+}
+
+.templateCard:hover .templateImage {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.templateCard:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 4px;
 }
 
 .templateImage {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
 }
@@ -1453,8 +1540,8 @@
 
 .templateTitle {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: #141414;
   margin: 0;
   line-height: 1.3;
@@ -1462,7 +1549,7 @@
 
 .templateDescription {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
   color: #797979;
   margin: 0;
@@ -1470,6 +1557,12 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1600px) {
+  .templatesGrid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
 @media (max-width: 1400px) {
   .templatesGrid {
     grid-template-columns: repeat(4, 1fr);
@@ -1591,6 +1684,7 @@
 }
 
 @media (max-width: 900px) {
+
   .createPrompt,
   .youtubeInput {
     height: 58px;
@@ -1955,6 +2049,7 @@
 }
 
 @media (max-width: 640px) {
+
   /* Further reduce blur elements on mobile */
   .blurTopRight {
     width: min(98%, 400px);
@@ -3068,6 +3163,16 @@
   color: #ffffff;
 }
 
+.darkTheme .navItemActive:hover {
+  background-color: #ff6f61;
+  color: #ffffff;
+}
+
+.darkTheme .navItemActive:active {
+  background-color: #e85a4d;
+  color: #ffffff;
+}
+
 .darkTheme .progressText {
   color: #ffeae8;
 }
@@ -3151,6 +3256,38 @@
 
 .darkTheme .projectVisibility {
   color: #a3a3a3;
+}
+
+/* Dark Theme - Create Project Card */
+.darkTheme .createProjectCard {
+  border-color: #3d3d3d;
+}
+
+.darkTheme .createProjectCard:hover {
+  border-color: #ff6f61;
+  background-color: rgba(255, 111, 97, 0.08);
+}
+
+.darkTheme .createProjectCard:active {
+  background-color: rgba(255, 111, 97, 0.12);
+}
+
+.darkTheme .createProjectIcon {
+  background-color: #2d2d2d;
+  color: #a3a3a3;
+}
+
+.darkTheme .createProjectCard:hover .createProjectIcon {
+  background-color: #ff6f61;
+  color: #ffffff;
+}
+
+.darkTheme .createProjectText {
+  color: #a3a3a3;
+}
+
+.darkTheme .createProjectCard:hover .createProjectText {
+  color: #ff6f61;
 }
 
 .darkTheme .projectMenuButton {
@@ -3248,6 +3385,10 @@
   background: #1c1c1c;
 }
 
+.darkTheme .quickCreateSubtitle {
+  color: #a3a3a3;
+}
+
 .darkTheme .createPrompt {
   background-color: #2d2d2d;
   border-color: #2d2d2d;
@@ -3273,7 +3414,7 @@
 }
 
 .darkTheme .dropdown:hover {
-  background-color: #2d2d2d;
+  background-color: #3a3a3a;
 }
 
 .darkTheme .dropdown:active {
@@ -3286,7 +3427,7 @@
 }
 
 .darkTheme .addButton:hover {
-  background-color: #2d2d2d;
+  background-color: #3a3a3a;
 }
 
 .darkTheme .addButton:active {
@@ -3327,6 +3468,10 @@
 
 .darkTheme .templateCard {
   background-color: transparent;
+}
+
+.darkTheme .templateCard:hover .templateImage {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .darkTheme .templateThumbnail {

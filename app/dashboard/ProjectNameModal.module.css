@@ -17,6 +17,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -43,6 +44,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -511,6 +513,15 @@
 
 .darkTheme .toggle:hover {
   background-color: #4d4d4d;
+}
+
+/* Active toggle state in dark mode - make it bright and visible */
+.darkTheme .toggleActive {
+  background-color: #ff6f61;
+}
+
+.darkTheme .toggleActive:hover {
+  background-color: #ff8577;
 }
 
 .darkTheme .cancelButton {

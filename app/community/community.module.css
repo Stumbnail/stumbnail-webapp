@@ -1,0 +1,510 @@
+/* Community Page Styles */
+
+/* Page Title */
+.pageTitle {
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #141414;
+    margin: 0;
+}
+
+/* Page Header */
+.pageHeader {
+    margin-bottom: 32px;
+}
+
+.pageSubtext {
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #797979;
+    margin: 6px 0 0 0;
+}
+
+/* Thumbnails Grid */
+.thumbnailsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+/* Infinite Scroll Sentinel */
+.scrollSentinel {
+    grid-column: 1 / -1;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Loading Indicator */
+.loadingIndicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+}
+
+.loadingIndicator p {
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #797979;
+    margin: 0;
+}
+
+/* Spinner */
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #f0f0f0;
+    border-top-color: #ff6f61;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Thumbnail Card */
+.thumbnailCard {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+}
+
+.thumbnailCard:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.thumbnailCard:active {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.thumbnailImage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Like Button - Hidden by default, shows on hover */
+.likeButton {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: none;
+    border-radius: 20px;
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #141414;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.thumbnailCard:hover .likeButton {
+    opacity: 1;
+}
+
+.likeButton:hover {
+    background-color: #ff6f61;
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+.likeButton:active {
+    transform: scale(0.98);
+}
+
+.likeButton svg {
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+/* Modal Overlay */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal */
+.modal {
+    position: relative;
+    background-color: #ffffff;
+    border-radius: 20px;
+    max-width: 1000px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Close Button */
+.closeButton {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.closeButton:hover {
+    background-color: #ff6f61;
+    color: #ffffff;
+    transform: rotate(90deg);
+}
+
+.closeButton:active {
+    transform: rotate(90deg) scale(0.95);
+}
+
+/* Modal Content */
+.modalContent {
+    display: flex;
+    flex-direction: row;
+    height: 90vh;
+    max-height: 700px;
+}
+
+.modalImage {
+    position: relative;
+    flex: 1;
+    background-color: #000000;
+    min-height: 0;
+}
+
+.modalInfo {
+    width: 360px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+}
+
+/* Creator Info */
+.creatorInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.creatorAvatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.creatorName {
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #141414;
+}
+
+/* Detail Sections */
+.detailSection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detailLabel {
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #797979;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+.detailText {
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #141414;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.youtubeLink {
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #ff6f61;
+    text-decoration: none;
+    word-break: break-all;
+    transition: opacity 0.2s ease;
+}
+
+.youtubeLink:hover {
+    opacity: 0.7;
+    text-decoration: underline;
+}
+
+/* Upgrade Button */
+.upgradeButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    background-color: #ff6f61;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    margin-top: auto;
+    transition: all 0.2s ease;
+}
+
+.upgradeButton:hover {
+    background-color: #e85a4d;
+    box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
+    transform: translateY(-2px);
+}
+
+.upgradeButton:active {
+    transform: translateY(0);
+}
+
+.upgradeButton svg {
+    flex-shrink: 0;
+}
+
+/* Dark Theme */
+:global(.darkTheme) .pageTitle {
+    color: #ffeae8;
+}
+
+:global(.darkTheme) .pageSubtext {
+    color: #a3a3a3;
+}
+
+:global(.darkTheme) .loadingIndicator p {
+    color: #a3a3a3;
+}
+
+:global(.darkTheme) .spinner {
+    border-color: #2d2d2d;
+    border-top-color: #ff6f61;
+}
+
+:global(.darkTheme) .thumbnailCard:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
+:global(.darkTheme) .likeButton {
+    background-color: rgba(28, 28, 28, 0.95);
+    color: #ffeae8;
+}
+
+:global(.darkTheme) .likeButton:hover {
+    background-color: #ff6f61;
+    color: #ffffff;
+}
+
+:global(.darkTheme) .modalOverlay {
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+:global(.darkTheme) .modal {
+    background-color: #1c1c1c;
+}
+
+:global(.darkTheme) .closeButton {
+    background-color: rgba(28, 28, 28, 0.95);
+    color: #ffeae8;
+}
+
+:global(.darkTheme) .closeButton:hover {
+    background-color: #ff6f61;
+    color: #ffffff;
+}
+
+:global(.darkTheme) .creatorInfo {
+    border-bottom-color: #2d2d2d;
+}
+
+:global(.darkTheme) .creatorName {
+    color: #ffeae8;
+}
+
+:global(.darkTheme) .detailLabel {
+    color: #a3a3a3;
+}
+
+:global(.darkTheme) .detailText {
+    color: #ffeae8;
+}
+
+:global(.darkTheme) .youtubeLink {
+    color: #ff8577;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .thumbnailsGrid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .modalContent {
+        flex-direction: column;
+        max-height: 85vh;
+    }
+
+    .modalImage {
+        height: 50%;
+        flex: none;
+    }
+
+    .modalInfo {
+        width: 100%;
+        height: 50%;
+        padding: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .pageHeader {
+        margin-bottom: 24px;
+    }
+
+    .thumbnailsGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .likeButton {
+        opacity: 1;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .modalContent {
+        max-height: 90vh;
+    }
+
+    .modalImage {
+        height: 40%;
+    }
+
+    .modalInfo {
+        height: 60%;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .closeButton {
+        top: 12px;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (max-width: 480px) {
+    .thumbnailsGrid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .modalInfo {
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .creatorInfo {
+        padding-bottom: 16px;
+    }
+
+    .upgradeButton {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+}
+
+/* Accessibility - Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+
+    .thumbnailCard,
+    .likeButton,
+    .closeButton,
+    .upgradeButton {
+        transition: none;
+    }
+
+    .modalOverlay,
+    .modal {
+        animation: none;
+    }
+}

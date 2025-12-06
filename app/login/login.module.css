@@ -47,12 +47,10 @@
   left: -50px;
   width: 1560px;
   height: 206px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 111, 97, 0.3) 0%,
-    rgba(255, 111, 97, 0.1) 50%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(255, 111, 97, 0.3) 0%,
+      rgba(255, 111, 97, 0.1) 50%,
+      transparent 70%);
   filter: blur(60px);
   z-index: 2;
 }
@@ -63,12 +61,10 @@
   right: -120px;
   width: 339px;
   height: 339px;
-  background: radial-gradient(
-    circle at center,
-    rgba(138, 43, 226, 0.3) 0%,
-    rgba(138, 43, 226, 0.1) 50%,
-    transparent 70%
-  );
+  background: radial-gradient(circle at center,
+      rgba(138, 43, 226, 0.3) 0%,
+      rgba(138, 43, 226, 0.1) 50%,
+      transparent 70%);
   filter: blur(80px);
   z-index: 2;
 }
@@ -77,24 +73,24 @@
 .loginCard {
   position: relative;
   z-index: 10;
-  border-radius: 30px;
-  padding: 60px 50px;
-  width: 750px;
+  border-radius: 24px;
+  padding: 48px 40px;
+  width: 520px;
   max-width: 90%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
 }
 
 .light .loginCard {
   background-color: #fffaff;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
 }
 
 .dark .loginCard {
   background-color: #141414;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
 /* Theme Toggle Button */
@@ -131,8 +127,8 @@
 .heading {
   font-family: 'Lexend', sans-serif;
   font-weight: 700;
-  font-size: 44px;
-  line-height: 50px;
+  font-size: 32px;
+  line-height: 40px;
   text-align: center;
   margin: 0;
 }
@@ -153,11 +149,11 @@
 .subtitle {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 400;
-  font-size: 26px;
-  line-height: 40px;
+  font-size: 18px;
+  line-height: 28px;
   text-align: center;
   margin: 0;
-  margin-top: -12px;
+  margin-top: -8px;
 }
 
 .light .subtitle {
@@ -170,19 +166,19 @@
 
 /* Google Button */
 .googleButton {
-  width: 450px;
+  width: 320px;
   max-width: 100%;
-  height: 75px;
-  border-radius: 16px;
+  height: 56px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
-  font-weight: 400;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .light .googleButton {
@@ -219,8 +215,8 @@
 }
 
 .googleIcon {
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
@@ -245,38 +241,38 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 8px;
 }
 
 .avatars {
   position: relative;
-  width: 190px;
-  height: 65px;
+  width: 140px;
+  height: 48px;
 }
 
 .avatar {
   position: absolute;
-  width: 65px;
-  height: 65px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .light .avatar {
-  border: 3px solid #fffaff;
+  border: 2px solid #fffaff;
 }
 
 .dark .avatar {
-  border: 3px solid #141414;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 2px solid #141414;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .trustText {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
-  line-height: 40px;
+  font-size: 14px;
+  line-height: 24px;
   text-align: center;
   margin: 0;
 }
@@ -290,91 +286,17 @@
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
-  .loginCard {
-    padding: 60px 40px;
-    width: 700px;
-  }
-
-  .heading {
-    font-size: 40px;
-    line-height: 46px;
-  }
-
-  .subtitle {
-    font-size: 24px;
-    line-height: 36px;
-  }
-
-  .googleButton {
-    width: 420px;
-    height: 70px;
-    font-size: 20px;
-  }
-}
-
 @media (max-width: 768px) {
   .loginCard {
-    padding: 50px 30px;
+    padding: 40px 32px;
     width: 90%;
-    max-width: 500px;
-    gap: 28px;
+    max-width: 420px;
+    gap: 20px;
   }
 
   .heading {
-    font-size: 32px;
-    line-height: 38px;
-  }
-
-  .subtitle {
-    font-size: 20px;
-    line-height: 32px;
-    margin-top: -8px;
-  }
-
-  .googleButton {
-    width: 100%;
-    height: 64px;
-    font-size: 18px;
-    gap: 12px;
-  }
-
-  .googleIcon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .trustText {
-    font-size: 18px;
-    line-height: 32px;
-  }
-
-  .avatar {
-    width: 55px;
-    height: 55px;
-  }
-
-  .avatars {
-    width: 165px;
-    height: 55px;
-  }
-
-  .avatar:nth-child(1) { left: 0; }
-  .avatar:nth-child(2) { left: 32px; }
-  .avatar:nth-child(3) { left: 64px; }
-  .avatar:nth-child(4) { left: 96px; }
-}
-
-@media (max-width: 480px) {
-  .loginCard {
-    padding: 36px 24px;
-    border-radius: 20px;
-    gap: 22px;
-  }
-
-  .heading {
-    font-size: 26px;
-    line-height: 30px;
+    font-size: 28px;
+    line-height: 36px;
   }
 
   .subtitle {
@@ -384,35 +306,108 @@
   }
 
   .googleButton {
-    height: 56px;
-    font-size: 16px;
+    width: 100%;
+    height: 52px;
+    font-size: 15px;
     gap: 10px;
-    border-radius: 12px;
   }
 
   .googleIcon {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
   }
 
   .trustText {
-    font-size: 14px;
-    line-height: 24px;
+    font-size: 13px;
+    line-height: 22px;
   }
 
   .avatar {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .avatars {
+    width: 120px;
+    height: 42px;
+  }
+
+  .avatar:nth-child(1) {
+    left: 0;
+  }
+
+  .avatar:nth-child(2) {
+    left: 26px;
+  }
+
+  .avatar:nth-child(3) {
+    left: 52px;
+  }
+
+  .avatar:nth-child(4) {
+    left: 78px;
+  }
+}
+
+@media (max-width: 480px) {
+  .loginCard {
+    padding: 32px 20px;
+    border-radius: 18px;
+    gap: 18px;
+  }
+
+  .heading {
+    font-size: 24px;
+    line-height: 30px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    line-height: 22px;
+    margin-top: -4px;
+  }
+
+  .googleButton {
+    height: 48px;
+    font-size: 14px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .googleIcon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .trustText {
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
     border-width: 2px;
   }
 
   .avatars {
-    width: 130px;
-    height: 44px;
+    width: 102px;
+    height: 36px;
   }
 
-  .avatar:nth-child(1) { left: 0; }
-  .avatar:nth-child(2) { left: 26px; }
-  .avatar:nth-child(3) { left: 52px; }
-  .avatar:nth-child(4) { left: 78px; }
+  .avatar:nth-child(1) {
+    left: 0;
+  }
+
+  .avatar:nth-child(2) {
+    left: 22px;
+  }
+
+  .avatar:nth-child(3) {
+    left: 44px;
+  }
+
+  .avatar:nth-child(4) {
+    left: 66px;
+  }
 }
