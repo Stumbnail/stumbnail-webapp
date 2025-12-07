@@ -387,6 +387,15 @@
   pointer-events: none;
 }
 
+/* Group bounding box for multi-selection */
+.groupBoundingBox {
+  position: absolute;
+  border: 2px dashed #ff6f61;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 100;
+}
+
 /* Resize handles */
 .resizeHandle {
   position: absolute;

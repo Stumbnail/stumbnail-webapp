@@ -48,14 +48,17 @@ interface DragState {
 
 interface ResizeState {
   isResizing: boolean;
-  elementId: string | null;
+  elementIds: string[];  // Changed to array for group resize
   handle: string;
   startX: number;
   startY: number;
-  elementStartWidth: number;
-  elementStartHeight: number;
-  elementStartX: number;
-  elementStartY: number;
+  // Group bounding box at start
+  groupStartX: number;
+  groupStartY: number;
+  groupStartWidth: number;
+  groupStartHeight: number;
+  // Individual element positions at start (for proportional scaling)
+  elementStarts: { id: string; x: number; y: number; width: number; height: number }[];
 }
 
 export default function ProjectCanvasPage() {
@@ -101,14 +104,15 @@ export default function ProjectCanvasPage() {
   });
   const [resizeState, setResizeState] = useState<ResizeState>({
     isResizing: false,
-    elementId: null,
+    elementIds: [],
     handle: '',
     startX: 0,
     startY: 0,
-    elementStartWidth: 0,
-    elementStartHeight: 0,
-    elementStartX: 0,
-    elementStartY: 0,
+    groupStartX: 0,
+    groupStartY: 0,
+    groupStartWidth: 0,
+    groupStartHeight: 0,
+    elementStarts: [],
   });
 
   // Rubberband selection
@@ -407,45 +411,63 @@ export default function ProjectCanvasPage() {
       return;
     }
 
-    // Resizing elements
-    if (resizeState.isResizing && resizeState.elementId) {
-      const element = canvasElements.find(el => el.id === resizeState.elementId);
-      if (!element) return;
-
+    // Resizing elements (group resize)
+    if (resizeState.isResizing && resizeState.elementIds.length > 0) {
       const dx = (e.clientX - resizeState.startX) / viewport.zoom;
       const dy = (e.clientY - resizeState.startY) / viewport.zoom;
 
-      let newWidth = resizeState.elementStartWidth;
-      let newHeight = resizeState.elementStartHeight;
-      let newX = resizeState.elementStartX;
-      let newY = resizeState.elementStartY;
-
       const handle = resizeState.handle;
 
-      // Corner handles - preserve aspect ratio
+      // Calculate new group bounding box based on handle
+      let newGroupWidth = resizeState.groupStartWidth;
+      let newGroupHeight = resizeState.groupStartHeight;
+      let newGroupX = resizeState.groupStartX;
+      let newGroupY = resizeState.groupStartY;
+
+      // Maintain aspect ratio for the group
+      const groupAspectRatio = resizeState.groupStartWidth / resizeState.groupStartHeight;
+
       if (handle === 'se') {
-        newWidth = Math.max(50, resizeState.elementStartWidth + dx);
-        newHeight = newWidth / element.aspectRatio;
+        newGroupWidth = Math.max(50, resizeState.groupStartWidth + dx);
+        newGroupHeight = newGroupWidth / groupAspectRatio;
       } else if (handle === 'sw') {
-        newWidth = Math.max(50, resizeState.elementStartWidth - dx);
-        newHeight = newWidth / element.aspectRatio;
-        newX = resizeState.elementStartX + (resizeState.elementStartWidth - newWidth);
+        newGroupWidth = Math.max(50, resizeState.groupStartWidth - dx);
+        newGroupHeight = newGroupWidth / groupAspectRatio;
+        newGroupX = resizeState.groupStartX + (resizeState.groupStartWidth - newGroupWidth);
       } else if (handle === 'ne') {
-        newWidth = Math.max(50, resizeState.elementStartWidth + dx);
-        newHeight = newWidth / element.aspectRatio;
-        newY = resizeState.elementStartY + (resizeState.elementStartHeight - newHeight);
+        newGroupWidth = Math.max(50, resizeState.groupStartWidth + dx);
+        newGroupHeight = newGroupWidth / groupAspectRatio;
+        newGroupY = resizeState.groupStartY + (resizeState.groupStartHeight - newGroupHeight);
       } else if (handle === 'nw') {
-        newWidth = Math.max(50, resizeState.elementStartWidth - dx);
-        newHeight = newWidth / element.aspectRatio;
-        newX = resizeState.elementStartX + (resizeState.elementStartWidth - newWidth);
-        newY = resizeState.elementStartY + (resizeState.elementStartHeight - newHeight);
+        newGroupWidth = Math.max(50, resizeState.groupStartWidth - dx);
+        newGroupHeight = newGroupWidth / groupAspectRatio;
+        newGroupX = resizeState.groupStartX + (resizeState.groupStartWidth - newGroupWidth);
+        newGroupY = resizeState.groupStartY + (resizeState.groupStartHeight - newGroupHeight);
       }
 
-      setCanvasElements(prev => prev.map(el =>
-        el.id === resizeState.elementId
-          ? { ...el, x: newX, y: newY, width: newWidth, height: newHeight }
-          : el
-      ));
+      // Calculate scale factors
+      const scaleX = newGroupWidth / resizeState.groupStartWidth;
+      const scaleY = newGroupHeight / resizeState.groupStartHeight;
+
+      // Apply proportional scaling to all elements in the group
+      setCanvasElements(prev => prev.map(el => {
+        const elStart = resizeState.elementStarts.find(s => s.id === el.id);
+        if (elStart) {
+          // Calculate relative position within the original group
+          const relX = elStart.x - resizeState.groupStartX;
+          const relY = elStart.y - resizeState.groupStartY;
+
+          // Apply scale and new group position
+          return {
+            ...el,
+            x: newGroupX + relX * scaleX,
+            y: newGroupY + relY * scaleY,
+            width: elStart.width * scaleX,
+            height: elStart.height * scaleY,
+          };
+        }
+        return el;
+      }));
     }
   }, [isPanning, panStart, viewport.zoom, dragState, resizeState, canvasElements, isRubberbanding, selectionBox, screenToCanvas]);
 
@@ -467,7 +489,7 @@ export default function ProjectCanvasPage() {
     setIsRubberbanding(false);
     setSelectionBox(null);
     setDragState(prev => ({ ...prev, isDragging: false, elementIds: [], elementStarts: [] }));
-    setResizeState(prev => ({ ...prev, isResizing: false, elementId: null }));
+    setResizeState(prev => ({ ...prev, isResizing: false, elementIds: [], elementStarts: [] }));
     setSnapLines({ x: [], y: [] }); // Clear snap lines
   }, [isRubberbanding, selectionBox, canvasElements, isElementInSelectionBox, shiftPressed]);
 
@@ -511,24 +533,44 @@ export default function ProjectCanvasPage() {
     });
   }, [canvasElements, selectedElementIds, shiftPressed, toolMode, isHandToolActive]);
 
-  const handleResizeMouseDown = useCallback((e: React.MouseEvent, elementId: string, handle: string) => {
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent, handle: string) => {
     e.stopPropagation();
 
-    const element = canvasElements.find(el => el.id === elementId);
-    if (!element) return;
+    // Get all selected elements
+    const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+    if (selectedElements.length === 0) return;
+
+    // Calculate group bounding box
+    const minX = Math.min(...selectedElements.map(el => el.x));
+    const minY = Math.min(...selectedElements.map(el => el.y));
+    const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+    const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+
+    const groupWidth = maxX - minX;
+    const groupHeight = maxY - minY;
+
+    // Store starting positions for all elements
+    const elementStarts = selectedElements.map(el => ({
+      id: el.id,
+      x: el.x,
+      y: el.y,
+      width: el.width,
+      height: el.height,
+    }));
 
     setResizeState({
       isResizing: true,
-      elementId,
+      elementIds: selectedElementIds,
       handle,
       startX: e.clientX,
       startY: e.clientY,
-      elementStartWidth: element.width,
-      elementStartHeight: element.height,
-      elementStartX: element.x,
-      elementStartY: element.y,
+      groupStartX: minX,
+      groupStartY: minY,
+      groupStartWidth: groupWidth,
+      groupStartHeight: groupHeight,
+      elementStarts,
     });
-  }, [canvasElements]);
+  }, [canvasElements, selectedElementIds]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -936,19 +978,42 @@ export default function ProjectCanvasPage() {
                     draggable={false}
                   />
 
-                  {/* Selection overlay with handles */}
+                  {/* Selection outline (no handles on individual elements) */}
                   {isSelected && (
-                    <div className={styles.selectionOverlay}>
-                      {/* Corner resize handles */}
-                      <div className={`${styles.resizeHandle} ${styles.handleNW}`} onMouseDown={(e) => handleResizeMouseDown(e, element.id, 'nw')} />
-                      <div className={`${styles.resizeHandle} ${styles.handleNE}`} onMouseDown={(e) => handleResizeMouseDown(e, element.id, 'ne')} />
-                      <div className={`${styles.resizeHandle} ${styles.handleSW}`} onMouseDown={(e) => handleResizeMouseDown(e, element.id, 'sw')} />
-                      <div className={`${styles.resizeHandle} ${styles.handleSE}`} onMouseDown={(e) => handleResizeMouseDown(e, element.id, 'se')} />
-                    </div>
+                    <div className={styles.selectionOverlay} />
                   )}
                 </div>
               );
             })}
+
+            {/* Unified group bounding box with resize handles */}
+            {selectedElementIds.length > 0 && (() => {
+              const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+              if (selectedElements.length === 0) return null;
+
+              const minX = Math.min(...selectedElements.map(el => el.x));
+              const minY = Math.min(...selectedElements.map(el => el.y));
+              const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+              const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+
+              return (
+                <div
+                  className={styles.groupBoundingBox}
+                  style={{
+                    left: minX - 2,
+                    top: minY - 2,
+                    width: maxX - minX + 4,
+                    height: maxY - minY + 4,
+                  }}
+                >
+                  {/* Corner resize handles */}
+                  <div className={`${styles.resizeHandle} ${styles.handleNW}`} onMouseDown={(e) => handleResizeMouseDown(e, 'nw')} />
+                  <div className={`${styles.resizeHandle} ${styles.handleNE}`} onMouseDown={(e) => handleResizeMouseDown(e, 'ne')} />
+                  <div className={`${styles.resizeHandle} ${styles.handleSW}`} onMouseDown={(e) => handleResizeMouseDown(e, 'sw')} />
+                  <div className={`${styles.resizeHandle} ${styles.handleSE}`} onMouseDown={(e) => handleResizeMouseDown(e, 'se')} />
+                </div>
+              );
+            })()}
 
             {/* Rubberband selection box */}
             {isRubberbanding && selectionBox && (
