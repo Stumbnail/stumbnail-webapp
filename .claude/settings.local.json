@@ -24,7 +24,8 @@
       "Bash(mv:*)",
       "Bash(mkdir:*)",
       "WebFetch(domain:localhost)",
-      "Bash(if exist .next rmdir /s /q .next)"
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

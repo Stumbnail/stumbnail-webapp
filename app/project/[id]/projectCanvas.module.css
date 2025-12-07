@@ -1,0 +1,469 @@
+/* Container */
+.container {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 16px;
+  color: #141414;
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f0f0f0;
+  border-top-color: #ff6f61;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Sidebar */
+.sidebar {
+  position: relative;
+  width: 364px;
+  height: 100vh;
+  background-color: #f0f0f0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+/* Sidebar Header */
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.backButton {
+  background: transparent;
+  border: none;
+  color: #141414;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.backButton:hover {
+  background-color: rgba(255, 111, 97, 0.1);
+  color: #ff6f61;
+}
+
+.backButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
+.projectTitle {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  color: #141414;
+  margin: 0;
+  line-height: 1.2;
+  flex: 1;
+}
+
+/* Public Toggle */
+.publicToggleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 10px 16px;
+  margin-bottom: 32px;
+  height: 60px;
+}
+
+.publicToggleLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #141414;
+}
+
+.toggleSwitch {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  background-color: #d5d5d5;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 0;
+}
+
+.toggleSwitch.toggleActive {
+  background-color: #ff6f61;
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggleActive .toggleKnob {
+  transform: translateX(22px);
+}
+
+/* Create New Section */
+.createNewSection {
+  margin-bottom: 24px;
+}
+
+.createNewTitle {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #141414;
+  margin: 0 0 20px 0;
+}
+
+.createOptionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.createOption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid #d5d5d5;
+  border-radius: 16px;
+  padding: 20px;
+  height: 140px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.createOption:hover {
+  border-color: #ff6f61;
+  background-color: rgba(255, 111, 97, 0.02);
+}
+
+.createOption:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
+.createOptionSelected {
+  border-color: #ff6f61;
+  border-width: 2px;
+}
+
+.createOptionIcon {
+  color: #8d8d8d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.createOptionSelected .createOptionIcon {
+  color: #ff6f61;
+}
+
+.createOptionLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #8d8d8d;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* Sidebar Spacer */
+.sidebarSpacer {
+  flex: 1;
+}
+
+/* YouTube Input Section */
+.youtubeInputSection {
+  margin-top: auto;
+}
+
+.youtubeInputContainer {
+  position: relative;
+  background-color: #ffffff;
+  border: 1px solid #d5d5d5;
+  border-radius: 24px;
+  padding: 16px;
+  padding-bottom: 70px;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+}
+
+.youtubeInputContainer.youtubeInputError {
+  border-color: #ff4444;
+}
+
+.youtubeTextarea {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #141414;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  width: 100%;
+  flex: 1;
+  line-height: 1.5;
+}
+
+.youtubeTextarea::placeholder {
+  color: #a3a3a3;
+}
+
+.submitButton {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  background-color: #ff6f61;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #ff5a4a;
+}
+
+.submitButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.submitButton:disabled {
+  background-color: #d5d5d5;
+  cursor: not-allowed;
+}
+
+.submitButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
+}
+
+.inputError {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 12px;
+  color: #ff4444;
+  margin-top: 8px;
+  padding-left: 16px;
+}
+
+/* Main Canvas Area */
+.canvas {
+  flex: 1;
+  position: relative;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+/* Decorative blur elements */
+.blurTop {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 1217px);
+  height: 167px;
+  background: radial-gradient(ellipse at center,
+      rgba(255, 200, 200, 0.35) 0%,
+      rgba(255, 180, 180, 0.2) 30%,
+      rgba(255, 160, 160, 0.1) 50%,
+      transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.blurBottomLeft {
+  position: absolute;
+  bottom: 0;
+  left: -50px;
+  width: 233px;
+  height: 195px;
+  background: radial-gradient(ellipse at center,
+      rgba(255, 111, 97, 0.25) 0%,
+      rgba(255, 111, 97, 0.1) 50%,
+      transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Dot Pattern Background */
+.dotPattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.15;
+  background-image: radial-gradient(#cccccc 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Canvas Content */
+.canvasContent {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dark Theme */
+.darkTheme {
+  background-color: #1a1a1a;
+}
+
+.darkTheme .sidebar {
+  background-color: #2a2a2a;
+}
+
+.darkTheme .projectTitle {
+  color: #ffffff;
+}
+
+.darkTheme .backButton {
+  color: #ffffff;
+}
+
+.darkTheme .publicToggleContainer {
+  background-color: #3a3a3a;
+}
+
+.darkTheme .publicToggleLabel {
+  color: #ffffff;
+}
+
+.darkTheme .toggleSwitch {
+  background-color: #4a4a4a;
+}
+
+.darkTheme .createNewTitle {
+  color: #ffffff;
+}
+
+.darkTheme .createOption {
+  background-color: #3a3a3a;
+  border-color: #4a4a4a;
+}
+
+.darkTheme .createOption:hover {
+  border-color: #ff6f61;
+  background-color: rgba(255, 111, 97, 0.1);
+}
+
+.darkTheme .youtubeInputContainer {
+  background-color: #3a3a3a;
+  border-color: #4a4a4a;
+}
+
+.darkTheme .youtubeTextarea {
+  color: #ffffff;
+}
+
+.darkTheme .youtubeTextarea::placeholder {
+  color: #8d8d8d;
+}
+
+.darkTheme .canvas {
+  background-color: #1a1a1a;
+}
+
+.darkTheme .dotPattern {
+  background-image: radial-gradient(#4a4a4a 1px, transparent 1px);
+}
+
+.darkTheme .loadingContainer {
+  color: #ffffff;
+}
+
+.darkTheme .loadingSpinner {
+  border-color: #3a3a3a;
+  border-top-color: #ff6f61;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+  }
+
+  .canvas {
+    display: none;
+  }
+
+  .createOptionsGrid {
+    gap: 12px;
+  }
+
+  .createOption {
+    height: 120px;
+    padding: 16px;
+  }
+
+  .createOptionLabel {
+    font-size: 14px;
+  }
+}

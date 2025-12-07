@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Project } from '@/types';
 import styles from '@/app/dashboard/dashboard.module.css';
@@ -37,6 +38,7 @@ export default function ProjectCard({
     onOpen,
     onDelete,
 }: ProjectCardProps) {
+    const router = useRouter();
     const editInputRef = useRef<HTMLInputElement>(null);
 
     const handleEditKeyDown = (e: React.KeyboardEvent) => {
@@ -47,9 +49,25 @@ export default function ProjectCard({
         }
     };
 
+    const handleCardClick = () => {
+        router.push(`/project/${project.id}`);
+    };
+
     return (
         <div className={styles.projectCard}>
-            <div className={styles.projectThumbnail}>
+            <div
+                className={styles.projectThumbnail}
+                onClick={handleCardClick}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleCardClick();
+                    }
+                }}
+                aria-label={`Open ${project.name}`}
+            >
                 <Image
                     src={project.thumbnail}
                     alt={project.name}
