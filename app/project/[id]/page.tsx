@@ -11,7 +11,7 @@ import { useAuth, useTheme } from '@/hooks';
 import styles from './projectCanvas.module.css';
 
 // Types
-type CreationMode = 'url' | 'image' | 'prompt' | 'sketch';
+type CreationMode = 'url' | 'prompt';
 type ToolMode = 'select' | 'hand';
 
 interface CanvasElement {
@@ -868,16 +868,6 @@ export default function ProjectCanvasPage() {
             </button>
 
             <button
-              className={`${styles.createOption} ${selectedMode === 'image' ? styles.createOptionSelected : ''}`}
-              onClick={() => { handleModeSelect('image'); triggerImageUpload(); }}
-            >
-              <div className={styles.createOptionIcon}>
-                <Image src="/assets/project/icons/add-image.svg" alt="" width={34} height={34} />
-              </div>
-              <span className={styles.createOptionLabel}>Image</span>
-            </button>
-
-            <button
               className={`${styles.createOption} ${selectedMode === 'prompt' ? styles.createOptionSelected : ''}`}
               onClick={() => handleModeSelect('prompt')}
             >
@@ -885,16 +875,6 @@ export default function ProjectCanvasPage() {
                 <Image src="/assets/project/icons/prompt.svg" alt="" width={34} height={34} />
               </div>
               <span className={styles.createOptionLabel}>Prompt</span>
-            </button>
-
-            <button
-              className={`${styles.createOption} ${selectedMode === 'sketch' ? styles.createOptionSelected : ''}`}
-              onClick={() => handleModeSelect('sketch')}
-            >
-              <div className={styles.createOptionIcon}>
-                <Image src="/assets/project/icons/magic-wand-01-stroke-rounded 1.svg" alt="" width={34} height={34} />
-              </div>
-              <span className={styles.createOptionLabel}>Sketch to Thumbnail</span>
             </button>
           </div>
         </div>
@@ -921,18 +901,6 @@ export default function ProjectCanvasPage() {
               </button>
             </div>
             {youtubeLinkError && <p className={styles.inputError}>{youtubeLinkError}</p>}
-          </div>
-        )}
-
-        {selectedMode === 'image' && (
-          <div className={styles.imageModeHint}>
-            <button className={styles.uploadButton} onClick={triggerImageUpload}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M3 15V16C3 18.2091 4.79086 20 7 20H17C19.2091 20 21 18.2091 21 16V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Upload Image
-            </button>
           </div>
         )}
       </aside>
@@ -1064,6 +1032,23 @@ export default function ProjectCanvasPage() {
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M18 11V6C18 5.44772 17.5523 5 17 5C16.4477 5 16 5.44772 16 6V11M16 11V4C16 3.44772 15.5523 3 15 3C14.4477 3 14 3.44772 14 4V11M16 11H14M14 11V3.5C14 2.94772 13.5523 2.5 13 2.5C12.4477 2.5 12 2.94772 12 3.5V11M14 11H12M12 11H10.5C9.67157 11 9 11.6716 9 12.5V12.5C9 13.3284 9.67157 14 10.5 14H12M12 11V5C12 4.44772 11.5523 4 11 4C10.4477 4 10 4.44772 10 5V12M10 12L8.5 10.5C8.10218 10.1022 7.44781 10.1022 7.05 10.5C6.65218 10.8978 6.65218 11.5522 7.05 11.95L10.5 15.4C11.2807 16.1807 12.3393 16.6072 13.44 16.58L15.5 16.5C17.433 16.5 19 14.933 19 13V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          {/* Divider */}
+          <div className={styles.toolDivider} />
+
+          {/* Image upload button */}
+          <button
+            className={styles.toolButton}
+            onClick={triggerImageUpload}
+            title="Add image"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M3 16L8 11L13 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M13 14L16 11L21 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
