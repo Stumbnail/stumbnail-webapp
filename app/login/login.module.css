@@ -25,6 +25,13 @@
   overflow: hidden;
 }
 
+/* Placeholder for lazy-loaded GridMotion */
+.backgroundPlaceholder {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #0c0b0b 0%, #1a1a1a 100%);
+}
+
 /* Dark Overlay */
 .overlay {
   position: absolute;

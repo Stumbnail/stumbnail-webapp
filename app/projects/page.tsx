@@ -3,38 +3,35 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth, logOut } from '@/lib/firebase';
+import dynamic from 'next/dynamic';
+
+// Types
+import { Project, EditProjectModalState, ProjectActionModalState } from '@/types';
+
+// Hooks
+import { useAuth, useTheme, useMobile } from '@/hooks';
+
+// Constants
+import { getNavItemsForRoute, PROJECTS_PER_PAGE } from '@/lib/constants';
+
+// Components
+import { Sidebar } from '@/components/layout';
+
+// Lazy load modals to reduce TBT
+const ProjectNameModal = dynamic(
+    () => import('@/components/modals/ProjectNameModal'),
+    { ssr: false }
+);
+const ProjectActionModal = dynamic(
+    () => import('@/components/modals/ProjectActionModal'),
+    { ssr: false }
+);
+
+// Styles
 import styles from './projects.module.css';
 import dashboardStyles from '@/app/dashboard/dashboard.module.css';
-import ProjectNameModal from '@/app/dashboard/ProjectNameModal';
-import ProjectActionModal from '@/app/dashboard/ProjectActionModal';
 
-interface NavItem {
-    id: string;
-    label: string;
-    icon: string;
-    active: boolean;
-}
-
-interface Project {
-    id: number;
-    name: string;
-    thumbnail: string;
-    createdAt: string;
-    isPublic: boolean;
-    isFavorite: boolean;
-}
-
-// Static nav items - moved outside to prevent recreation
-const navItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: '/assets/dashboard/icons/home-05-stroke-rounded 2-sidebar.svg', active: false },
-    { id: 'projects', label: 'Projects', icon: '/assets/dashboard/icons/image-02-stroke-rounded 1-sidebar.svg', active: true },
-    { id: 'community', label: 'Community', icon: '/assets/dashboard/icons/ai-cloud-stroke-rounded 1-sidebar.svg', active: false },
-    { id: 'favourites', label: 'Favourites', icon: '/assets/dashboard/icons/play-list-favourite-02-stroke-rounded 1-sidebar.svg', active: false },
-];
-
-// Generate mock projects data - moved outside to prevent recreation
+// Generate mock projects data
 const generateMockProjects = (): Project[] => {
     const projectNames = [
         'Summer Vlog Thumbnail', 'Gaming Stream Cover', 'Product Review',
@@ -73,49 +70,26 @@ const generateMockProjects = (): Project[] => {
     }));
 };
 
-// Debounce utility for performance
-function debounce<T extends (...args: Parameters<T>) => void>(
-    fn: T,
-    delay: number
-): (...args: Parameters<T>) => void {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    return (...args: Parameters<T>) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
-    };
-}
-
-// Constants
-const PROJECTS_PER_PAGE = 12;
-
 export default function ProjectsPage() {
     const router = useRouter();
 
-    // Auth state
-    const [user, setUser] = useState<User | null>(null);
-    const [authLoading, setAuthLoading] = useState(true);
+    // Custom hooks
+    const { user, loading: authLoading, signOut } = useAuth();
+    const { theme, setTheme } = useTheme({ userId: user?.uid });
+    const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
+
+    // Navigation
+    const navItems = useMemo(() => getNavItemsForRoute('projects'), []);
 
     // UI state
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editProjectModal, setEditProjectModal] = useState<{
-        isOpen: boolean;
-        projectId: number | null;
-        projectName: string;
-        isPublic: boolean;
-    }>({
+    const [editProjectModal, setEditProjectModal] = useState<EditProjectModalState>({
         isOpen: false,
         projectId: null,
         projectName: '',
         isPublic: true
     });
-    const [projectActionModal, setProjectActionModal] = useState<{
-        isOpen: boolean;
-        type: 'delete' | 'duplicate';
-        projectId: number | null;
-        projectName: string;
-    }>({
+    const [projectActionModal, setProjectActionModal] = useState<ProjectActionModalState>({
         isOpen: false,
         type: 'delete',
         projectId: null,
@@ -124,34 +98,27 @@ export default function ProjectsPage() {
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
 
-    // Projects state - lazy initialization for performance
+    // Projects state
     const [projects, setProjects] = useState<Project[]>(() => generateMockProjects());
-
-    // Load more state
     const [itemsToShow, setItemsToShow] = useState(PROJECTS_PER_PAGE);
 
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-    // Theme state
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
-
     // Refs
     const searchInputRef = useRef<HTMLInputElement>(null);
-    const profileMenuRef = useRef<HTMLDivElement>(null);
 
-    // Debounced search update for performance
+    // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearchQuery(searchQuery);
-            setItemsToShow(PROJECTS_PER_PAGE); // Reset to initial items on search
+            setItemsToShow(PROJECTS_PER_PAGE);
         }, 300);
-
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Memoized filtered projects for performance
+    // Memoized filtered projects
     const filteredProjects = useMemo(() => {
         if (!debouncedSearchQuery.trim()) return projects;
         const query = debouncedSearchQuery.toLowerCase();
@@ -160,80 +127,16 @@ export default function ProjectsPage() {
         );
     }, [projects, debouncedSearchQuery]);
 
-    // Memoized visible projects with load more
-    const visibleProjects = useMemo(() => {
-        return filteredProjects.slice(0, itemsToShow);
-    }, [filteredProjects, itemsToShow]);
+    const visibleProjects = useMemo(() =>
+        filteredProjects.slice(0, itemsToShow),
+        [filteredProjects, itemsToShow]
+    );
 
-    // Check if there are more projects to load
-    const hasMore = useMemo(() => {
-        return itemsToShow < filteredProjects.length;
-    }, [itemsToShow, filteredProjects.length]);
+    const hasMore = itemsToShow < filteredProjects.length;
 
-    const checkMobile = useCallback(() => {
-        setIsMobile(window.innerWidth <= 768);
-        if (window.innerWidth > 768) {
-            setSidebarOpen(false);
-        }
-    }, []);
-
-    // Theme initialization
-    useEffect(() => {
-        const initializeTheme = async () => {
-            const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-            if (savedTheme) {
-                setTheme(savedTheme);
-            } else {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                setTheme(prefersDark ? 'dark' : 'light');
-            }
-
-            if (user) {
-                try {
-                    const response = await fetch(`/api/user/theme?userId=${user.uid}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.theme && (data.theme === 'light' || data.theme === 'dark')) {
-                            setTheme(data.theme);
-                            localStorage.setItem('theme', data.theme);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error fetching theme from database:', error);
-                }
-            }
-        };
-
-        initializeTheme();
-    }, [user]);
-
-    // Auth state listener
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            if (currentUser) {
-                setUser(currentUser);
-            } else {
-                router.push('/login');
-            }
-            setAuthLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [router]);
-
-    useEffect(() => {
-        checkMobile();
-        const debouncedCheckMobile = debounce(checkMobile, 150);
-        window.addEventListener('resize', debouncedCheckMobile, { passive: true });
-        return () => window.removeEventListener('resize', debouncedCheckMobile);
-    }, [checkMobile]);
-
-    // Handle click outside for dropdowns
+    // Click outside for project menus
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-                setProfileMenuOpen(false);
-            }
             if (projectMenuOpen !== null) {
                 const menus = document.querySelectorAll('[data-project-menu]');
                 let clickedInside = false;
@@ -248,67 +151,38 @@ export default function ProjectsPage() {
             }
         }
 
-        if (profileMenuOpen || projectMenuOpen !== null) {
+        if (projectMenuOpen !== null) {
             document.addEventListener('mousedown', handleClickOutside);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [profileMenuOpen, projectMenuOpen]);
+    }, [projectMenuOpen]);
 
-    // Navigation handlers
-    const handleNavClick = (id: string) => {
-        if (id === 'dashboard') {
-            router.push('/dashboard');
-        } else if (id === 'community') {
-            router.push('/community');
-        } else if (id === 'favourites') {
-            router.push('/favourites');
-        }
-    };
-
-    const handleCreateProject = (name: string, isPublic: boolean) => {
+    // Handlers
+    const handleCreateProject = useCallback((name: string, isPublic: boolean) => {
         console.log('Creating project:', { name, isPublic });
-        // TODO: API integration
-    };
+    }, []);
 
-    const handleSignOut = async () => {
+    const handleSignOut = useCallback(async () => {
         try {
-            await logOut();
+            await signOut();
             setProfileMenuOpen(false);
-            router.push('/login');
         } catch (error) {
             console.error('Sign out error:', error);
         }
-    };
+    }, [signOut]);
 
-    const handleThemeToggle = async (newTheme: 'light' | 'dark') => {
+    const handleThemeToggle = useCallback((newTheme: 'light' | 'dark') => {
         setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
+    }, [setTheme]);
 
-        if (user) {
-            try {
-                const response = await fetch('/api/user/theme', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.uid, theme: newTheme }),
-                });
+    const handleProjectMenuClick = useCallback((projectId: number) => {
+        setProjectMenuOpen(prev => prev === projectId ? null : projectId);
+    }, []);
 
-                if (!response.ok) {
-                    console.error('Failed to update theme in database');
-                }
-            } catch (error) {
-                console.error('Error updating theme:', error);
-            }
-        }
-    };
-
-    const handleProjectMenuClick = (projectId: number) => {
-        setProjectMenuOpen(projectMenuOpen === projectId ? null : projectId);
-    };
-
-    const handleEditProject = (projectId: number) => {
+    const handleEditProject = useCallback((projectId: number) => {
         const project = projects.find(p => p.id === projectId);
         if (project) {
             setEditProjectModal({
@@ -319,12 +193,12 @@ export default function ProjectsPage() {
             });
         }
         setProjectMenuOpen(null);
-    };
+    }, [projects]);
 
-    const handleEditProjectConfirm = (name: string, isPublic: boolean) => {
+    const handleEditProjectConfirm = useCallback((name: string, isPublic: boolean) => {
         if (editProjectModal.projectId === null) return;
 
-        setProjects(projects.map(project =>
+        setProjects(prev => prev.map(project =>
             project.id === editProjectModal.projectId
                 ? { ...project, name, isPublic }
                 : project
@@ -336,22 +210,21 @@ export default function ProjectsPage() {
             projectName: '',
             isPublic: true
         });
-    };
+    }, [editProjectModal.projectId]);
 
-    const handleToggleFavorite = (projectId: number) => {
-        setProjects(projects.map(p =>
+    const handleToggleFavorite = useCallback((projectId: number) => {
+        setProjects(prev => prev.map(p =>
             p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p
         ));
         setProjectMenuOpen(null);
-    };
+    }, []);
 
-    const handleOpenProject = (projectId: number) => {
+    const handleOpenProject = useCallback((projectId: number) => {
         console.log('Open project:', projectId);
         setProjectMenuOpen(null);
-        // TODO: Navigate to project editor
-    };
+    }, []);
 
-    const handleDeleteProject = (projectId: number) => {
+    const handleDeleteProject = useCallback((projectId: number) => {
         const project = projects.find(p => p.id === projectId);
         if (project) {
             setProjectActionModal({
@@ -362,16 +235,16 @@ export default function ProjectsPage() {
             });
         }
         setProjectMenuOpen(null);
-    };
+    }, [projects]);
 
-    const handleProjectActionConfirm = () => {
+    const handleProjectActionConfirm = useCallback(() => {
         if (projectActionModal.projectId === null) return;
 
         const projectId = projectActionModal.projectId;
 
         switch (projectActionModal.type) {
             case 'delete':
-                setProjects(projects.filter(project => project.id !== projectId));
+                setProjects(prev => prev.filter(project => project.id !== projectId));
                 break;
 
             case 'duplicate':
@@ -383,7 +256,7 @@ export default function ProjectsPage() {
                         name: `${projectToDuplicate.name} (Copy)`,
                         createdAt: 'Just now'
                     };
-                    setProjects([newProject, ...projects]);
+                    setProjects(prev => [newProject, ...prev]);
                 }
                 break;
         }
@@ -394,17 +267,17 @@ export default function ProjectsPage() {
             projectId: null,
             projectName: ''
         });
-    };
+    }, [projectActionModal, projects]);
 
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
-    };
+    }, []);
 
-    const handleLoadMore = () => {
+    const handleLoadMore = useCallback(() => {
         setItemsToShow(prev => prev + PROJECTS_PER_PAGE);
-    };
+    }, []);
 
-    // Show loading state
+    // Loading state
     if (authLoading) {
         return (
             <div className={dashboardStyles.loadingContainer}>
@@ -432,157 +305,33 @@ export default function ProjectsPage() {
             {isMobile && sidebarOpen && (
                 <div
                     className={dashboardStyles.overlay}
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={closeSidebar}
                     aria-hidden="true"
                 />
             )}
 
             {/* Sidebar */}
-            <aside className={`${dashboardStyles.sidebar} ${sidebarOpen ? dashboardStyles.sidebarOpen : ''}`}>
-                {/* Logo */}
-                <div className={dashboardStyles.logo}>
-                    <div className={dashboardStyles.logoIcon}>
-                        <span className={dashboardStyles.logoText}>Logo</span>
-                    </div>
-                    <h1 className={dashboardStyles.logoTitle}>
-                        <span className={dashboardStyles.logoAccent}>Stumb</span>nail
-                    </h1>
-                </div>
-
-                {/* User Profile */}
-                <div className={dashboardStyles.userProfile} ref={profileMenuRef}>
-                    {user?.photoURL ? (
-                        <Image
-                            src={user.photoURL}
-                            alt="User avatar"
-                            width={51}
-                            height={51}
-                            className={dashboardStyles.userAvatar}
-                            referrerPolicy="no-referrer"
-                        />
-                    ) : (
-                        <div className={dashboardStyles.userAvatarPlaceholder}>
-                            {user?.displayName?.charAt(0) || user?.email?.charAt(0) || '?'}
-                        </div>
-                    )}
-                    <div className={dashboardStyles.userInfo}>
-                        <p className={dashboardStyles.userName}>{user?.displayName || 'User'}</p>
-                        <p className={dashboardStyles.userEmail}>{user?.email || ''}</p>
-                    </div>
-                    <button
-                        className={dashboardStyles.userMenu}
-                        aria-label="User menu options"
-                        onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                        aria-expanded={profileMenuOpen}
-                    >
-                        <span className={dashboardStyles.userMenuDot} />
-                    </button>
-
-                    {profileMenuOpen && (
-                        <div className={dashboardStyles.profileDropdown}>
-                            <div className={dashboardStyles.themeSection}>
-                                <span className={dashboardStyles.themeSectionLabel}>Theme</span>
-                                <div className={dashboardStyles.themeToggle}>
-                                    <button
-                                        className={`${dashboardStyles.themeButton} ${theme === 'light' ? dashboardStyles.themeButtonActive : ''}`}
-                                        onClick={() => handleThemeToggle('light')}
-                                        aria-label="Switch to light theme"
-                                        aria-pressed={theme === 'light'}
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                            <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5" />
-                                            <path d="M8 1V2M8 14V15M15 8H14M2 8H1M12.95 12.95L12.24 12.24M3.76 3.76L3.05 3.05M12.95 3.05L12.24 3.76M3.76 12.24L3.05 12.95" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                                        </svg>
-                                        <span>Light</span>
-                                    </button>
-                                    <button
-                                        className={`${dashboardStyles.themeButton} ${theme === 'dark' ? dashboardStyles.themeButtonActive : ''}`}
-                                        onClick={() => handleThemeToggle('dark')}
-                                        aria-label="Switch to dark theme"
-                                        aria-pressed={theme === 'dark'}
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                            <path d="M14 8.5C13.3 10.5 11.4 12 9 12C6.2 12 4 9.8 4 7C4 4.6 5.5 2.7 7.5 2C4.7 2.3 2.5 4.6 2.5 7.5C2.5 10.5 5 13 8 13C10.9 13 13.2 10.8 13.5 8C13.7 8.2 13.9 8.3 14 8.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                        <span>Dark</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div className={dashboardStyles.profileMenuDivider} />
-                            <button className={dashboardStyles.profileMenuItem} onClick={handleSignOut}>
-                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                    <path d="M6.75 15.75H3.75C3.35218 15.75 2.97064 15.592 2.68934 15.3107C2.40804 15.0294 2.25 14.6478 2.25 14.25V3.75C2.25 3.35218 2.40804 2.97064 2.68934 2.68934C2.97064 2.40804 3.35218 2.25 3.75 2.25H6.75M12 12.75L15.75 9M15.75 9L12 5.25M15.75 9H6.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                                <span>Sign Out</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Navigation */}
-                <nav className={dashboardStyles.nav}>
-                    {navItems.map((item) => (
-                        <button
-                            key={item.id}
-                            className={`${dashboardStyles.navItem} ${item.active ? dashboardStyles.navItemActive : ''}`}
-                            aria-current={item.active ? 'page' : undefined}
-                            aria-label={`Navigate to ${item.label}`}
-                            onClick={() => handleNavClick(item.id)}
-                        >
-                            <Image
-                                src={item.icon}
-                                alt=""
-                                width={29}
-                                height={29}
-                                aria-hidden="true"
-                            />
-                            <span>{item.label}</span>
-                        </button>
-                    ))}
-                </nav>
-
-                {/* Progress Section */}
-                <div className={dashboardStyles.progressSection}>
-                    <div className={dashboardStyles.progressHeader}>
-                        <Image
-                            src="/assets/dashboard/icons/credits.svg"
-                            alt=""
-                            width={24}
-                            height={24}
-                            className={dashboardStyles.progressIcon}
-                            aria-hidden="true"
-                        />
-                        <p className={dashboardStyles.progressText}>
-                            <span className={dashboardStyles.progressCurrent}>7</span> / 10
-                        </p>
-                    </div>
-                    <div className={dashboardStyles.progressBar}>
-                        <div className={dashboardStyles.progressFill} style={{ width: '70%' }} />
-                    </div>
-                </div>
-
-                {/* Upgrade Plan Button */}
-                <button className={dashboardStyles.upgradeButton} aria-label="Upgrade to premium plan">
-                    <Image
-                        src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
-                        alt=""
-                        width={32}
-                        height={32}
-                        aria-hidden="true"
-                    />
-                    <span>Upgrade Plan</span>
-                </button>
-            </aside>
+            <Sidebar
+                user={user}
+                navItems={navItems}
+                theme={theme}
+                sidebarOpen={sidebarOpen}
+                profileMenuOpen={profileMenuOpen}
+                onProfileMenuToggle={() => setProfileMenuOpen(prev => !prev)}
+                onProfileMenuClose={() => setProfileMenuOpen(false)}
+                onThemeToggle={handleThemeToggle}
+                onSignOut={handleSignOut}
+                onCloseSidebar={closeSidebar}
+            />
 
             {/* Main Content */}
             <main className={dashboardStyles.main}>
                 {/* Header */}
                 <header className={dashboardStyles.header}>
-                    {/* Mobile Menu Button */}
                     {isMobile && (
                         <button
                             className={dashboardStyles.menuButton}
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            onClick={toggleSidebar}
                             aria-label="Toggle sidebar menu"
                         >
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -593,7 +342,6 @@ export default function ProjectsPage() {
 
                     <h1 className={styles.pageTitle}>My Projects</h1>
 
-                    {/* Create New Project Button */}
                     <button
                         className={dashboardStyles.createButton}
                         onClick={() => setIsModalOpen(true)}
@@ -692,9 +440,13 @@ export default function ProjectsPage() {
                                         aria-label="Create new project"
                                     >
                                         <div className={dashboardStyles.createProjectIcon}>
-                                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M16 8V24M8 16H24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
+                                            <Image
+                                                src="/assets/dashboard/icons/create-new-project-icon.svg"
+                                                alt=""
+                                                width={32}
+                                                height={32}
+                                                aria-hidden="true"
+                                            />
                                         </div>
                                         <span className={dashboardStyles.createProjectText}>New Project</span>
                                     </button>
@@ -745,15 +497,13 @@ export default function ProjectsPage() {
                                                                 className={dashboardStyles.projectDropdownItem}
                                                                 onClick={() => handleToggleFavorite(project.id)}
                                                             >
-                                                                {project.isFavorite ? (
-                                                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                                                                        <path d="M9 15.75C9 15.75 2.0625 11.625 2.0625 6.5625C2.0625 5.50483 2.48284 4.49048 3.23041 3.74291C3.97798 2.99534 4.99233 2.575 6.05 2.575C7.3875 2.575 8.5375 3.2625 9 4.25C9.4625 3.2625 10.6125 2.575 11.95 2.575C13.0077 2.575 14.022 2.99534 14.7696 3.74291C15.5172 4.49048 15.9375 5.50483 15.9375 6.5625C15.9375 11.625 9 15.75 9 15.75Z" fill="#ff6f61" stroke="#ff6f61" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                                    </svg>
-                                                                ) : (
-                                                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                                                                        <path d="M9 15.75C9 15.75 2.0625 11.625 2.0625 6.5625C2.0625 5.50483 2.48284 4.49048 3.23041 3.74291C3.97798 2.99534 4.99233 2.575 6.05 2.575C7.3875 2.575 8.5375 3.2625 9 4.25C9.4625 3.2625 10.6125 2.575 11.95 2.575C13.0077 2.575 14.022 2.99534 14.7696 3.74291C15.5172 4.49048 15.9375 5.50483 15.9375 6.5625C15.9375 11.625 9 15.75 9 15.75Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                                    </svg>
-                                                                )}
+                                                                <Image
+                                                                    src={project.isFavorite ? '/assets/dashboard/icons/heart-filled.svg' : '/assets/dashboard/icons/heart-outline.svg'}
+                                                                    alt=""
+                                                                    width={18}
+                                                                    height={18}
+                                                                    aria-hidden="true"
+                                                                />
                                                                 {project.isFavorite ? 'Unfavorite' : 'Favorite'}
                                                             </button>
                                                             <button
@@ -814,9 +564,8 @@ export default function ProjectsPage() {
                                     <button
                                         className={styles.loadMoreButton}
                                         onClick={handleLoadMore}
-                                        aria-label="Load more projects"
                                     >
-                                        Load More
+                                        Load More ({filteredProjects.length - visibleProjects.length} remaining)
                                     </button>
                                 </div>
                             )}
@@ -825,7 +574,7 @@ export default function ProjectsPage() {
                 </div>
             </main>
 
-            {/* Project Name Modal - Create */}
+            {/* Modals */}
             <ProjectNameModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -833,10 +582,9 @@ export default function ProjectsPage() {
                 theme={theme}
             />
 
-            {/* Project Name Modal - Edit */}
             <ProjectNameModal
                 isOpen={editProjectModal.isOpen}
-                onClose={() => setEditProjectModal({ ...editProjectModal, isOpen: false })}
+                onClose={() => setEditProjectModal(prev => ({ ...prev, isOpen: false }))}
                 onCreateProject={handleEditProjectConfirm}
                 editMode={true}
                 initialName={editProjectModal.projectName}
@@ -844,15 +592,31 @@ export default function ProjectsPage() {
                 theme={theme}
             />
 
-            {/* Project Action Modal - Delete/Duplicate */}
             <ProjectActionModal
                 isOpen={projectActionModal.isOpen}
-                onClose={() => setProjectActionModal({ ...projectActionModal, isOpen: false })}
+                onClose={() => setProjectActionModal(prev => ({ ...prev, isOpen: false }))}
                 onConfirm={handleProjectActionConfirm}
                 type={projectActionModal.type}
                 projectName={projectActionModal.projectName}
                 theme={theme}
             />
+
+            {/* Mobile Floating Action Button */}
+            {isMobile && (
+                <button
+                    className={dashboardStyles.fab}
+                    onClick={() => setIsModalOpen(true)}
+                    aria-label="Create new project"
+                >
+                    <Image
+                        src="/assets/dashboard/icons/create-new-project-icon.svg"
+                        alt=""
+                        width={24}
+                        height={24}
+                        aria-hidden="true"
+                    />
+                </button>
+            )}
         </div>
     );
 }

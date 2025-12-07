@@ -1,10 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithGoogle } from '@/lib/firebase';
-import GridMotion from '@/components/GridMotion/GridMotion';
+import dynamic from 'next/dynamic';
 import styles from './login.module.css';
+
+// Lazy load heavy GridMotion component (uses GSAP animations)
+const GridMotion = dynamic(
+  () => import('@/components/GridMotion/GridMotion'),
+  {
+    ssr: false,
+    loading: () => <div className={styles.backgroundPlaceholder} />
+  }
+);
 
 interface FirebaseError extends Error {
   code?: string;
@@ -18,19 +26,21 @@ export default function LoginPage() {
 
   const themeClass = isDarkTheme ? styles.dark : styles.light;
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = useCallback(async () => {
     setLoading(true);
     setError('');
 
     try {
+      // Dynamically import Firebase only when user clicks sign in
+      const { signInWithGoogle } = await import('@/lib/firebase');
       await signInWithGoogle();
       router.push('/dashboard');
     } catch (err) {
       const firebaseError = err as FirebaseError;
-      
+
       // Handle specific Firebase auth errors silently
-      if (firebaseError.code === 'auth/popup-closed-by-user' || 
-          firebaseError.code === 'auth/cancelled-popup-request') {
+      if (firebaseError.code === 'auth/popup-closed-by-user' ||
+        firebaseError.code === 'auth/cancelled-popup-request') {
         setLoading(false);
         return;
       }
@@ -39,7 +49,7 @@ export default function LoginPage() {
       setLoading(false);
       console.error('Sign in error:', err);
     }
-  };
+  }, [router]);
 
   // Generate thumbnail grid items for GridMotion (28 items total)
   const thumbnails = Array.from({ length: 13 }, (_, i) => `/assets/thumbnails/thumb${i + 1}.png`);
@@ -55,7 +65,7 @@ export default function LoginPage() {
 
   return (
     <div className={`${styles.container} ${themeClass}`}>
-      {/* GridMotion Background */}
+      {/* GridMotion Background - Lazy loaded */}
       <div className={styles.backgroundGrid}>
         <GridMotion
           items={gridItems}
@@ -127,6 +137,7 @@ export default function LoginPage() {
                 alt={avatar.alt}
                 className={styles.avatar}
                 style={{ left: `${idx * 38}px` }}
+                loading="lazy"
               />
             ))}
           </div>

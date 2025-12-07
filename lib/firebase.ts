@@ -1,6 +1,7 @@
 // Firebase configuration and authentication utilities
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+// Uses dynamic imports for code splitting to reduce initial bundle size
+
+import type { Auth, User } from 'firebase/auth';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -12,21 +13,41 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase (avoid reinitializing in development with hot reload)
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
-
-// Configure Google provider
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
+// Cached references to avoid re-importing
+let authInstance: Auth | null = null;
+let authInitPromise: Promise<Auth> | null = null;
 
 /**
- * Sign in with Google
- * @returns Promise with user credentials
+ * Lazily initialize Firebase Auth
+ * This prevents the large Firebase bundle from blocking initial page load
  */
-export const signInWithGoogle = async () => {
+export async function getFirebaseAuth(): Promise<Auth> {
+  if (authInstance) return authInstance;
+
+  if (!authInitPromise) {
+    authInitPromise = (async () => {
+      const { initializeApp, getApps, getApp } = await import('firebase/app');
+      const { getAuth } = await import('firebase/auth');
+
+      const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+      authInstance = getAuth(app);
+      return authInstance;
+    })();
+  }
+
+  return authInitPromise;
+}
+
+/**
+ * Sign in with Google - lazily loads Firebase
+ */
+export const signInWithGoogle = async (): Promise<User> => {
+  const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+  const auth = await getFirebaseAuth();
+
+  const googleProvider = new GoogleAuthProvider();
+  googleProvider.setCustomParameters({ prompt: 'select_account' });
+
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
@@ -39,7 +60,10 @@ export const signInWithGoogle = async () => {
 /**
  * Sign out the current user
  */
-export const logOut = async () => {
+export const logOut = async (): Promise<void> => {
+  const { signOut } = await import('firebase/auth');
+  const auth = await getFirebaseAuth();
+
   try {
     await signOut(auth);
   } catch (error: any) {
@@ -48,4 +72,15 @@ export const logOut = async () => {
   }
 };
 
-export { auth };
+/**
+ * Subscribe to auth state changes
+ * Returns unsubscribe function
+ */
+export const onAuthChange = async (
+  callback: (user: User | null) => void
+): Promise<() => void> => {
+  const { onAuthStateChanged } = await import('firebase/auth');
+  const auth = await getFirebaseAuth();
+
+  return onAuthStateChanged(auth, callback);
+};

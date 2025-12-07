@@ -1,10 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Target modern browsers to reduce legacy JavaScript polyfills (~10 KiB savings)
-  // This configuration tells Next.js to generate code for modern browsers only
+  // Optimize bundle size
   experimental: {
     // Optimize package imports for better tree-shaking
-    optimizePackageImports: ['lucide-react', 'gsap'],
+    optimizePackageImports: ['lucide-react'],
   },
   // Compiler options for production optimization
   compiler: {
@@ -20,6 +19,22 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    // Optimize image formats
+    formats: ['image/avif', 'image/webp'],
+    // Reduce image sizes
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+  },
+  // Modularize imports for firebase
+  modularizeImports: {
+    'firebase/auth': {
+      transform: 'firebase/auth',
+      skipDefaultConversion: true,
+    },
+    'firebase/app': {
+      transform: 'firebase/app',
+      skipDefaultConversion: true,
+    },
   },
 };
 
