@@ -332,6 +332,8 @@
   background-color: #f0f0f0;
   background-image: radial-gradient(circle, #d0d0d0 1px, transparent 1px);
   background-size: 20px 20px;
+  /* Prevent browser zoom gestures */
+  touch-action: none;
 }
 
 .canvasViewport {
@@ -371,16 +373,6 @@
   height: 100%;
   object-fit: cover;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transition: box-shadow 0.15s ease;
-}
-
-.canvasElement:hover .elementImage {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-}
-
-.canvasElementSelected .elementImage {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 /* Selection overlay with border */
@@ -390,29 +382,9 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  border: 2px solid #2196f3;
+  border: 2px solid #ff6f61;
   border-radius: 6px;
   pointer-events: none;
-  /* Animated dashed border */
-  background:
-    linear-gradient(90deg, #2196f3 50%, transparent 50%) top,
-    linear-gradient(90deg, #2196f3 50%, transparent 50%) bottom,
-    linear-gradient(0deg, #2196f3 50%, transparent 50%) left,
-    linear-gradient(0deg, #2196f3 50%, transparent 50%) right;
-  background-size: 8px 2px, 8px 2px, 2px 8px, 2px 8px;
-  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
-  border: none;
-  animation: marchingAnts 0.5s linear infinite;
-}
-
-@keyframes marchingAnts {
-  0% {
-    background-position: 0 0, 0 100%, 0 0, 100% 0;
-  }
-
-  100% {
-    background-position: 8px 0, -8px 100%, 0 8px, 100% -8px;
-  }
 }
 
 /* Resize handles */
@@ -421,7 +393,7 @@
   width: 10px;
   height: 10px;
   background: #ffffff;
-  border: 2px solid #2196f3;
+  border: 2px solid #ff6f61;
   border-radius: 2px;
   pointer-events: auto;
   z-index: 10;
@@ -429,7 +401,7 @@
 }
 
 .resizeHandle:hover {
-  background: #2196f3;
+  background: #ff6f61;
   transform: scale(1.2);
 }
 
@@ -460,10 +432,31 @@
 /* Rubberband selection box */
 .selectionRubberband {
   position: absolute;
-  background: rgba(33, 150, 243, 0.1);
-  border: 1px solid #2196f3;
+  background: rgba(255, 111, 97, 0.1);
+  border: 1px solid #ff6f61;
   pointer-events: none;
   z-index: 1000;
+}
+
+/* Snap alignment lines */
+.snapLineVertical {
+  position: absolute;
+  top: -10000px;
+  bottom: -10000px;
+  width: 1px;
+  background: #ff6f61;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.snapLineHorizontal {
+  position: absolute;
+  left: -10000px;
+  right: -10000px;
+  height: 1px;
+  background: #ff6f61;
+  pointer-events: none;
+  z-index: 999;
 }
 
 /* ============================================

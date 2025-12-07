@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 
@@ -69,6 +69,7 @@ export default function ProjectCanvasPage() {
 
   // Refs
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const canvasMainRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -117,6 +118,10 @@ export default function ProjectCanvasPage() {
   // Key states
   const [shiftPressed, setShiftPressed] = useState(false);
   const [ctrlPressed, setCtrlPressed] = useState(false);
+
+  // Snap alignment
+  const [snapLines, setSnapLines] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] });
+  const SNAP_THRESHOLD = 8;
 
   // Handlers
   const handleBack = useCallback(() => {
@@ -270,37 +275,6 @@ export default function ProjectCanvasPage() {
     );
   }, []);
 
-  // Canvas wheel handler - Ctrl+scroll to zoom, normal scroll to pan
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-
-    if (ctrlPressed) {
-      // Zoom
-      const container = canvasContainerRef.current;
-      if (!container) return;
-
-      const rect = container.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.min(10, Math.max(0.05, viewport.zoom * zoomFactor));
-
-      // Zoom centered on mouse position
-      const newX = mouseX - (mouseX - viewport.x) * (newZoom / viewport.zoom);
-      const newY = mouseY - (mouseY - viewport.y) * (newZoom / viewport.zoom);
-
-      setViewport({ x: newX, y: newY, zoom: newZoom });
-    } else {
-      // Scroll to pan
-      setViewport(prev => ({
-        ...prev,
-        x: prev.x - e.deltaX,
-        y: prev.y - e.deltaY,
-      }));
-    }
-  }, [viewport, ctrlPressed]);
-
   // Mouse handlers
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -351,18 +325,85 @@ export default function ProjectCanvasPage() {
       return;
     }
 
-    // Dragging elements
+    // Dragging elements with snap alignment
     if (dragState.isDragging && dragState.elementIds.length > 0) {
       const dx = (e.clientX - dragState.startX) / viewport.zoom;
       const dy = (e.clientY - dragState.startY) / viewport.zoom;
 
+      // Calculate snap guides from other elements
+      const otherElements = canvasElements.filter(el => !dragState.elementIds.includes(el.id));
+      const snapXPositions: number[] = [];
+      const snapYPositions: number[] = [];
+
+      otherElements.forEach(el => {
+        // Element edges and center
+        snapXPositions.push(el.x, el.x + el.width / 2, el.x + el.width);
+        snapYPositions.push(el.y, el.y + el.height / 2, el.y + el.height);
+      });
+
+      // Track active snap lines
+      const activeSnapX: number[] = [];
+      const activeSnapY: number[] = [];
+
       setCanvasElements(prev => prev.map(el => {
         const start = dragState.elementStarts.find(s => s.id === el.id);
         if (start) {
-          return { ...el, x: start.x + dx, y: start.y + dy };
+          let newX = start.x + dx;
+          let newY = start.y + dy;
+
+          // Snap to other elements
+          const elLeft = newX;
+          const elCenterX = newX + el.width / 2;
+          const elRight = newX + el.width;
+          const elTop = newY;
+          const elCenterY = newY + el.height / 2;
+          const elBottom = newY + el.height;
+
+          // Check horizontal snapping
+          for (const sx of snapXPositions) {
+            if (Math.abs(elLeft - sx) < SNAP_THRESHOLD) {
+              newX = sx;
+              activeSnapX.push(sx);
+              break;
+            }
+            if (Math.abs(elCenterX - sx) < SNAP_THRESHOLD) {
+              newX = sx - el.width / 2;
+              activeSnapX.push(sx);
+              break;
+            }
+            if (Math.abs(elRight - sx) < SNAP_THRESHOLD) {
+              newX = sx - el.width;
+              activeSnapX.push(sx);
+              break;
+            }
+          }
+
+          // Check vertical snapping
+          for (const sy of snapYPositions) {
+            if (Math.abs(elTop - sy) < SNAP_THRESHOLD) {
+              newY = sy;
+              activeSnapY.push(sy);
+              break;
+            }
+            if (Math.abs(elCenterY - sy) < SNAP_THRESHOLD) {
+              newY = sy - el.height / 2;
+              activeSnapY.push(sy);
+              break;
+            }
+            if (Math.abs(elBottom - sy) < SNAP_THRESHOLD) {
+              newY = sy - el.height;
+              activeSnapY.push(sy);
+              break;
+            }
+          }
+
+          return { ...el, x: newX, y: newY };
         }
         return el;
       }));
+
+      // Update snap lines for rendering
+      setSnapLines({ x: activeSnapX, y: activeSnapY });
       return;
     }
 
@@ -427,6 +468,7 @@ export default function ProjectCanvasPage() {
     setSelectionBox(null);
     setDragState(prev => ({ ...prev, isDragging: false, elementIds: [], elementStarts: [] }));
     setResizeState(prev => ({ ...prev, isResizing: false, elementId: null }));
+    setSnapLines({ x: [], y: [] }); // Clear snap lines
   }, [isRubberbanding, selectionBox, canvasElements, isElementInSelectionBox, shiftPressed]);
 
   // Element interaction handlers
@@ -609,6 +651,93 @@ export default function ProjectCanvasPage() {
     };
   }, [selectedElementIds, canvasElements]);
 
+  // Prevent browser zoom with Ctrl+scroll AND handle canvas zoom directly
+  // Must handle zoom here because stopImmediatePropagation blocks React's onWheel
+  useLayoutEffect(() => {
+    // Store ref to check canvas bounds
+    const checkIsInCanvas = (e: WheelEvent): boolean => {
+      const mainCanvas = canvasMainRef.current;
+      if (!mainCanvas) return false;
+
+      const rect = mainCanvas.getBoundingClientRect();
+      return e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top && e.clientY <= rect.bottom;
+    };
+
+    // The wheel event handler - prevent browser zoom AND handle canvas zoom
+    const handleWheelZoom = (e: WheelEvent) => {
+      const isInCanvas = checkIsInCanvas(e);
+
+      // Only act if mouse is over canvas
+      if (!isInCanvas) return;
+
+      // Ctrl/Meta + scroll = zoom
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        // Perform zoom
+        const container = canvasContainerRef.current;
+        if (!container) return;
+
+        const rect = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+
+        setViewport(prev => {
+          const newZoom = Math.min(10, Math.max(0.05, prev.zoom * zoomFactor));
+          // Zoom centered on mouse position
+          const newX = mouseX - (mouseX - prev.x) * (newZoom / prev.zoom);
+          const newY = mouseY - (mouseY - prev.y) * (newZoom / prev.zoom);
+          return { x: newX, y: newY, zoom: newZoom };
+        });
+      } else {
+        // Regular scroll = pan
+        e.preventDefault();
+        setViewport(prev => ({
+          ...prev,
+          x: prev.x - e.deltaX,
+          y: prev.y - e.deltaY,
+        }));
+      }
+    };
+
+    // Attach to multiple targets in capture phase for maximum coverage
+    const options = { passive: false, capture: true } as AddEventListenerOptions;
+
+    document.addEventListener('wheel', handleWheelZoom, options);
+    document.body.addEventListener('wheel', handleWheelZoom, options);
+    window.addEventListener('wheel', handleWheelZoom, options);
+
+    // Also prevent via keyboard event for Ctrl key press + scroll
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        document.body.style.touchAction = 'none';
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) {
+        document.body.style.touchAction = '';
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      document.removeEventListener('wheel', handleWheelZoom, { capture: true });
+      document.body.removeEventListener('wheel', handleWheelZoom, { capture: true });
+      window.removeEventListener('wheel', handleWheelZoom, { capture: true });
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+      document.body.style.touchAction = '';
+    };
+  }, []);
+
   // Zoom controls
   const handleZoomIn = useCallback(() => {
     setViewport(prev => ({ ...prev, zoom: Math.min(10, prev.zoom * 1.2) }));
@@ -768,13 +897,13 @@ export default function ProjectCanvasPage() {
 
       {/* Main Canvas Area */}
       <main
+        ref={canvasMainRef}
         className={styles.canvas}
         style={{ cursor: getCursorStyle() }}
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
         onMouseUp={handleCanvasMouseUp}
         onMouseLeave={handleCanvasMouseUp}
-        onWheel={handleWheel}
         onContextMenu={(e) => e.preventDefault()}
       >
         <div ref={canvasContainerRef} className={styles.canvasViewport}>
@@ -833,6 +962,22 @@ export default function ProjectCanvasPage() {
                 }}
               />
             )}
+
+            {/* Snap alignment lines */}
+            {snapLines.x.map((x, i) => (
+              <div
+                key={`snap-x-${i}`}
+                className={styles.snapLineVertical}
+                style={{ left: x }}
+              />
+            ))}
+            {snapLines.y.map((y, i) => (
+              <div
+                key={`snap-y-${i}`}
+                className={styles.snapLineHorizontal}
+                style={{ top: y }}
+              />
+            ))}
           </div>
         </div>
 
@@ -885,7 +1030,7 @@ export default function ProjectCanvasPage() {
           <span>V: Select</span>
           <span>H: Hand</span>
           <span>Space: Pan</span>
-          <span>Ctrl+Scroll: Zoom</span>
+          <span>Ctrl/⌘+Scroll: Zoom</span>
           <span>Shift+Click: Multi-select</span>
         </div>
       </main>
