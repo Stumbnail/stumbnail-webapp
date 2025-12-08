@@ -3,9 +3,27 @@
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 
 // Hooks
 import { useAuth, useTheme } from '@/hooks';
+
+// Types
+import { Model } from '@/types';
+
+// Constants
+import { DEFAULT_MODEL } from '@/lib/constants';
+
+// Lazy load dropdowns
+const ModelDropdown = dynamic(
+  () => import('@/app/dashboard/ModelDropdown'),
+  { ssr: false }
+);
+
+const StyleDropdown = dynamic(
+  () => import('@/app/dashboard/StyleDropdown'),
+  { ssr: false }
+);
 
 // Styles
 import styles from './projectCanvas.module.css';
@@ -82,6 +100,22 @@ export default function ProjectCanvasPage() {
   const [selectedMode, setSelectedMode] = useState<CreationMode>('url');
   const [youtubeLink, setYoutubeLink] = useState('');
   const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
+
+  // Prompt mode state
+  const [promptText, setPromptText] = useState('');
+  const [promptModel, setPromptModel] = useState<Model | null>(null);
+  const [promptStyle, setPromptStyle] = useState<any>(null);
+  const [thumbnailCount, setThumbnailCount] = useState(1);
+
+  // Modify prompt state - stores prompts per element ID
+  const [elementPrompts, setElementPrompts] = useState<Record<string, string>>({});
+  const [elementModels, setElementModels] = useState<Record<string, Model>>({});
+
+  // Multi-select conversion form state
+  const [showConversionForm, setShowConversionForm] = useState(false);
+  const [conversionGenre, setConversionGenre] = useState('');
+  const [conversionIncludeText, setConversionIncludeText] = useState<'yes' | 'no' | null>(null);
+  const [conversionText, setConversionText] = useState('');
 
   // Tool State
   const [toolMode, setToolMode] = useState<ToolMode>('select');
@@ -242,6 +276,35 @@ export default function ProjectCanvasPage() {
     };
     img.src = thumbnailUrl;
   }, [youtubeLink, addElementAtViewportCenter]);
+
+  // Prompt mode handlers
+  const handlePromptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPromptText(e.target.value);
+  }, []);
+
+  const handlePromptSubmit = useCallback(() => {
+    if (!promptText.trim()) return;
+
+    console.log('Generating thumbnails with prompt:', {
+      prompt: promptText,
+      model: promptModel,
+      style: promptStyle,
+      count: thumbnailCount
+    });
+
+    // TODO: Implement actual thumbnail generation logic
+    // For now, just clear the prompt
+    // setPromptText('');
+  }, [promptText, promptModel, promptStyle, thumbnailCount]);
+
+  const handleThumbnailCountChange = useCallback((count: number) => {
+    setThumbnailCount(count);
+  }, []);
+
+  const handleCreateNewStyle = useCallback(() => {
+    console.log('Create new style clicked');
+    // TODO: Implement style creation logic
+  }, []);
 
   // Image upload handler
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -575,9 +638,24 @@ export default function ProjectCanvasPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Track modifier keys
+      // Check if user is typing in an input field
+      const isTyping = document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA';
+
+      // Track modifier keys (always track these)
       if (e.key === 'Shift') setShiftPressed(true);
       if (e.key === 'Control') setCtrlPressed(true);
+
+      // Skip canvas shortcuts if typing in input field
+      if (isTyping) {
+        // Only allow Escape to work while typing
+        if (e.key === 'Escape') {
+          setSelectedElementIds([]);
+          setToolMode('select');
+          (document.activeElement as HTMLElement)?.blur();
+        }
+        return;
+      }
 
       // H for hand tool
       if (e.key === 'h' || e.key === 'H') {
@@ -599,10 +677,20 @@ export default function ProjectCanvasPage() {
 
       // Delete selected elements
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementIds.length > 0) {
-        if (document.activeElement?.tagName === 'INPUT' ||
-          document.activeElement?.tagName === 'TEXTAREA') return;
-
         setCanvasElements(prev => prev.filter(el => !selectedElementIds.includes(el.id)));
+
+        // Clean up prompts and models for deleted elements
+        setElementPrompts(prev => {
+          const newPrompts = { ...prev };
+          selectedElementIds.forEach(id => delete newPrompts[id]);
+          return newPrompts;
+        });
+        setElementModels(prev => {
+          const newModels = { ...prev };
+          selectedElementIds.forEach(id => delete newModels[id]);
+          return newModels;
+        });
+
         setSelectedElementIds([]);
         e.preventDefault();
       }
@@ -636,9 +724,6 @@ export default function ProjectCanvasPage() {
 
       // Arrow keys to nudge
       if (selectedElementIds.length > 0 && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        if (document.activeElement?.tagName === 'INPUT' ||
-          document.activeElement?.tagName === 'TEXTAREA') return;
-
         const nudge = e.shiftKey ? 10 : 1;
         let dx = 0, dy = 0;
         if (e.key === 'ArrowUp') dy = -nudge;
@@ -654,7 +739,7 @@ export default function ProjectCanvasPage() {
         e.preventDefault();
       }
 
-      // Escape to deselect
+      // Escape to deselect (only when not typing - already handled above)
       if (e.key === 'Escape') {
         setSelectedElementIds([]);
         setToolMode('select');
@@ -737,12 +822,12 @@ export default function ProjectCanvasPage() {
           return { x: newX, y: newY, zoom: newZoom };
         });
       } else {
-        // Regular scroll = pan
+        // Regular scroll = pan (slowed down by 0.4x for smoother control)
         e.preventDefault();
         setViewport(prev => ({
           ...prev,
-          x: prev.x - e.deltaX,
-          y: prev.y - e.deltaY,
+          x: prev.x - e.deltaX * 0.4,
+          y: prev.y - e.deltaY * 0.4,
         }));
       }
     };
@@ -792,6 +877,83 @@ export default function ProjectCanvasPage() {
   const handleResetView = useCallback(() => {
     setViewport({ x: 0, y: 0, zoom: 1 });
   }, []);
+
+  // Modify prompt handlers
+  const handleModifyPromptChange = useCallback((elementId: string, value: string) => {
+    setElementPrompts(prev => ({
+      ...prev,
+      [elementId]: value,
+    }));
+  }, []);
+
+  const handleModifyPromptSubmit = useCallback((elementId: string) => {
+    const prompt = elementPrompts[elementId];
+    const model = elementModels[elementId] || DEFAULT_MODEL;
+
+    if (!prompt?.trim()) return;
+
+    console.log('Modifying element:', elementId, 'with prompt:', prompt, 'using model:', model);
+    // TODO: Implement actual modification logic
+
+    // Clear the prompt after submission
+    setElementPrompts(prev => ({
+      ...prev,
+      [elementId]: '',
+    }));
+  }, [elementPrompts, elementModels]);
+
+  const handleModifyPromptKeyDown = useCallback((elementId: string, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleModifyPromptSubmit(elementId);
+    }
+  }, [handleModifyPromptSubmit]);
+
+  const handleSelectModifyModel = useCallback((elementId: string, model: Model) => {
+    setElementModels(prev => ({
+      ...prev,
+      [elementId]: model,
+    }));
+  }, []);
+
+  // Multi-select conversion handlers
+  const handleOpenConversionForm = useCallback(() => {
+    setShowConversionForm(true);
+  }, []);
+
+  const handleCloseConversionForm = useCallback(() => {
+    setShowConversionForm(false);
+    setConversionGenre('');
+    setConversionIncludeText(null);
+    setConversionText('');
+  }, []);
+
+  const handleConversionSubmit = useCallback(() => {
+    if (!conversionGenre.trim()) {
+      alert('Please enter a genre');
+      return;
+    }
+
+    if (conversionIncludeText === null) {
+      alert('Please select whether to include text');
+      return;
+    }
+
+    if (conversionIncludeText === 'yes' && !conversionText.trim()) {
+      alert('Please enter text or select "Let AI decide"');
+      return;
+    }
+
+    console.log('Converting assets to thumbnails:', {
+      elementIds: selectedElementIds,
+      genre: conversionGenre,
+      includeText: conversionIncludeText,
+      text: conversionIncludeText === 'yes' ? conversionText : null,
+    });
+
+    // TODO: Implement actual conversion logic
+    handleCloseConversionForm();
+  }, [conversionGenre, conversionIncludeText, conversionText, selectedElementIds, handleCloseConversionForm]);
 
   // Compute cursor style
   const getCursorStyle = () => {
@@ -884,13 +1046,21 @@ export default function ProjectCanvasPage() {
         {selectedMode === 'url' && (
           <div className={styles.youtubeInputSection}>
             <div className={`${styles.youtubeInputContainer} ${youtubeLinkError ? styles.youtubeInputError : ''}`}>
+              <div className={styles.youtubeInputIcon}>
+                <Image
+                  src="/assets/project/icons/attachment-02-stroke-rounded 1.svg"
+                  alt=""
+                  width={27}
+                  height={27}
+                />
+              </div>
               <textarea
                 ref={youtubeLinkInputRef}
                 value={youtubeLink}
                 onChange={handleYoutubeLinkChange}
-                placeholder="Paste a YouTube link to add thumbnail to canvas"
+                placeholder="Paste a YouTube link to generate thumbnail"
                 className={styles.youtubeTextarea}
-                rows={3}
+                rows={1}
               />
               <button
                 className={styles.submitButton}
@@ -901,6 +1071,79 @@ export default function ProjectCanvasPage() {
               </button>
             </div>
             {youtubeLinkError && <p className={styles.inputError}>{youtubeLinkError}</p>}
+          </div>
+        )}
+
+        {selectedMode === 'prompt' && (
+          <div className={styles.promptInputSection}>
+            {/* Prompt Container */}
+            <div className={styles.promptInputContainer}>
+              <textarea
+                value={promptText}
+                onChange={handlePromptChange}
+                placeholder="Describe your thumbnail"
+                className={styles.promptTextarea}
+                rows={1}
+              />
+              <div className={styles.promptButtonsRow}>
+                <button className={styles.addButton} title="Add reference image">
+                  <Image src="/assets/project/icons/add-image.svg" alt="" width={24} height={24} />
+                </button>
+                <button
+                  className={styles.submitButton}
+                  onClick={handlePromptSubmit}
+                  disabled={!promptText.trim()}
+                >
+                  <Image src="/assets/project/icons/send-prompt.svg" alt="" width={20} height={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Model and Style Dropdowns */}
+            <div className={styles.promptDropdownsRow}>
+              <div className={styles.promptDropdownWrapper}>
+                <ModelDropdown
+                  selectedModel={promptModel}
+                  onSelectModel={setPromptModel}
+                  theme={theme}
+                  openUpward
+                  showLabel
+                />
+              </div>
+              <div className={styles.promptDropdownWrapper}>
+                <StyleDropdown
+                  selectedStyle={promptStyle}
+                  onSelectStyle={setPromptStyle}
+                  onCreateNew={handleCreateNewStyle}
+                  theme={theme}
+                  openUpward
+                  showLabel
+                />
+              </div>
+            </div>
+
+            {/* Thumbnail Count Slider */}
+            <div className={styles.thumbnailCountSection}>
+              <span className={styles.thumbnailCountLabel}>Thumbnails to generate</span>
+              <div className={styles.thumbnailCountSlider}>
+                <div className={styles.sliderTrack}>
+                  <div
+                    className={styles.sliderFill}
+                    style={{ width: `${((thumbnailCount - 1) / 2) * 100}%` }}
+                  />
+                  <div className={styles.sliderDots}>
+                    {[1, 2, 3].map((count) => (
+                      <div
+                        key={count}
+                        className={`${styles.sliderDot} ${thumbnailCount >= count ? styles.sliderDotActive : ''}`}
+                        onClick={() => handleThumbnailCountChange(count)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <span className={styles.thumbnailCountValue}>{thumbnailCount}</span>
+              </div>
+            </div>
           </div>
         )}
       </aside>
@@ -1011,6 +1254,195 @@ export default function ProjectCanvasPage() {
                 style={{ top: y }}
               />
             ))}
+
+            {/* Multi-select: Convert form or Single-select: Individual prompts */}
+            {selectedElementIds.length > 1 ? (
+              // Multiple elements selected - show conversion form
+              (() => {
+                const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+                const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+                const minX = Math.min(...selectedElements.map(el => el.x));
+                const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+                const centerX = (minX + maxX) / 2;
+
+                // Calculate inverse scale to maintain visibility when zoomed out
+                // Form uses full scaling, button uses dampened scaling
+                const formScale = Math.max(1, 1 / viewport.zoom);
+                const buttonScale = Math.max(1, Math.sqrt(1 / viewport.zoom));
+
+                return showConversionForm ? (
+                  <div
+                    className={styles.conversionFormPanel}
+                    style={{
+                      left: centerX,
+                      top: maxY + (24 * formScale),
+                      transform: `translateX(-50%) scale(${formScale})`,
+                      transformOrigin: 'top center',
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => e.stopPropagation()}
+                  >
+
+                    <div className={styles.formPanelHeader}>
+                      <h3 className={styles.formPanelTitle}>Convert Assets to Thumbnail</h3>
+                      <button className={styles.formPanelClose} onClick={handleCloseConversionForm}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className={styles.formPanelContent}>
+                      {/* Genre Input */}
+                      <div className={styles.formField}>
+                        <label className={styles.formLabel}>Genre of thumbnail</label>
+                        <input
+                          type="text"
+                          value={conversionGenre}
+                          onChange={(e) => setConversionGenre(e.target.value)}
+                          placeholder="e.g., tech, cinematic, gaming, vlog"
+                          className={styles.formInput}
+                        />
+                      </div>
+
+                      {/* Text Option */}
+                      <div className={styles.formField}>
+                        <label className={styles.formLabel}>Include text?</label>
+                        <div className={styles.radioGroup}>
+                          <button
+                            className={`${styles.radioButton} ${conversionIncludeText === 'yes' ? styles.radioButtonActive : ''}`}
+                            onClick={() => setConversionIncludeText('yes')}
+                          >
+                            Yes
+                          </button>
+                          <button
+                            className={`${styles.radioButton} ${conversionIncludeText === 'no' ? styles.radioButtonActive : ''}`}
+                            onClick={() => setConversionIncludeText('no')}
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Text Input - only show if "yes" selected */}
+                      {conversionIncludeText === 'yes' && (
+                        <div className={styles.formField}>
+                          <label className={styles.formLabel}>Text content</label>
+                          <input
+                            type="text"
+                            value={conversionText}
+                            onChange={(e) => setConversionText(e.target.value)}
+                            placeholder="Enter text or leave empty for AI to decide"
+                            className={styles.formInput}
+                          />
+                          <p className={styles.formHint}>Leave empty to let AI decide the text</p>
+                        </div>
+                      )}
+
+                      {/* Submit Button */}
+                      <button
+                        className={styles.formSubmitButton}
+                        onClick={handleConversionSubmit}
+                        disabled={!conversionGenre.trim() || conversionIncludeText === null}
+                      >
+                        <span>Generate Thumbnails</span>
+                        <Image
+                          src="/assets/project/icons/send-prompt.svg"
+                          alt=""
+                          width={20}
+                          height={20}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className={styles.convertButton}
+                    style={{
+                      left: centerX,
+                      top: maxY + (24 * buttonScale),
+                      transform: `translateX(-50%) scale(${buttonScale})`,
+                      transformOrigin: 'top center',
+                    }}
+                    onClick={handleOpenConversionForm}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    Convert assets to thumbnail
+                  </button>
+                );
+              })()
+            ) : (
+              // Single element selected - show individual prompt panels
+              selectedElementIds.map(elementId => {
+                const element = canvasElements.find(el => el.id === elementId);
+                if (!element) return null;
+
+                const elementPrompt = elementPrompts[elementId] || '';
+                const elementModel = elementModels[elementId] || DEFAULT_MODEL;
+
+                // Calculate dampened inverse scale to maintain visibility when zoomed out
+                const panelScale = Math.max(1, Math.sqrt(1 / viewport.zoom));
+
+                return (
+                  <div
+                    key={`prompt-${elementId}`}
+                    className={styles.modifyPromptPanel}
+                    style={{
+                      left: element.x + element.width / 2,
+                      top: element.y + element.height + (24 * panelScale),
+                      transform: `translateX(-50%) scale(${panelScale})`,
+                      transformOrigin: 'top center',
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => e.stopPropagation()}
+                  >
+                    <div className={styles.promptPanelIcon}>
+                      <Image
+                        src="/assets/project/icons/star.svg"
+                        alt=""
+                        width={27}
+                        height={27}
+                        aria-hidden="true"
+                      />
+                    </div>
+
+                    <input
+                      type="text"
+                      value={elementPrompt}
+                      onChange={(e) => handleModifyPromptChange(elementId, e.target.value)}
+                      onKeyDown={(e) => handleModifyPromptKeyDown(elementId, e)}
+                      placeholder="Add here your prompt to modify this thumbnail"
+                      className={styles.promptPanelInput}
+                    />
+
+                    <div className={styles.promptPanelModelWrapper}>
+                      <ModelDropdown
+                        selectedModel={elementModel}
+                        onSelectModel={(model) => handleSelectModifyModel(elementId, model)}
+                        theme={theme}
+                      />
+                    </div>
+
+                    <button
+                      className={styles.promptPanelSubmit}
+                      onClick={() => handleModifyPromptSubmit(elementId)}
+                      disabled={!elementPrompt.trim()}
+                    >
+                      <Image
+                        src="/assets/project/icons/send-prompt.svg"
+                        alt=""
+                        width={24}
+                        height={24}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 

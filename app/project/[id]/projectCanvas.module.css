@@ -24,7 +24,7 @@
 .loadingSpinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f0f0f0;
+  border: 3px solid #e8e8e8;
   border-top-color: #ff6f61;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -222,43 +222,68 @@
 .youtubeInputContainer {
   position: relative;
   background-color: #ffffff;
-  border: 1px solid #e5e5e5;
-  border-radius: 16px;
-  padding: 14px;
-  padding-bottom: 60px;
-  min-height: 160px;
+  border: 1px solid #d5d5d5;
+  border-radius: 24px;
+  padding: 0;
+  width: 310px;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease;
 }
 
 .youtubeInputContainer.youtubeInputError {
   border-color: #ff4444;
 }
 
+.youtubeInputContainer:focus-within {
+  border-color: #ff6f61;
+}
+
+.youtubeInputIcon {
+  position: absolute;
+  top: 19px;
+  left: 12px;
+  width: 36.044px;
+  height: 36.044px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(28.783deg);
+  pointer-events: none;
+}
+
 .youtubeTextarea {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 400;
   color: #141414;
   background: transparent;
   border: none;
   outline: none;
   resize: none;
   width: 100%;
-  min-height: 80px;
-  line-height: 1.5;
+  flex: 1;
+  padding: 19px 16px 70px 52px;
+  line-height: normal;
 }
 
 .youtubeTextarea::placeholder {
   color: #a3a3a3;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
 }
 
 .submitButton {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 44px;
-  height: 44px;
+  bottom: 16px;
+  right: 16px;
+  width: 56px;
+  height: 56px;
   background-color: #ff6f61;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -285,6 +310,208 @@
   color: #ff4444;
   margin-top: 8px;
   padding-left: 14px;
+}
+
+/* Prompt Input Section */
+.promptInputSection {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.promptInputContainer {
+  position: relative;
+  background-color: #ffffff;
+  border: 1px solid #d5d5d5;
+  border-radius: 24px;
+  padding: 0;
+  width: 310px;
+  height: 279px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease;
+}
+
+.promptInputContainer:focus-within {
+  border-color: #ff6f61;
+}
+
+.promptTextarea {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #141414;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  width: 100%;
+  flex: 1;
+  padding: 21px 16px 70px 16px;
+  line-height: normal;
+}
+
+.promptTextarea::placeholder {
+  color: #a3a3a3;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.promptButtonsRow {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.addButton {
+  width: 48px;
+  height: 48px;
+  background-color: #e8e8e8;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.addButton:hover {
+  background-color: #e5e5e5;
+}
+
+.addButton:active {
+  transform: scale(0.95);
+}
+
+.promptButtonsRow .submitButton {
+  width: 48px;
+  height: 48px;
+  position: static;
+  flex-shrink: 0;
+}
+
+.promptDropdownsRow {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  position: relative;
+  z-index: 100;
+}
+
+.promptDropdownWrapper {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.promptDropdownWrapper :global(.container) {
+  width: 100%;
+  position: static;
+}
+
+.promptDropdownWrapper :global(.trigger) {
+  width: 100%;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: 12px;
+  justify-content: flex-start;
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+}
+
+.promptDropdownWrapper :global(.trigger:hover) {
+  background-color: #fafafa;
+  border-color: #d5d5d5;
+}
+
+
+
+/* Thumbnail Count Slider */
+.thumbnailCountSection {
+  width: 310px;
+  padding: 16px 0;
+}
+
+.thumbnailCountLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #141414;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.thumbnailCountSlider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sliderTrack {
+  flex: 1;
+  height: 6px;
+  background-color: #e5e5e5;
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+}
+
+.sliderFill {
+  height: 100%;
+  background-color: #ff6f61;
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.sliderDots {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.sliderDot {
+  width: 14px;
+  height: 14px;
+  background-color: #ffffff;
+  border: 2px solid #d5d5d5;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.sliderDot:hover {
+  border-color: #ff6f61;
+  transform: scale(1.15);
+}
+
+.sliderDot.sliderDotActive {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+}
+
+.thumbnailCountValue {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #141414;
+  min-width: 20px;
+  text-align: center;
 }
 
 /* Image Mode Hint */
@@ -329,7 +556,7 @@
   position: relative;
   overflow: hidden;
   /* Clean dotted pattern background - infinite feel */
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   background-image: radial-gradient(circle, #d0d0d0 1px, transparent 1px);
   background-size: 20px 20px;
   /* Prevent browser zoom gestures */
@@ -469,6 +696,291 @@
 }
 
 /* ============================================
+   MODIFY PROMPT PANEL
+   ============================================ */
+
+.modifyPromptPanel {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #d5d5d5;
+  border-radius: 16px;
+  padding: 16px;
+  min-width: 600px;
+  height: 80px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  pointer-events: auto;
+}
+
+.promptPanelIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  /* Color the white star SVG to coral */
+  filter: brightness(0) saturate(100%) invert(58%) sepia(51%) saturate(2512%) hue-rotate(333deg) brightness(101%) contrast(101%);
+}
+
+.promptPanelInput {
+  flex: 1;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  color: #141414;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.promptPanelInput::placeholder {
+  color: #a3a3a3;
+}
+
+.promptPanelModelWrapper {
+  flex-shrink: 0;
+}
+
+.promptPanelSubmit {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  background-color: #ff6f61;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.promptPanelSubmit:hover:not(:disabled) {
+  background-color: #ff5a4a;
+}
+
+.promptPanelSubmit:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.promptPanelSubmit:disabled {
+  background-color: #d5d5d5;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ============================================
+   CONVERT BUTTON (Multi-select)
+   ============================================ */
+
+.convertButton {
+  position: absolute;
+  background: linear-gradient(135deg, #ff6f61 0%, #ff8a7a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 32px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255, 111, 97, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1001;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.convertButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(255, 111, 97, 0.4);
+}
+
+.convertButton:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   CONVERSION FORM PANEL (In-Canvas)
+   ============================================ */
+
+.conversionFormPanel {
+  position: absolute;
+  background: #ffffff;
+  border: 1px solid #d5d5d5;
+  border-radius: 20px;
+  min-width: 450px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1001;
+  pointer-events: auto;
+  animation: scaleIn 0.2s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+.formPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.formPanelTitle {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #141414;
+  margin: 0;
+}
+
+.formPanelClose {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.formPanelClose:hover {
+  background-color: #e8e8e8;
+  color: #333;
+}
+
+.formPanelContent {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #141414;
+}
+
+.formInput {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  color: #141414;
+  background: #f8f8f8;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.formInput:focus {
+  background: #ffffff;
+  border-color: #ff6f61;
+}
+
+.formInput::placeholder {
+  color: #a3a3a3;
+}
+
+.formHint {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 11px;
+  color: #666;
+  margin-top: -2px;
+}
+
+.radioGroup {
+  display: flex;
+  gap: 10px;
+}
+
+.radioButton {
+  flex: 1;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  background: #f8f8f8;
+  border: 2px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radioButton:hover {
+  background: #e8e8e8;
+  border-color: #d5d5d5;
+}
+
+.radioButtonActive {
+  background: rgba(255, 111, 97, 0.1);
+  border-color: #ff6f61;
+  color: #ff6f61;
+  font-weight: 600;
+}
+
+.formSubmitButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #ff6f61 0%, #ff8a7a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 16px rgba(255, 111, 97, 0.25);
+  margin-top: 6px;
+}
+
+.formSubmitButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 111, 97, 0.35);
+}
+
+.formSubmitButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.formSubmitButton:disabled {
+  background: linear-gradient(135deg, #d5d5d5 0%, #e5e5e5 100%);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ============================================
    TOOL PALETTE
    ============================================ */
 
@@ -501,7 +1013,7 @@
 }
 
 .toolButton:hover {
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   color: #333;
 }
 
@@ -550,7 +1062,7 @@
 }
 
 .zoomButton:hover {
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   color: #333;
 }
 
@@ -662,6 +1174,57 @@
   color: #666;
 }
 
+.darkTheme .youtubeInputIcon {
+  opacity: 0.8;
+}
+
+.darkTheme .promptInputContainer {
+  background-color: #2a2a2a;
+  border-color: #333;
+}
+
+.darkTheme .promptTextarea {
+  color: #ffffff;
+}
+
+.darkTheme .promptTextarea::placeholder {
+  color: #666;
+}
+
+.darkTheme .addButton {
+  background-color: #1a1a1a;
+}
+
+.darkTheme .addButton:hover {
+  background-color: #333;
+}
+
+.darkTheme .thumbnailCountLabel {
+  color: #ffffff;
+}
+
+.darkTheme .sliderTrack {
+  background-color: #333;
+}
+
+.darkTheme .sliderDot {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+.darkTheme .sliderDot.sliderDotActive {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+}
+
+.darkTheme .thumbnailCountValue {
+  color: #ffffff;
+}
+
+.darkTheme .promptDropdownWrapper :global(.trigger) {
+  background-color: #2a2a2a;
+}
+
 .darkTheme .imageModeHint {
   background-color: #2a2a2a;
   border-color: #444;
@@ -720,6 +1283,81 @@
   border-top-color: #ff6f61;
 }
 
+.darkTheme .modifyPromptPanel {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.darkTheme .promptPanelInput {
+  color: #ffffff;
+}
+
+.darkTheme .promptPanelInput::placeholder {
+  color: #666;
+}
+
+.darkTheme .conversionFormPanel {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.darkTheme .formPanelHeader {
+  border-bottom-color: #444;
+}
+
+.darkTheme .formPanelTitle {
+  color: #ffffff;
+}
+
+.darkTheme .formPanelClose {
+  color: #999;
+}
+
+.darkTheme .formPanelClose:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.darkTheme .formLabel {
+  color: #ffffff;
+}
+
+.darkTheme .formInput {
+  background: #1a1a1a;
+  border-color: #444;
+  color: #ffffff;
+}
+
+.darkTheme .formInput:focus {
+  background: #242424;
+  border-color: #ff6f61;
+}
+
+.darkTheme .formInput::placeholder {
+  color: #666;
+}
+
+.darkTheme .formHint {
+  color: #999;
+}
+
+.darkTheme .radioButton {
+  background: #1a1a1a;
+  border-color: #444;
+  color: #999;
+}
+
+.darkTheme .radioButton:hover {
+  background: #242424;
+  border-color: #555;
+}
+
+.darkTheme .radioButtonActive {
+  background: rgba(255, 111, 97, 0.15);
+  border-color: #ff6f61;
+  color: #ff6f61;
+}
+
 /* ============================================
    RESPONSIVE
    ============================================ */
@@ -742,5 +1380,22 @@
 
   .shortcutsHint {
     display: none;
+  }
+
+  .youtubeInputContainer,
+  .promptInputContainer,
+  .promptDropdownsRow,
+  .thumbnailCountSection {
+    width: 100%;
+    max-width: 310px;
+  }
+
+  .promptDropdownsRow {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .promptDropdownWrapper {
+    width: 100%;
   }
 }

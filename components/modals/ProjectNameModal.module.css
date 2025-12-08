@@ -148,7 +148,7 @@
 .toggleContainer {
   width: 100%;
   max-width: 550px;
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   border-radius: 14px;
   height: 60px;
   padding: 0 20px;
@@ -230,7 +230,7 @@
 }
 
 .cancelButton {
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   color: #797979;
 }
 

@@ -17,6 +17,8 @@ interface ModelDropdownProps {
   selectedModel: Model | null;
   onSelectModel: (model: Model) => void;
   theme?: 'light' | 'dark';
+  openUpward?: boolean;
+  showLabel?: boolean;
 }
 
 const MODELS: Model[] = [
@@ -46,9 +48,24 @@ const MODELS: Model[] = [
   }
 ];
 
-export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'light' }: ModelDropdownProps) {
+export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'light', openUpward = false, showLabel = false }: ModelDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Calculate dropdown position when opening upward with fixed positioning
+  useEffect(() => {
+    if (isOpen && openUpward && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        bottom: window.innerHeight - rect.top + 8,
+        left: rect.left,
+      });
+    } else if (!isOpen) {
+      setDropdownPosition(null);
+    }
+  }, [isOpen, openUpward]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -74,6 +91,7 @@ export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'l
   return (
     <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : ''}`} ref={dropdownRef}>
       <button
+        ref={triggerRef}
         className={`${styles.trigger} ${selectedModel ? styles.triggerSelected : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Select model"
@@ -97,14 +115,22 @@ export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'l
             aria-hidden="true"
           />
         )}
-        <span>{selectedModel ? selectedModel.name : 'Model'}</span>
+        {showLabel && <span className={styles.labelVisible}>{selectedModel ? selectedModel.name : 'Model'}</span>}
         <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
       {isOpen && (
-        <div className={styles.dropdown}>
+        <div
+          className={`${styles.dropdown} ${openUpward ? styles.dropdownUpward : ''}`}
+          style={openUpward && dropdownPosition ? {
+            position: 'fixed',
+            bottom: dropdownPosition.bottom,
+            left: dropdownPosition.left,
+            top: 'auto',
+          } : undefined}
+        >
           {/* Header */}
           <div className={styles.header}>
             <p className={styles.headerLabel}>Model Selected</p>
@@ -133,14 +159,14 @@ export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'l
                 </div>
                 <div className={styles.creditsContainer}>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28"/>
-                    <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+                    <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                    <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
                   </svg>
                   <span className={styles.credits}>{model.credits}</span>
                 </div>
                 {selectedModel?.id === model.id && (
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={styles.checkIcon} aria-hidden="true">
-                    <path d="M13.3334 4L6.00008 11.3333L2.66675 8" stroke="#ff6f61" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M13.3334 4L6.00008 11.3333L2.66675 8" stroke="#ff6f61" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </button>

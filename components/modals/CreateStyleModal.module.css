@@ -17,6 +17,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -44,6 +45,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -69,7 +71,7 @@
 }
 
 .closeButton:hover {
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   color: #797979;
 }
 
@@ -184,7 +186,7 @@
 
 /* Info Box */
 .infoBox {
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   border-radius: 14px;
   padding: 16px 20px;
   margin-bottom: 8px;
@@ -213,7 +215,7 @@
   justify-content: center;
   gap: 10px;
   padding: 14px 16px;
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   border: 2px solid transparent;
   border-radius: 14px;
   cursor: pointer;
@@ -261,7 +263,7 @@
 
 /* Mode Description */
 .modeDescription {
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   border-radius: 14px;
   padding: 14px 18px;
 }
@@ -305,7 +307,7 @@
   aspect-ratio: 1;
   border-radius: 14px;
   overflow: hidden;
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
 }
 
 .previewImage {
@@ -391,7 +393,7 @@
 .cancelButton {
   flex: 1;
   height: 56px;
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   border: none;
   border-radius: 14px;
   font-family: var(--font-space-grotesk), sans-serif;

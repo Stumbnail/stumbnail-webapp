@@ -2,11 +2,12 @@
 .container {
   position: relative;
   display: inline-block;
+  width: auto;
 }
 
 /* Trigger Button */
 .trigger {
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   border: none;
   border-radius: 10px;
   height: 44px;
@@ -20,11 +21,18 @@
   cursor: pointer;
   transition: background-color 0.15s ease;
   min-width: 44px;
+  width: auto;
   justify-content: center;
 }
 
 .trigger span {
   display: none;
+}
+
+.trigger .labelVisible {
+  display: block;
+  font-weight: 400;
+  color: #8d8d8d;
 }
 
 .trigger img {
@@ -85,6 +93,25 @@
   }
 }
 
+/* Upward opening variant */
+.dropdownUpward {
+  top: auto;
+  bottom: calc(100% + 8px);
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Header */
 .header {
   display: flex;
@@ -125,7 +152,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
   border: 1px solid transparent;
   border-radius: 10px;
   cursor: pointer;
@@ -144,11 +171,11 @@
 
 .modelItemSelected {
   border-color: #ff6f61;
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
 }
 
 .modelItemSelected:hover {
-  background-color: #f0f0f0;
+  background-color: #e8e8e8;
 }
 
 .checkIcon {
