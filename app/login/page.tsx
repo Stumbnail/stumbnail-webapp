@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import styles from './login.module.css';
+
+// Hooks
+import { useAuth } from '@/hooks';
+
+// UI Components
+import { LoadingSpinner } from '@/components/ui';
 
 // Lazy load heavy GridMotion component (uses GSAP animations)
 const GridMotion = dynamic(
@@ -18,11 +24,44 @@ interface FirebaseError extends Error {
   code?: string;
 }
 
+/**
+ * Get initial theme from localStorage or system preference
+ * Used for rendering the loading spinner with correct theme before full page loads
+ */
+function getInitialTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'dark';
+
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    return savedTheme;
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isDarkTheme, setIsDarkTheme] = useState(true);
+  const [initialTheme, setInitialTheme] = useState<'light' | 'dark'>('dark');
   const router = useRouter();
+
+  // Check if user is already authenticated (don't redirect to login if not)
+  const { user, loading: authLoading } = useAuth(false);
+
+  // Initialize theme on mount
+  useEffect(() => {
+    const theme = getInitialTheme();
+    setInitialTheme(theme);
+    setIsDarkTheme(theme === 'dark');
+  }, []);
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [authLoading, user, router]);
 
   const themeClass = isDarkTheme ? styles.dark : styles.light;
 
@@ -50,6 +89,13 @@ export default function LoginPage() {
       console.error('Sign in error:', err);
     }
   }, [router]);
+
+  // Show loading state while checking authentication
+  if (authLoading || user) {
+    return (
+      <LoadingSpinner theme={initialTheme} fullScreen />
+    );
+  }
 
   // Generate thumbnail grid items for GridMotion (28 items total)
   const thumbnails = Array.from({ length: 13 }, (_, i) => `/assets/thumbnails/thumb${i + 1}.png`);

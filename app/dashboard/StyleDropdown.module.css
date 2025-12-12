@@ -367,16 +367,18 @@
 
 /* Dark Theme */
 .darkTheme .trigger {
-  background-color: #252525;
+  background-color: #333333;
+  border: 1px solid #444444;
   color: #a3a3a3;
 }
 
 .darkTheme .trigger:hover {
   background-color: #3a3a3a;
+  border-color: #555555;
 }
 
 .darkTheme .trigger:active {
-  background-color: #1c1c1c;
+  background-color: #2a2a2a;
 }
 
 .darkTheme .dropdown {

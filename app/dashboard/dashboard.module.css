@@ -610,10 +610,11 @@
 }
 
 /* Section Title */
+/* Section Title */
 .sectionTitle {
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   color: #141414;
   margin: 0;
   line-height: 1.2;
@@ -777,8 +778,9 @@
 
 .createProjectText {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 400;
+  /* Reduced from 500 */
   color: #797979;
   transition: color 0.2s ease;
 }
@@ -845,8 +847,9 @@
 
 .projectName {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
+  /* Reduced from 600 */
   color: #141414;
   margin: 0;
   line-height: 1.3;
@@ -855,6 +858,7 @@
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -965,7 +969,7 @@
 
 .projectDate {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 400;
   color: #a3a3a3;
   line-height: 1.2;
@@ -976,8 +980,9 @@
   align-items: center;
   gap: 4px;
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 400;
+  /* Reduced from 500 */
   color: #797979;
   line-height: 1.2;
 }
@@ -1073,33 +1078,30 @@
   border-radius: 18px;
 }
 
-.creationContainerFocused {
-  /* No visual change on focus */
-}
+/* .creationContainerFocused removed */
 
 .creationContainerInner {
-  background: #f8f8f8;
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
   border-radius: 18px;
   padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 /* Quick Create Header */
 .quickCreateHeader {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .quickCreateSubtitle {
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  color: #797979;
-  margin: 6px 0 0 0;
+  display: none;
 }
 
 .createRow {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  align-items: flex-end;
+  /* Align to bottom for inputs */
+  gap: 24px;
 }
 
 .createPromptWrapper {
@@ -1118,31 +1120,32 @@
 
 .orDividerWrapper {
   flex-shrink: 0;
-  padding: 0 8px;
-  padding-top: 42px;
+  padding: 0;
+  height: 60px;
+  /* Match input height */
+  display: flex;
+  align-items: center;
 }
 
-.orDivider {
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #8d8d8d;
-  margin: 0;
+.verticalDivider {
+  width: 1px;
+  height: 40px;
+  background-color: #f0f0f0;
 }
 
 .createPrompt {
   position: relative;
   display: flex;
   align-items: center;
-  background-color: #ffffff;
-  border: 1px solid #d5d5d5;
+  background-color: #fcfcfc;
+  border: 1px solid #f0f0f0;
   border-radius: 14px;
   height: 60px;
   padding: 0 12px 0 16px;
   gap: 10px;
   cursor: text;
   flex-wrap: nowrap;
-  transition: border-color 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .createPrompt:focus-within {
@@ -1298,14 +1301,14 @@
 .youtubeInput {
   display: flex;
   align-items: center;
-  background-color: #ffffff;
-  border: 1px solid #d5d5d5;
+  background-color: #fcfcfc;
+  border: 1px solid #f0f0f0;
   border-radius: 14px;
   height: 60px;
   padding: 0 12px;
   gap: 10px;
   cursor: text;
-  transition: border-color 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .youtubeInput:focus-within {
@@ -1371,13 +1374,7 @@
   margin-bottom: 16px;
 }
 
-.templatesSubtitle {
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  color: #a3a3a3;
-  margin: 4px 0 0 0;
-}
+/* .templatesSubtitle removed */
 
 .seeAll {
   font-family: var(--font-space-grotesk), sans-serif;
@@ -1570,7 +1567,8 @@
 .templateTitle {
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  /* Reduced from 600 */
   color: #141414;
   margin: 0;
   line-height: 1.3;
@@ -3342,6 +3340,7 @@
 /* Dark Theme - Content */
 .darkTheme .sectionTitle {
   color: #ffeae8;
+  font-weight: 600;
 }
 
 .darkTheme .projectCard {
@@ -3401,6 +3400,7 @@
 
 .darkTheme .createProjectText {
   color: #a3a3a3;
+  font-weight: 400;
 }
 
 .darkTheme .createProjectCard:hover .createProjectText {
@@ -3500,6 +3500,8 @@
 /* Dark Theme - Creation Section */
 .darkTheme .creationContainerInner {
   background: #1c1c1c;
+  border-color: #2d2d2d;
+  box-shadow: none;
 }
 
 .darkTheme .quickCreateSubtitle {
@@ -3576,6 +3578,10 @@
 
 .darkTheme .orDivider {
   color: #a3a3a3;
+}
+
+.darkTheme .verticalDivider {
+  background-color: #2d2d2d;
 }
 
 /* Dark Theme - Templates Section */

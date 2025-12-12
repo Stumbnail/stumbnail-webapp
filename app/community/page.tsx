@@ -15,6 +15,7 @@ import { getNavItemsForRoute } from '@/lib/constants';
 
 // Components
 import { Sidebar } from '@/components/layout';
+import { LoadingSpinner } from '@/components/ui';
 
 // Styles
 import styles from './community.module.css';
@@ -142,10 +143,7 @@ export default function CommunityPage() {
     // Loading state
     if (authLoading) {
         return (
-            <div className={dashboardStyles.loadingContainer}>
-                <div className={dashboardStyles.loadingSpinner} />
-                <p>Loading...</p>
-            </div>
+            <LoadingSpinner theme={theme} text="Loading..." fullScreen />
         );
     }
 

@@ -210,6 +210,93 @@
   color: #ff6f61;
 }
 
+/* URL Input Section - appears below the tiles in normal flow */
+.urlInputSection {
+  margin-top: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.urlPopupInput {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 8px 12px;
+  transition: border-color 0.2s ease;
+}
+
+.urlPopupInput:focus-within {
+  outline: 2px solid #ff6f61;
+  outline-offset: 0px;
+}
+
+.urlPopupInputError {
+  outline: 2px solid #ff4444;
+  outline-offset: 0px;
+}
+
+.urlInput {
+  flex: 1;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #141414;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 4px 0;
+}
+
+.urlInput::placeholder {
+  color: #8d8d8d;
+}
+
+.urlSubmitButton {
+  width: 32px;
+  height: 32px;
+  background-color: #ff6f61;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.urlSubmitButton:hover {
+  background-color: #e5635a;
+}
+
+.urlSubmitButton:active {
+  transform: scale(0.95);
+}
+
+.urlSubmitButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.urlPopupError {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 12px;
+  color: #ff4444;
+  margin: 8px 0 0 0;
+}
+
 .sidebarSpacer {
   flex: 1;
 }
@@ -234,10 +321,12 @@
 
 .youtubeInputContainer.youtubeInputError {
   border-color: #ff4444;
+  border-width: 2px;
 }
 
 .youtubeInputContainer:focus-within {
   border-color: #ff6f61;
+  border-width: 2px;
 }
 
 .youtubeInputIcon {
@@ -314,7 +403,7 @@
 
 /* Prompt Input Section */
 .promptInputSection {
-  margin-top: auto;
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -323,7 +412,7 @@
 .promptInputContainer {
   position: relative;
   background-color: #ffffff;
-  border: 1px solid #d5d5d5;
+  border: 1px solid #e5e5e5;
   border-radius: 24px;
   padding: 0;
   width: 310px;
@@ -334,7 +423,8 @@
 }
 
 .promptInputContainer:focus-within {
-  border-color: #ff6f61;
+  outline: 2px solid #ff6f61;
+  outline-offset: 0px;
 }
 
 .promptTextarea {
@@ -365,9 +455,8 @@
   left: 16px;
   right: 16px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  gap: 12px;
 }
 
 .addButton {
@@ -401,25 +490,25 @@
 
 .promptDropdownsRow {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   position: relative;
   z-index: 100;
 }
 
 .promptDropdownWrapper {
-  flex: 1;
-  min-width: 0;
   position: relative;
 }
 
 .promptDropdownWrapper :global(.container) {
-  width: 100%;
+  width: auto;
   position: static;
 }
 
 .promptDropdownWrapper :global(.trigger) {
-  width: 100%;
+  width: auto;
+  min-width: 100px;
   height: 48px;
   padding: 0 12px;
   border-radius: 12px;
@@ -433,9 +522,75 @@
   border-color: #d5d5d5;
 }
 
+/* Attached Images Container */
+.attachedImagesContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f8f8f8;
+  border-radius: 12px;
+  border: 1px dashed #d5d5d5;
+  width: 310px;
+}
 
+.attachedImageWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
 
-/* Thumbnail Count Slider */
+.attachedImagePreview {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.removeImageButton {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ff6f61;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ffffff;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  padding: 0;
+}
+
+.removeImageButton:hover {
+  background-color: #e85a4d;
+  transform: scale(1.1);
+}
+
+.removeImageButton svg {
+  width: 10px;
+  height: 10px;
+}
+
+.attachedImageName {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 10px;
+  color: #797979;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Thumbnail Count Selector */
 .thumbnailCountSection {
   width: 310px;
   padding: 16px 0;
@@ -450,68 +605,42 @@
   display: block;
 }
 
-.thumbnailCountSlider {
+.thumbnailCountButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.countButton {
+  width: 48px;
+  height: 56px;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.sliderTrack {
-  flex: 1;
-  height: 6px;
-  background-color: #e5e5e5;
-  border-radius: 3px;
-  position: relative;
-  cursor: pointer;
-}
-
-.sliderFill {
-  height: 100%;
-  background-color: #ff6f61;
-  border-radius: 3px;
-  transition: width 0.2s ease;
-}
-
-.sliderDots {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 2px;
-}
-
-.sliderDot {
-  width: 14px;
-  height: 14px;
+  justify-content: center;
   background-color: #ffffff;
-  border: 2px solid #d5d5d5;
-  border-radius: 50%;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
   cursor: pointer;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #666;
   transition: all 0.2s ease;
-  z-index: 2;
 }
 
-.sliderDot:hover {
+.countButton:hover {
   border-color: #ff6f61;
-  transform: scale(1.15);
+  color: #ff6f61;
 }
 
-.sliderDot.sliderDotActive {
+.countButtonActive {
   background-color: #ff6f61;
   border-color: #ff6f61;
+  color: #ffffff;
 }
 
-.thumbnailCountValue {
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: #141414;
-  min-width: 20px;
-  text-align: center;
+.countButtonActive:hover {
+  background-color: #e85a4d;
+  border-color: #e85a4d;
 }
 
 /* Image Mode Hint */
@@ -700,18 +829,16 @@
    ============================================ */
 
 .modifyPromptPanel {
-  position: absolute;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   background: #ffffff;
   border: 1px solid #d5d5d5;
-  border-radius: 16px;
-  padding: 16px;
-  min-width: 600px;
-  height: 80px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  z-index: 1001;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 580px;
+  height: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   pointer-events: auto;
 }
 
@@ -720,8 +847,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   /* Color the white star SVG to coral */
   filter: brightness(0) saturate(100%) invert(58%) sepia(51%) saturate(2512%) hue-rotate(333deg) brightness(101%) contrast(101%);
 }
@@ -729,7 +856,7 @@
 .promptPanelInput {
   flex: 1;
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   color: #141414;
   background: transparent;
   border: none;
@@ -748,11 +875,11 @@
 
 .promptPanelSubmit {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   background-color: #ff6f61;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -981,6 +1108,242 @@
 }
 
 /* ============================================
+   EXPORT BUTTON
+   ============================================ */
+
+.exportButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #ff6f61 0%, #ff8a7a 100%);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
+  z-index: 100;
+}
+
+.exportButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 111, 97, 0.4);
+}
+
+.exportButton:active {
+  transform: translateY(0);
+}
+
+.exportButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================
+   ELEMENT DIMENSIONS DISPLAY (above selected element)
+   ============================================ */
+
+.elementDimensionsDisplay {
+  position: absolute;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  background: rgba(20, 20, 20, 0.85);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.dimensionsSize {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.dimensionsRatio {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ============================================
+   GENERATION PLACEHOLDER
+   ============================================ */
+
+.generatingPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #fafafa;
+  border-radius: 4px;
+  gap: 12px;
+}
+
+.generatingSpinner {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  animation: spinnerRotate 1.2s linear infinite;
+}
+
+.generatingSpinnerDot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.generatingSpinnerDot:nth-child(1) {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff6f61;
+}
+
+.generatingSpinnerDot:nth-child(2) {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  background-color: #ffb3ab;
+}
+
+.generatingSpinnerDot:nth-child(3) {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff6f61;
+}
+
+.generatingSpinnerDot:nth-child(4) {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  background-color: #ffb3ab;
+}
+
+@keyframes spinnerRotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.generatingText {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+}
+
+/* ============================================
+   FLOATING PROMPT - IMAGE ATTACHMENT
+   ============================================ */
+
+.modifyPromptPanelWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: text;
+}
+
+.modifyPromptAttachButton {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.modifyPromptAttachButton:hover {
+  background-color: #e5e5e5;
+}
+
+.modifyPromptAttachButton:active {
+  transform: scale(0.95);
+}
+
+.modifyPromptAttachedImages {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 12px;
+  padding: 14px 18px 10px 14px;
+  margin-top: 8px;
+  background: #ffffff;
+  border: 1px solid #d5d5d5;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: visible;
+}
+
+.modifyPromptAttachedImage {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.modifyPromptAttachedImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.modifyPromptRemoveImage {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  background-color: #ff6f61;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.modifyPromptRemoveImage:hover {
+  background-color: #e85a4d;
+  transform: scale(1.1);
+}
+
+.modifyPromptRemoveImage svg {
+  width: 8px;
+  height: 8px;
+  color: #fff;
+}
+
+/* ============================================
    TOOL PALETTE
    ============================================ */
 
@@ -1161,9 +1524,42 @@
   color: #ff6f61;
 }
 
+/* Dark theme - URL Popup */
+.darkTheme .urlPopupInput {
+  background-color: #333333;
+  border: 1px solid #444444;
+}
+
+.darkTheme .urlPopupInput:focus-within {
+  outline: 2px solid #ff6f61;
+  outline-offset: 0px;
+}
+
+.darkTheme .urlPopupInputError {
+  outline: 2px solid #ff4444;
+  outline-offset: 0px;
+}
+
+.darkTheme .urlInput {
+  color: #ffffff;
+}
+
+.darkTheme .urlInput::placeholder {
+  color: #666;
+}
+
+.darkTheme .urlSubmitButton:disabled {
+  background-color: #444;
+}
+
+.darkTheme .urlPopupError {
+  color: #ff6b6b;
+}
+
 .darkTheme .youtubeInputContainer {
-  background-color: #2a2a2a;
-  border-color: #333;
+  background-color: #1e1e1e;
+  border-color: #3a3a3a;
+  border-width: 1.5px;
 }
 
 .darkTheme .youtubeTextarea {
@@ -1179,8 +1575,13 @@
 }
 
 .darkTheme .promptInputContainer {
-  background-color: #2a2a2a;
-  border-color: #333;
+  background-color: #333333;
+  border: 1px solid #444444;
+}
+
+.darkTheme .promptInputContainer:focus-within {
+  outline: 2px solid #ff6f61;
+  outline-offset: 0px;
 }
 
 .darkTheme .promptTextarea {
@@ -1192,11 +1593,13 @@
 }
 
 .darkTheme .addButton {
-  background-color: #1a1a1a;
+  background-color: #333333;
+  border: 1px solid #444444;
 }
 
 .darkTheme .addButton:hover {
-  background-color: #333;
+  background-color: #3a3a3a;
+  border-color: #555555;
 }
 
 .darkTheme .thumbnailCountLabel {
@@ -1221,8 +1624,40 @@
   color: #ffffff;
 }
 
-.darkTheme .promptDropdownWrapper :global(.trigger) {
+/* Dark theme - Attached Images */
+.darkTheme .attachedImagesContainer {
   background-color: #2a2a2a;
+  border-color: #444;
+}
+
+.darkTheme .attachedImagePreview {
+  border-color: #444;
+}
+
+.darkTheme .attachedImageName {
+  color: #a3a3a3;
+}
+
+.darkTheme .removeImageButton {
+  border-color: #2a2a2a;
+}
+
+/* Dark theme - Count buttons */
+.darkTheme .countButton {
+  background-color: #2a2a2a;
+  border-color: #444;
+  color: #a3a3a3;
+}
+
+.darkTheme .countButton:hover {
+  border-color: #ff6f61;
+  color: #ff6f61;
+}
+
+.darkTheme .countButtonActive {
+  background-color: #ff6f61;
+  border-color: #ff6f61;
+  color: #ffffff;
 }
 
 .darkTheme .imageModeHint {
@@ -1356,6 +1791,132 @@
   background: rgba(255, 111, 97, 0.15);
   border-color: #ff6f61;
   color: #ff6f61;
+}
+
+/* Dark theme - Selected mode button */
+.darkTheme .createOptionSelected {
+  background-color: rgba(255, 111, 97, 0.15);
+  border-color: #ff6f61;
+}
+
+.darkTheme .createOptionSelected:hover {
+  background-color: rgba(255, 111, 97, 0.2);
+}
+
+/* Dark theme - Input container focus states */
+.darkTheme .youtubeInputContainer:focus-within {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 3px rgba(255, 111, 97, 0.15);
+}
+
+.darkTheme .promptInputContainer:focus-within {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 3px rgba(255, 111, 97, 0.15);
+}
+
+/* Dark theme - Add button (image attachment) */
+.darkTheme .addButton img {
+  filter: brightness(0) invert(1) opacity(0.7);
+}
+
+.darkTheme .addButton:hover img {
+  filter: brightness(0) invert(1) opacity(1);
+}
+
+/* Dark theme - Submit button disabled state */
+.darkTheme .submitButton:disabled {
+  background-color: #444;
+  opacity: 0.6;
+}
+
+/* Dark theme - Input error state */
+.darkTheme .youtubeInputContainer.youtubeInputError {
+  border-color: #ff4444;
+  box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.15);
+}
+
+.darkTheme .inputError {
+  color: #ff6b6b;
+}
+
+/* Dark theme - Dropdown wrapper label visibility */
+.darkTheme .promptDropdownWrapper :global(.labelVisible) {
+  color: #a0a0a0;
+}
+
+/* Dark theme - Toggle switch */
+.darkTheme .toggleSwitch.toggleActive {
+  background-color: #ff6f61;
+}
+
+/* Dark theme - Icon filters for visibility */
+.darkTheme .createOptionIcon {
+  filter: brightness(0) invert(1) opacity(0.6);
+}
+
+.darkTheme .createOptionSelected .createOptionIcon {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(51%) saturate(2512%) hue-rotate(333deg) brightness(101%) contrast(101%);
+}
+
+.darkTheme .youtubeInputIcon img {
+  filter: brightness(0) invert(1) opacity(0.6);
+}
+
+/* Dark theme - Shortcuts hint */
+.darkTheme .shortcutsHint {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Dark theme - Dropdown trigger label text */
+.darkTheme .promptDropdownWrapper :global(.trigger) span {
+  color: #a0a0a0;
+}
+
+/* Dark theme - Slider dot hover state */
+.darkTheme .sliderDot:hover {
+  border-color: #ff6f61;
+  transform: scale(1.15);
+}
+
+/* Dark theme - Canvas Dimensions Display */
+.darkTheme .canvasDimensionsDisplay {
+  background: rgba(42, 42, 42, 0.95);
+}
+
+.darkTheme .dimensionsSize {
+  color: #ffffff;
+}
+
+.darkTheme .dimensionsRatio {
+  color: #888;
+}
+
+/* Dark theme - Generation Placeholder */
+.darkTheme .generatingPlaceholder {
+  background: #1f1f1f;
+}
+
+.darkTheme .generatingText {
+  color: #999;
+}
+
+/* Dark theme - Floating Prompt Attachments */
+.darkTheme .modifyPromptAttachButton {
+  background-color: #333;
+}
+
+.darkTheme .modifyPromptAttachButton:hover {
+  background-color: #444;
+}
+
+.darkTheme .modifyPromptAttachedImages {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.darkTheme .modifyPromptAttachedImage {
+  border-color: #333;
 }
 
 /* ============================================

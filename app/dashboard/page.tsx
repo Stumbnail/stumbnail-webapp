@@ -31,6 +31,7 @@ import {
 // Components - Critical path components load normally
 import { Sidebar, Header } from '@/components/layout';
 import { ProjectsGrid } from '@/components/projects';
+import { LoadingSpinner } from '@/components/ui';
 
 // Lazy load non-critical components to reduce TBT
 const StyleDropdown = dynamic(
@@ -172,7 +173,7 @@ export default function DashboardPage() {
 
   const hasMoreProjects = filteredProjects.length > maxProjectsToShow;
 
-  // Click outside handling for tooltips
+  // Click outside handling for menus and tooltips
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (promptInfoRef.current && !promptInfoRef.current.contains(event.target as Node)) {
@@ -203,7 +204,7 @@ export default function DashboardPage() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [promptInfoOpen, urlInfoOpen, projectMenuOpen]);
+  }, [projectMenuOpen, promptInfoOpen, urlInfoOpen]);
 
   // Cleanup image previews on unmount
   useEffect(() => {
@@ -465,10 +466,7 @@ export default function DashboardPage() {
   // Show loading state
   if (authLoading) {
     return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.loadingSpinner} />
-        <p>Loading...</p>
-      </div>
+      <LoadingSpinner theme={theme} text="Loading..." fullScreen />
     );
   }
 
@@ -554,11 +552,8 @@ export default function DashboardPage() {
           <section className={styles.createSection}>
             <div className={styles.quickCreateHeader}>
               <h2 className={styles.sectionTitle}>
-                Quick <span className={styles.titleAccent}>Create</span>
+                Create
               </h2>
-              <p className={styles.quickCreateSubtitle}>
-                Start creating instantly
-              </p>
             </div>
 
             <div
@@ -575,7 +570,7 @@ export default function DashboardPage() {
                   <div className={styles.createPromptWrapper}>
                     <div className={styles.sectionTitleWithInfo}>
                       <h2 className={styles.sectionTitle}>
-                        Create With <span className={styles.titleAccent}>Prompt</span>
+                        Prompt
                       </h2>
                       <div className={styles.infoButtonWrapper} ref={promptInfoRef}>
                         <button
@@ -692,13 +687,13 @@ export default function DashboardPage() {
                   </div>
 
                   <div className={styles.orDividerWrapper}>
-                    <p className={styles.orDivider}>OR</p>
+                    <div className={styles.verticalDivider} />
                   </div>
 
                   <div className={styles.youtubeInputWrapper}>
                     <div className={styles.sectionTitleWithInfo}>
                       <h2 className={styles.sectionTitle}>
-                        Paste a <span className={styles.titleAccent}>Youtube Link</span>
+                        YouTube Link
                       </h2>
                       <div className={styles.infoButtonWrapper} ref={urlInfoRef}>
                         <button
@@ -738,7 +733,7 @@ export default function DashboardPage() {
                         value={youtubeLink}
                         onChange={handleYoutubeLinkChange}
                         onKeyDown={handleYoutubeLinkKeyDown}
-                        placeholder="Paste a YouTube link to generate thumbnail"
+                        placeholder="Paste a YouTube link"
                         className={styles.linkInput}
                         aria-label="Paste YouTube video URL to generate thumbnail"
                         aria-invalid={!!youtubeLinkError}
@@ -776,8 +771,7 @@ export default function DashboardPage() {
           <section className={`${styles.templatesSection} ${viewingAllTemplates ? styles.viewingAll : ''}`}>
             <div className={styles.templatesHeader}>
               <div>
-                <h2 className={styles.sectionTitle}>Jumpstart Your Creativity</h2>
-                <p className={styles.templatesSubtitle}>Hand-picked templates curated by our team, ready to use</p>
+                <h2 className={styles.sectionTitle}>Templates</h2>
               </div>
               <button
                 onClick={handleSeeAllClick}

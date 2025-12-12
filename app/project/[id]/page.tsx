@@ -28,19 +28,25 @@ const StyleDropdown = dynamic(
 // Styles
 import styles from './projectCanvas.module.css';
 
+// UI Components
+import { LoadingSpinner } from '@/components/ui';
+
 // Types
 type CreationMode = 'url' | 'prompt';
 type ToolMode = 'select' | 'hand';
 
 interface CanvasElement {
   id: string;
-  type: 'image' | 'youtube-thumbnail';
+  type: 'image' | 'youtube-thumbnail' | 'generated';
   src: string;
   x: number;
   y: number;
   width: number;
   height: number;
+  naturalWidth: number;
+  naturalHeight: number;
   aspectRatio: number;
+  status?: 'generating' | 'complete';
 }
 
 interface Viewport {
@@ -92,24 +98,30 @@ export default function ProjectCanvasPage() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const canvasMainRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const youtubeLinkInputRef = useRef<HTMLTextAreaElement>(null);
+  const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
+  const promptImageInputRef = useRef<HTMLInputElement>(null);
 
   // UI State
   const [projectName, setProjectName] = useState('My First Thumbnail');
   const [isPublic, setIsPublic] = useState(true);
-  const [selectedMode, setSelectedMode] = useState<CreationMode>('url');
+  const [selectedMode, setSelectedMode] = useState<CreationMode>('prompt');
   const [youtubeLink, setYoutubeLink] = useState('');
   const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
+  const [showUrlPopup, setShowUrlPopup] = useState(false);
 
   // Prompt mode state
   const [promptText, setPromptText] = useState('');
   const [promptModel, setPromptModel] = useState<Model | null>(null);
   const [promptStyle, setPromptStyle] = useState<any>(null);
   const [thumbnailCount, setThumbnailCount] = useState(1);
+  const [attachedImages, setAttachedImages] = useState<{ id: string; file: File; preview: string }[]>([]);
 
   // Modify prompt state - stores prompts per element ID
   const [elementPrompts, setElementPrompts] = useState<Record<string, string>>({});
   const [elementModels, setElementModels] = useState<Record<string, Model>>({});
+  const [modifyAttachedImages, setModifyAttachedImages] = useState<Record<string, { id: string; file: File; preview: string }[]>>({});
+  const modifyImageInputRef = useRef<HTMLInputElement>(null);
+  const [activeModifyElementId, setActiveModifyElementId] = useState<string | null>(null);
 
   // Multi-select conversion form state
   const [showConversionForm, setShowConversionForm] = useState(false);
@@ -217,14 +229,129 @@ export default function ProjectCanvasPage() {
     };
   }, [viewport]);
 
-  // Add element at viewport center
+  // Animate viewport to target position with easing
+  const animateViewportTo = useCallback((targetX: number, targetY: number, targetZoom: number, duration = 400) => {
+    const startTime = performance.now();
+    const startX = viewport.x;
+    const startY = viewport.y;
+    const startZoom = viewport.zoom;
+
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutCubic(progress);
+
+      setViewport({
+        x: startX + (targetX - startX) * eased,
+        y: startY + (targetY - startY) * eased,
+        zoom: startZoom + (targetZoom - startZoom) * eased,
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [viewport]);
+
+  // Gap between auto-placed elements (DB-persistable: this is just a constant)
+  const ELEMENT_GAP = 20;
+
+  // Find a non-overlapping position for a new element
+  const findNonOverlappingPosition = useCallback((
+    width: number,
+    height: number,
+    existingElements: CanvasElement[],
+    preferredX: number,
+    preferredY: number
+  ): { x: number; y: number } => {
+    // Check if position overlaps with any existing element
+    const doesOverlap = (x: number, y: number): boolean => {
+      return existingElements.some(el => {
+        return !(x + width + ELEMENT_GAP <= el.x ||
+          x >= el.x + el.width + ELEMENT_GAP ||
+          y + height + ELEMENT_GAP <= el.y ||
+          y >= el.y + el.height + ELEMENT_GAP);
+      });
+    };
+
+    // If no overlap at preferred position, use it
+    if (!doesOverlap(preferredX, preferredY)) {
+      return { x: preferredX, y: preferredY };
+    }
+
+    // Try positions to the right of existing elements
+    let bestX = preferredX;
+    let bestY = preferredY;
+
+    // Find rightmost element edge and place next to it
+    if (existingElements.length > 0) {
+      const maxRight = Math.max(...existingElements.map(el => el.x + el.width));
+      bestX = maxRight + ELEMENT_GAP;
+      bestY = preferredY;
+
+      // If that overlaps, try below
+      if (doesOverlap(bestX, bestY)) {
+        const maxBottom = Math.max(...existingElements.map(el => el.y + el.height));
+        bestX = preferredX;
+        bestY = maxBottom + ELEMENT_GAP;
+      }
+    }
+
+    return { x: bestX, y: bestY };
+  }, []);
+
+  // Animate viewport to fit a bounding box of elements
+  const fitElementsInView = useCallback((elementIds: string[]) => {
+    if (!canvasContainerRef.current || elementIds.length === 0) return;
+
+    const containerRect = canvasContainerRef.current.getBoundingClientRect();
+
+    setCanvasElements(prev => {
+      const elements = prev.filter(el => elementIds.includes(el.id));
+      if (elements.length === 0) return prev;
+
+      // Calculate bounding box of all elements
+      const minX = Math.min(...elements.map(el => el.x));
+      const minY = Math.min(...elements.map(el => el.y));
+      const maxX = Math.max(...elements.map(el => el.x + el.width));
+      const maxY = Math.max(...elements.map(el => el.y + el.height));
+
+      const boundingWidth = maxX - minX;
+      const boundingHeight = maxY - minY;
+      const centerX = minX + boundingWidth / 2;
+      const centerY = minY + boundingHeight / 2;
+
+      // Calculate zoom to fit all elements with padding
+      const padding = 100;
+      const zoomX = (containerRect.width - padding * 2) / boundingWidth;
+      const zoomY = (containerRect.height - padding * 2) / boundingHeight;
+      const targetZoom = Math.min(Math.min(zoomX, zoomY), viewport.zoom, 1); // Don't zoom in more than current or 100%
+
+      // Calculate viewport position to center the bounding box
+      const targetX = -(centerX * targetZoom - containerRect.width / 2);
+      const targetY = -(centerY * targetZoom - containerRect.height / 2);
+
+      // Animate to fit all elements
+      animateViewportTo(targetX, targetY, targetZoom);
+
+      return prev;
+    });
+  }, [viewport, animateViewportTo]);
+
+  // Add element at viewport center with non-overlapping logic
   const addElementAtViewportCenter = useCallback((
     src: string,
-    type: 'image' | 'youtube-thumbnail',
+    type: 'image' | 'youtube-thumbnail' | 'generated',
     naturalWidth: number,
-    naturalHeight: number
-  ) => {
-    if (!canvasContainerRef.current) return;
+    naturalHeight: number,
+    status?: 'generating' | 'complete',
+    skipAnimation = false
+  ): string => {
+    if (!canvasContainerRef.current) return '';
 
     const containerRect = canvasContainerRef.current.getBoundingClientRect();
     const centerCanvas = screenToCanvas(
@@ -237,20 +364,88 @@ export default function ProjectCanvasPage() {
     const width = naturalWidth * scale;
     const height = naturalHeight * scale;
 
-    const newElement: CanvasElement = {
-      id: crypto.randomUUID(),
-      type,
-      src,
-      x: centerCanvas.x - width / 2,
-      y: centerCanvas.y - height / 2,
-      width,
-      height,
-      aspectRatio: naturalWidth / naturalHeight,
-    };
+    const preferredX = centerCanvas.x - width / 2;
+    const preferredY = centerCanvas.y - height / 2;
 
-    setCanvasElements(prev => [...prev, newElement]);
-    setSelectedElementIds([newElement.id]);
-  }, [screenToCanvas]);
+    // Generate ID upfront so we can return it
+    const newElementId = crypto.randomUUID();
+
+    // Find non-overlapping position
+    let finalPosition = { x: preferredX, y: preferredY };
+
+    setCanvasElements(prev => {
+      finalPosition = findNonOverlappingPosition(width, height, prev, preferredX, preferredY);
+
+      const newElement: CanvasElement = {
+        id: newElementId,
+        type,
+        src,
+        x: finalPosition.x,
+        y: finalPosition.y,
+        width,
+        height,
+        naturalWidth,
+        naturalHeight,
+        aspectRatio: naturalWidth / naturalHeight,
+        status,
+      };
+
+      setSelectedElementIds(ids => [...ids, newElement.id]);
+
+      // Skip animation for batch operations - they'll handle it themselves
+      if (!skipAnimation) {
+        // Adjust viewport to show the new element if it's outside current view
+        const elementCenterX = finalPosition.x + width / 2;
+        const elementCenterY = finalPosition.y + height / 2;
+
+        // Calculate visible area boundaries in canvas coordinates
+        const visibleLeft = -viewport.x / viewport.zoom;
+        const visibleTop = -viewport.y / viewport.zoom;
+        const visibleRight = visibleLeft + containerRect.width / viewport.zoom;
+        const visibleBottom = visibleTop + containerRect.height / viewport.zoom;
+
+        // Check if element center is outside visible area (with some padding)
+        const padding = 50;
+        const needsPan =
+          elementCenterX < visibleLeft + padding ||
+          elementCenterX > visibleRight - padding ||
+          elementCenterY < visibleTop + padding ||
+          elementCenterY > visibleBottom - padding;
+
+        if (needsPan) {
+          // Calculate target position to center the new element
+          const targetX = -(elementCenterX * viewport.zoom - containerRect.width / 2);
+          const targetY = -(elementCenterY * viewport.zoom - containerRect.height / 2);
+
+          // Check if we need to zoom out to see more elements
+          // Calculate how far outside the view the element is
+          const distanceOutside = Math.max(
+            Math.max(visibleLeft + padding - elementCenterX, 0),
+            Math.max(elementCenterX - (visibleRight - padding), 0),
+            Math.max(visibleTop + padding - elementCenterY, 0),
+            Math.max(elementCenterY - (visibleBottom - padding), 0)
+          );
+
+          // Zoom out slightly if element is far outside (more than 200px in canvas coords)
+          let targetZoom = viewport.zoom;
+          if (distanceOutside > 200) {
+            targetZoom = Math.max(0.5, viewport.zoom * 0.85); // Zoom out by 15%, min 50%
+          }
+
+          // Recalculate target position with new zoom
+          const finalTargetX = -(elementCenterX * targetZoom - containerRect.width / 2);
+          const finalTargetY = -(elementCenterY * targetZoom - containerRect.height / 2);
+
+          // Animate to new viewport position
+          animateViewportTo(finalTargetX, finalTargetY, targetZoom);
+        }
+      }
+
+      return [...prev, newElement];
+    });
+
+    return newElementId;
+  }, [screenToCanvas, findNonOverlappingPosition, viewport, animateViewportTo]);
 
   const handleYoutubeLinkSubmit = useCallback(() => {
     if (!validateYoutubeLink(youtubeLink)) return;
@@ -292,10 +487,31 @@ export default function ProjectCanvasPage() {
       count: thumbnailCount
     });
 
-    // TODO: Implement actual thumbnail generation logic
+    // Create placeholder elements for each thumbnail being generated
+    // Default thumbnail size: 1920x1080 (16:9 aspect ratio)
+    const defaultWidth = 1920;
+    const defaultHeight = 1080;
+
+    // Clear selection first, then add all elements with skipAnimation
+    setSelectedElementIds([]);
+    const newElementIds: string[] = [];
+
+    for (let i = 0; i < thumbnailCount; i++) {
+      const id = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
+      if (id) newElementIds.push(id);
+    }
+
+    // After a short delay to let state update, fit all new elements in view with animation
+    setTimeout(() => {
+      if (newElementIds.length > 0) {
+        fitElementsInView(newElementIds);
+      }
+    }, 50);
+
+    // TODO: Call API endpoint here, then update elements with status: 'complete' and src: imageUrl
     // For now, just clear the prompt
-    // setPromptText('');
-  }, [promptText, promptModel, promptStyle, thumbnailCount]);
+    setPromptText('');
+  }, [promptText, promptModel, promptStyle, thumbnailCount, addElementAtViewportCenter, fitElementsInView]);
 
   const handleThumbnailCountChange = useCallback((count: number) => {
     setThumbnailCount(count);
@@ -558,6 +774,8 @@ export default function ProjectCanvasPage() {
 
   // Element interaction handlers
   const handleElementMouseDown = useCallback((e: React.MouseEvent, elementId: string) => {
+    // Block middle mouse button - only use it for panning
+    if (e.button === 1) return;
     if (toolMode === 'hand' || isHandToolActive) return;
     e.stopPropagation();
 
@@ -893,14 +1111,28 @@ export default function ProjectCanvasPage() {
     if (!prompt?.trim()) return;
 
     console.log('Modifying element:', elementId, 'with prompt:', prompt, 'using model:', model);
-    // TODO: Implement actual modification logic
+
+    // Create a NEW placeholder element next to the current one (don't replace it)
+    const defaultWidth = 1920;
+    const defaultHeight = 1080;
+
+    const newId = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
+
+    // Animate to show the new placeholder
+    if (newId) {
+      setTimeout(() => {
+        fitElementsInView([newId]);
+      }, 50);
+    }
+
+    // TODO: Implement actual API call, then update element with status: 'complete' and new src
 
     // Clear the prompt after submission
     setElementPrompts(prev => ({
       ...prev,
       [elementId]: '',
     }));
-  }, [elementPrompts, elementModels]);
+  }, [elementPrompts, elementModels, addElementAtViewportCenter, fitElementsInView]);
 
   const handleModifyPromptKeyDown = useCallback((elementId: string, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -951,9 +1183,25 @@ export default function ProjectCanvasPage() {
       text: conversionIncludeText === 'yes' ? conversionText : null,
     });
 
-    // TODO: Implement actual conversion logic
+    // Create ONE generation placeholder for the converted thumbnail (16:9)
+    const defaultWidth = 1920;
+    const defaultHeight = 1080;
+
+    setSelectedElementIds([]);
+
+    // Only create one thumbnail regardless of how many assets are selected
+    const newId = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
+
+    // Animate to show the new placeholder
+    if (newId) {
+      setTimeout(() => {
+        fitElementsInView([newId]);
+      }, 50);
+    }
+
+    // TODO: Implement actual API call, then update element with status: 'complete' and src
     handleCloseConversionForm();
-  }, [conversionGenre, conversionIncludeText, conversionText, selectedElementIds, handleCloseConversionForm]);
+  }, [conversionGenre, conversionIncludeText, conversionText, selectedElementIds, handleCloseConversionForm, addElementAtViewportCenter, fitElementsInView]);
 
   // Compute cursor style
   const getCursorStyle = () => {
@@ -966,10 +1214,7 @@ export default function ProjectCanvasPage() {
   // Show loading state
   if (authLoading) {
     return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.loadingSpinner} />
-        <p>Loading...</p>
-      </div>
+      <LoadingSpinner theme={theme} text="Loading..." fullScreen />
     );
   }
 
@@ -985,6 +1230,33 @@ export default function ProjectCanvasPage() {
         type="file"
         accept="image/*"
         onChange={handleImageUpload}
+        style={{ display: 'none' }}
+        aria-hidden="true"
+      />
+
+      {/* Hidden file input for modify prompt attachments */}
+      <input
+        ref={modifyImageInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={(e) => {
+          const files = e.target.files;
+          if (!files || !activeModifyElementId) return;
+          const newImages = Array.from(files).map(file => ({
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            file,
+            preview: URL.createObjectURL(file)
+          }));
+          setModifyAttachedImages(prev => ({
+            ...prev,
+            [activeModifyElementId]: [...(prev[activeModifyElementId] || []), ...newImages]
+          }));
+          setActiveModifyElementId(null);
+          if (modifyImageInputRef.current) {
+            modifyImageInputRef.current.value = '';
+          }
+        }}
         style={{ display: 'none' }}
         aria-hidden="true"
       />
@@ -1021,7 +1293,14 @@ export default function ProjectCanvasPage() {
           <div className={styles.createOptionsGrid}>
             <button
               className={`${styles.createOption} ${selectedMode === 'url' ? styles.createOptionSelected : ''}`}
-              onClick={() => handleModeSelect('url')}
+              onClick={() => {
+                handleModeSelect('url');
+                if (selectedMode !== 'url') {
+                  setShowUrlPopup(true);
+                } else {
+                  setShowUrlPopup(!showUrlPopup);
+                }
+              }}
             >
               <div className={styles.createOptionIcon}>
                 <Image src="/assets/project/icons/attachment-02-stroke-rounded 1.svg" alt="" width={34} height={34} />
@@ -1039,40 +1318,39 @@ export default function ProjectCanvasPage() {
               <span className={styles.createOptionLabel}>Prompt</span>
             </button>
           </div>
-        </div>
 
-        <div className={styles.sidebarSpacer} />
-
-        {selectedMode === 'url' && (
-          <div className={styles.youtubeInputSection}>
-            <div className={`${styles.youtubeInputContainer} ${youtubeLinkError ? styles.youtubeInputError : ''}`}>
-              <div className={styles.youtubeInputIcon}>
-                <Image
-                  src="/assets/project/icons/attachment-02-stroke-rounded 1.svg"
-                  alt=""
-                  width={27}
-                  height={27}
+          {/* URL Input - appears below tiles when URL mode is selected */}
+          {selectedMode === 'url' && showUrlPopup && (
+            <div className={styles.urlInputSection}>
+              <div className={`${styles.urlPopupInput} ${youtubeLinkError ? styles.urlPopupInputError : ''}`}>
+                <input
+                  ref={youtubeLinkInputRef}
+                  type="text"
+                  value={youtubeLink}
+                  onChange={(e) => {
+                    setYoutubeLink(e.target.value);
+                    setYoutubeLinkError(null);
+                  }}
+                  placeholder="Paste YouTube URL"
+                  className={styles.urlInput}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleYoutubeLinkSubmit();
+                    }
+                  }}
                 />
+                <button
+                  className={styles.urlSubmitButton}
+                  onClick={handleYoutubeLinkSubmit}
+                  disabled={!youtubeLink.trim()}
+                >
+                  <Image src="/assets/project/icons/send-prompt.svg" alt="" width={16} height={16} />
+                </button>
               </div>
-              <textarea
-                ref={youtubeLinkInputRef}
-                value={youtubeLink}
-                onChange={handleYoutubeLinkChange}
-                placeholder="Paste a YouTube link to generate thumbnail"
-                className={styles.youtubeTextarea}
-                rows={1}
-              />
-              <button
-                className={styles.submitButton}
-                onClick={handleYoutubeLinkSubmit}
-                disabled={!youtubeLink.trim()}
-              >
-                <Image src="/assets/project/icons/send-prompt.svg" alt="" width={24} height={24} />
-              </button>
+              {youtubeLinkError && <p className={styles.urlPopupError}>{youtubeLinkError}</p>}
             </div>
-            {youtubeLinkError && <p className={styles.inputError}>{youtubeLinkError}</p>}
-          </div>
-        )}
+          )}
+        </div>
 
         {selectedMode === 'prompt' && (
           <div className={styles.promptInputSection}>
@@ -1086,9 +1364,6 @@ export default function ProjectCanvasPage() {
                 rows={1}
               />
               <div className={styles.promptButtonsRow}>
-                <button className={styles.addButton} title="Add reference image">
-                  <Image src="/assets/project/icons/add-image.svg" alt="" width={24} height={24} />
-                </button>
                 <button
                   className={styles.submitButton}
                   onClick={handlePromptSubmit}
@@ -1099,8 +1374,36 @@ export default function ProjectCanvasPage() {
               </div>
             </div>
 
-            {/* Model and Style Dropdowns */}
+            {/* Model, Style Dropdowns and Add Image */}
             <div className={styles.promptDropdownsRow}>
+              <button
+                className={styles.addButton}
+                title="Add reference image"
+                onClick={() => promptImageInputRef.current?.click()}
+              >
+                <Image src="/assets/project/icons/add-image.svg" alt="" width={24} height={24} />
+              </button>
+              <input
+                ref={promptImageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (!files) return;
+                  const newImages = Array.from(files).map(file => ({
+                    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    file,
+                    preview: URL.createObjectURL(file)
+                  }));
+                  setAttachedImages(prev => [...prev, ...newImages]);
+                  if (promptImageInputRef.current) {
+                    promptImageInputRef.current.value = '';
+                  }
+                }}
+                style={{ display: 'none' }}
+                aria-label="Upload reference image"
+              />
               <div className={styles.promptDropdownWrapper}>
                 <ModelDropdown
                   selectedModel={promptModel}
@@ -1108,6 +1411,7 @@ export default function ProjectCanvasPage() {
                   theme={theme}
                   openUpward
                   showLabel
+                  disabled={!!promptStyle}
                 />
               </div>
               <div className={styles.promptDropdownWrapper}>
@@ -1122,26 +1426,54 @@ export default function ProjectCanvasPage() {
               </div>
             </div>
 
-            {/* Thumbnail Count Slider */}
+            {/* Attached Images Preview */}
+            {attachedImages.length > 0 && (
+              <div className={styles.attachedImagesContainer}>
+                {attachedImages.map((img) => (
+                  <div key={img.id} className={styles.attachedImageWrapper}>
+                    <Image
+                      src={img.preview}
+                      alt={`Attached: ${img.file.name}`}
+                      width={60}
+                      height={60}
+                      className={styles.attachedImagePreview}
+                    />
+                    <button
+                      className={styles.removeImageButton}
+                      onClick={() => {
+                        setAttachedImages(prev => {
+                          const imageToRemove = prev.find(i => i.id === img.id);
+                          if (imageToRemove) {
+                            URL.revokeObjectURL(imageToRemove.preview);
+                          }
+                          return prev.filter(i => i.id !== img.id);
+                        });
+                      }}
+                      aria-label={`Remove ${img.file.name}`}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <span className={styles.attachedImageName}>{img.file.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Thumbnail Count Selector */}
             <div className={styles.thumbnailCountSection}>
               <span className={styles.thumbnailCountLabel}>Thumbnails to generate</span>
-              <div className={styles.thumbnailCountSlider}>
-                <div className={styles.sliderTrack}>
-                  <div
-                    className={styles.sliderFill}
-                    style={{ width: `${((thumbnailCount - 1) / 2) * 100}%` }}
-                  />
-                  <div className={styles.sliderDots}>
-                    {[1, 2, 3].map((count) => (
-                      <div
-                        key={count}
-                        className={`${styles.sliderDot} ${thumbnailCount >= count ? styles.sliderDotActive : ''}`}
-                        onClick={() => handleThumbnailCountChange(count)}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <span className={styles.thumbnailCountValue}>{thumbnailCount}</span>
+              <div className={styles.thumbnailCountButtons}>
+                {[1, 2, 3, 4].map((count) => (
+                  <button
+                    key={count}
+                    className={`${styles.countButton} ${thumbnailCount === count ? styles.countButtonActive : ''}`}
+                    onClick={() => handleThumbnailCountChange(count)}
+                  >
+                    {count}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -1182,12 +1514,24 @@ export default function ProjectCanvasPage() {
                   }}
                   onMouseDown={(e) => handleElementMouseDown(e, element.id)}
                 >
-                  <img
-                    src={element.src}
-                    alt=""
-                    className={styles.elementImage}
-                    draggable={false}
-                  />
+                  {element.status === 'generating' ? (
+                    <div className={styles.generatingPlaceholder}>
+                      <div className={styles.generatingSpinner}>
+                        <div className={styles.generatingSpinnerDot}></div>
+                        <div className={styles.generatingSpinnerDot}></div>
+                        <div className={styles.generatingSpinnerDot}></div>
+                        <div className={styles.generatingSpinnerDot}></div>
+                      </div>
+                      <span className={styles.generatingText}>Generating</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={element.src}
+                      alt=""
+                      className={styles.elementImage}
+                      draggable={false}
+                    />
+                  )}
 
                   {/* Selection outline (no handles on individual elements) */}
                   {isSelected && (
@@ -1207,22 +1551,64 @@ export default function ProjectCanvasPage() {
               const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
               const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
 
+              // Use natural dimensions for display (original image size, not scaled canvas size)
+              // For single element, use its natural dims; for multiple, sum up or use first element
+              let displayWidth: number;
+              let displayHeight: number;
+
+              if (selectedElements.length === 1) {
+                // Single element - show its natural dimensions
+                displayWidth = selectedElements[0].naturalWidth;
+                displayHeight = selectedElements[0].naturalHeight;
+              } else {
+                // Multiple elements - show first element's natural dimensions
+                displayWidth = selectedElements[0].naturalWidth;
+                displayHeight = selectedElements[0].naturalHeight;
+              }
+
+              // Calculate aspect ratio from natural dimensions
+              const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+              const divisor = gcd(displayWidth, displayHeight);
+              const ratioW = displayWidth / divisor;
+              const ratioH = displayHeight / divisor;
+              // Simplify to common ratios
+              let ratioDisplay = `${ratioW}:${ratioH}`;
+              const ratio = displayWidth / displayHeight;
+              if (Math.abs(ratio - 16 / 9) < 0.01) ratioDisplay = '16:9';
+              else if (Math.abs(ratio - 4 / 3) < 0.01) ratioDisplay = '4:3';
+              else if (Math.abs(ratio - 1) < 0.01) ratioDisplay = '1:1';
+              else if (Math.abs(ratio - 9 / 16) < 0.01) ratioDisplay = '9:16';
+
               return (
-                <div
-                  className={styles.groupBoundingBox}
-                  style={{
-                    left: minX - 2,
-                    top: minY - 2,
-                    width: maxX - minX + 4,
-                    height: maxY - minY + 4,
-                  }}
-                >
-                  {/* Corner resize handles */}
-                  <div className={`${styles.resizeHandle} ${styles.handleNW}`} onMouseDown={(e) => handleResizeMouseDown(e, 'nw')} />
-                  <div className={`${styles.resizeHandle} ${styles.handleNE}`} onMouseDown={(e) => handleResizeMouseDown(e, 'ne')} />
-                  <div className={`${styles.resizeHandle} ${styles.handleSW}`} onMouseDown={(e) => handleResizeMouseDown(e, 'sw')} />
-                  <div className={`${styles.resizeHandle} ${styles.handleSE}`} onMouseDown={(e) => handleResizeMouseDown(e, 'se')} />
-                </div>
+                <>
+                  {/* Dimensions display above top-left */}
+                  <div
+                    className={styles.elementDimensionsDisplay}
+                    style={{
+                      left: minX,
+                      top: minY - 28,
+                    }}
+                  >
+                    <span className={styles.dimensionsSize}>{displayWidth}×{displayHeight}</span>
+                    <span className={styles.dimensionsRatio}>{ratioDisplay}</span>
+                  </div>
+
+                  <div
+                    className={styles.groupBoundingBox}
+                    style={{
+                      left: minX - 2,
+                      top: minY - 2,
+                      width: maxX - minX + 4,
+                      height: maxY - minY + 4,
+                    }}
+                  >
+                    {/* Corner resize handles */}
+                    <div className={`${styles.resizeHandle} ${styles.handleNW}`} onMouseDown={(e) => handleResizeMouseDown(e, 'nw')} />
+                    <div className={`${styles.resizeHandle} ${styles.handleNE}`} onMouseDown={(e) => handleResizeMouseDown(e, 'ne')} />
+                    <div className={`${styles.resizeHandle} ${styles.handleSW}`} onMouseDown={(e) => handleResizeMouseDown(e, 'sw')} />
+                    <div className={`${styles.resizeHandle} ${styles.handleSE}`} onMouseDown={(e) => handleResizeMouseDown(e, 'se')} />
+                  </div>
+                </>
               );
             })()}
 
@@ -1381,6 +1767,7 @@ export default function ProjectCanvasPage() {
 
                 const elementPrompt = elementPrompts[elementId] || '';
                 const elementModel = elementModels[elementId] || DEFAULT_MODEL;
+                const elementAttachedImages = modifyAttachedImages[elementId] || [];
 
                 // Calculate dampened inverse scale to maintain visibility when zoomed out
                 const panelScale = Math.max(1, Math.sqrt(1 / viewport.zoom));
@@ -1388,57 +1775,116 @@ export default function ProjectCanvasPage() {
                 return (
                   <div
                     key={`prompt-${elementId}`}
-                    className={styles.modifyPromptPanel}
+                    className={styles.modifyPromptPanelWrapper}
                     style={{
+                      position: 'absolute',
                       left: element.x + element.width / 2,
-                      top: element.y + element.height + (24 * panelScale),
+                      top: element.y + element.height + (40 * panelScale),
                       transform: `translateX(-50%) scale(${panelScale})`,
                       transformOrigin: 'top center',
+                      zIndex: 1001,
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Focus the input when clicking anywhere on the panel
+                      const input = e.currentTarget.querySelector('input');
+                      if (input) input.focus();
+                    }}
                     onDoubleClick={(e) => e.stopPropagation()}
                   >
-                    <div className={styles.promptPanelIcon}>
-                      <Image
-                        src="/assets/project/icons/star.svg"
-                        alt=""
-                        width={27}
-                        height={27}
-                        aria-hidden="true"
+                    <div className={styles.modifyPromptPanel}>
+                      <div className={styles.promptPanelIcon}>
+                        <Image
+                          src="/assets/project/icons/star.svg"
+                          alt=""
+                          width={27}
+                          height={27}
+                          aria-hidden="true"
+                        />
+                      </div>
+
+                      <input
+                        type="text"
+                        value={elementPrompt}
+                        onChange={(e) => handleModifyPromptChange(elementId, e.target.value)}
+                        onKeyDown={(e) => handleModifyPromptKeyDown(elementId, e)}
+                        placeholder="Add here your prompt to modify this thumbnail"
+                        className={styles.promptPanelInput}
                       />
+
+                      {/* Image attachment button */}
+                      <button
+                        className={styles.modifyPromptAttachButton}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveModifyElementId(elementId);
+                          modifyImageInputRef.current?.click();
+                        }}
+                        title="Attach reference image"
+                      >
+                        <Image
+                          src="/assets/project/icons/add-image.svg"
+                          alt=""
+                          width={20}
+                          height={20}
+                        />
+                      </button>
+
+                      <div className={styles.promptPanelModelWrapper}>
+                        <ModelDropdown
+                          selectedModel={elementModel}
+                          onSelectModel={(model) => handleSelectModifyModel(elementId, model)}
+                          theme={theme}
+                        />
+                      </div>
+
+                      <button
+                        className={styles.promptPanelSubmit}
+                        onClick={() => handleModifyPromptSubmit(elementId)}
+                        disabled={!elementPrompt.trim()}
+                      >
+                        <Image
+                          src="/assets/project/icons/send-prompt.svg"
+                          alt=""
+                          width={24}
+                          height={24}
+                          aria-hidden="true"
+                        />
+                      </button>
                     </div>
 
-                    <input
-                      type="text"
-                      value={elementPrompt}
-                      onChange={(e) => handleModifyPromptChange(elementId, e.target.value)}
-                      onKeyDown={(e) => handleModifyPromptKeyDown(elementId, e)}
-                      placeholder="Add here your prompt to modify this thumbnail"
-                      className={styles.promptPanelInput}
-                    />
-
-                    <div className={styles.promptPanelModelWrapper}>
-                      <ModelDropdown
-                        selectedModel={elementModel}
-                        onSelectModel={(model) => handleSelectModifyModel(elementId, model)}
-                        theme={theme}
-                      />
-                    </div>
-
-                    <button
-                      className={styles.promptPanelSubmit}
-                      onClick={() => handleModifyPromptSubmit(elementId)}
-                      disabled={!elementPrompt.trim()}
-                    >
-                      <Image
-                        src="/assets/project/icons/send-prompt.svg"
-                        alt=""
-                        width={24}
-                        height={24}
-                        aria-hidden="true"
-                      />
-                    </button>
+                    {/* Attached images strip */}
+                    {elementAttachedImages.length > 0 && (
+                      <div className={styles.modifyPromptAttachedImages}>
+                        {elementAttachedImages.map((img) => (
+                          <div key={img.id} className={styles.modifyPromptAttachedImage}>
+                            <img src={img.preview} alt="" />
+                            <button
+                              className={styles.modifyPromptRemoveImage}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setModifyAttachedImages(prev => {
+                                  const current = prev[elementId] || [];
+                                  const imgToRemove = current.find(i => i.id === img.id);
+                                  if (imgToRemove) {
+                                    URL.revokeObjectURL(imgToRemove.preview);
+                                  }
+                                  return {
+                                    ...prev,
+                                    [elementId]: current.filter(i => i.id !== img.id)
+                                  };
+                                });
+                              }}
+                            >
+                              <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 2L2 6M2 2L6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -1506,15 +1952,23 @@ export default function ProjectCanvasPage() {
             </svg>
           </button>
         </div>
+        {/* Export button - visible when elements are selected */}
+        {selectedElementIds.length > 0 && (
+          <button
+            className={styles.exportButton}
+            onClick={() => console.log('Export thumbnails:', selectedElementIds)}
+            title="Export selected thumbnails"
+          >
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Export
+          </button>
+        )}
 
-        {/* Shortcuts hint */}
-        <div className={styles.shortcutsHint}>
-          <span>V: Select</span>
-          <span>H: Hand</span>
-          <span>Space: Pan</span>
-          <span>Ctrl/⌘+Scroll: Zoom</span>
-          <span>Shift+Click: Multi-select</span>
-        </div>
+
       </main>
     </div>
   );

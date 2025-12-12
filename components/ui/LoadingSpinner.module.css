@@ -1,0 +1,161 @@
+/* Loading Spinner Styles */
+
+/* Full screen container */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #797979; /* Default light theme text color */
+}
+
+.fullScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background-color: #ffffff; /* Default light theme background */
+}
+
+/* Dark theme styles when HTML has dark class */
+:global(html.dark) .container {
+    color: #a3a3a3;
+}
+
+:global(html.dark) .fullScreen {
+    background-color: #1a1a1a;
+}
+
+/* Explicit component theme overrides (when theme prop is passed) */
+.light {
+    color: #797979;
+}
+
+.light.fullScreen {
+    background-color: #ffffff;
+}
+
+.dark {
+    color: #a3a3a3;
+}
+
+.dark.fullScreen {
+    background-color: #1a1a1a;
+}
+
+/* Spinner wrapper */
+.spinner {
+    position: relative;
+    animation: spinnerRotate 1.2s linear infinite;
+}
+
+/* Size variants */
+.small {
+    width: 24px;
+    height: 24px;
+}
+
+.medium {
+    width: 40px;
+    height: 40px;
+}
+
+.large {
+    width: 56px;
+    height: 56px;
+}
+
+/* Spinner dots */
+.dot {
+    position: absolute;
+    border-radius: 50%;
+}
+
+/* Dot sizes based on spinner size */
+.small .dot {
+    width: 6px;
+    height: 6px;
+}
+
+.medium .dot {
+    width: 10px;
+    height: 10px;
+}
+
+.large .dot {
+    width: 14px;
+    height: 14px;
+}
+
+/* Dot positions */
+.dot:nth-child(1) {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.dot:nth-child(2) {
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+}
+
+.dot:nth-child(3) {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.dot:nth-child(4) {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+}
+
+/* Dot colors - Light theme (default) */
+.dot:nth-child(1) {
+    background-color: #ff6f61;
+}
+
+.dot:nth-child(2) {
+    background-color: #ffb3ab;
+}
+
+.dot:nth-child(3) {
+    background-color: #ff6f61;
+}
+
+.dot:nth-child(4) {
+    background-color: #ffb3ab;
+}
+
+/* Loading text */
+.text {
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Text sizes */
+.textSmall {
+    font-size: 12px;
+}
+
+.textLarge {
+    font-size: 16px;
+}
+
+/* Rotation animation */
+@keyframes spinnerRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

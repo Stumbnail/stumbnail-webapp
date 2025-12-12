@@ -16,6 +16,7 @@ import { getNavItemsForRoute, PROJECTS_PER_PAGE } from '@/lib/constants';
 
 // Components
 import { Sidebar } from '@/components/layout';
+import { LoadingSpinner } from '@/components/ui';
 
 // Lazy load modals to reduce TBT
 const ProjectNameModal = dynamic(
@@ -280,10 +281,7 @@ export default function ProjectsPage() {
     // Loading state
     if (authLoading) {
         return (
-            <div className={dashboardStyles.loadingContainer}>
-                <div className={dashboardStyles.loadingSpinner} />
-                <p>Loading...</p>
-            </div>
+            <LoadingSpinner theme={theme} text="Loading..." fullScreen />
         );
     }
 

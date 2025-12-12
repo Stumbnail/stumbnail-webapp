@@ -19,6 +19,7 @@ interface ModelDropdownProps {
   theme?: 'light' | 'dark';
   openUpward?: boolean;
   showLabel?: boolean;
+  disabled?: boolean;
 }
 
 const MODELS: Model[] = [
@@ -48,7 +49,7 @@ const MODELS: Model[] = [
   }
 ];
 
-export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'light', openUpward = false, showLabel = false }: ModelDropdownProps) {
+export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'light', openUpward = false, showLabel = false, disabled = false }: ModelDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -92,10 +93,11 @@ export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'l
     <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : ''}`} ref={dropdownRef}>
       <button
         ref={triggerRef}
-        className={`${styles.trigger} ${selectedModel ? styles.triggerSelected : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
+        className={`${styles.trigger} ${selectedModel ? styles.triggerSelected : ''} ${disabled ? styles.triggerDisabled : ''}`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
         aria-label="Select model"
         aria-expanded={isOpen}
+        aria-disabled={disabled}
       >
         {selectedModel ? (
           <Image

@@ -55,6 +55,20 @@
   filter: none;
 }
 
+/* Disabled trigger state */
+.triggerDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.triggerDisabled:hover {
+  background-color: #e8e8e8;
+}
+
+.triggerDisabled:active {
+  background-color: #e8e8e8;
+}
+
 .selectedLogo {
   border-radius: 50%;
   object-fit: cover;
@@ -352,16 +366,18 @@
 
 /* Dark Theme */
 .darkTheme .trigger {
-  background-color: #252525;
+  background-color: #333333;
+  border: 1px solid #444444;
   color: #a3a3a3;
 }
 
 .darkTheme .trigger:hover {
   background-color: #3a3a3a;
+  border-color: #555555;
 }
 
 .darkTheme .trigger:active {
-  background-color: #1c1c1c;
+  background-color: #2a2a2a;
 }
 
 .darkTheme .dropdown {
@@ -405,4 +421,19 @@
 
 .darkTheme .modelName {
   color: #ffeae8;
+}
+
+/* Dark theme - Disabled trigger */
+.darkTheme .triggerDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.darkTheme .triggerDisabled:hover {
+  background-color: #333333;
+  border-color: #444444;
+}
+
+.darkTheme .triggerDisabled:active {
+  background-color: #333333;
 }
