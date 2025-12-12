@@ -1,0 +1,40 @@
+/* AnimatedBorder Component Styles */
+
+.animatedBorderWrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* Full width modifier - wrapper takes full width of parent */
+.fullWidth {
+    display: block;
+    width: 100%;
+}
+
+/* Ensure child elements stretch to fill the fullWidth wrapper */
+.fullWidth>* {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* SVG Overlay - Positioned outside the element with gap */
+.borderSvg {
+    position: absolute;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 10;
+}
+
+/* Path Styling */
+.borderPath {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    stroke: #ff6f61;
+}
+
+/* Active state - make path visible */
+.activeBorder {
+    opacity: 1;
+}

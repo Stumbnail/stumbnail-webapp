@@ -443,12 +443,20 @@
   transition: width 0.3s ease;
 }
 
+/* Upgrade Button Wrapper - holds the AnimatedBorder */
+.upgradeButtonWrapper {
+  display: block;
+  margin-bottom: 12px;
+  margin-right: 16px;
+}
+
 /* Upgrade Button */
 .upgradeButton {
   background: linear-gradient(135deg, #da9a28 0%, #e8a838 100%);
   border: none;
   border-radius: 14px;
   height: 52px;
+  width: 100%;
   padding: 0 20px;
   display: flex;
   align-items: center;
@@ -460,8 +468,6 @@
   color: #ffffff;
   cursor: pointer;
   transition: box-shadow 0.15s ease, filter 0.15s ease;
-  margin-bottom: 12px;
-  margin-right: 16px;
 }
 
 .upgradeButton img {
@@ -470,7 +476,7 @@
 }
 
 .upgradeButton:hover {
-  box-shadow: 0 4px 12px rgba(232, 168, 56, 0.35);
+  filter: brightness(1.02);
 }
 
 .upgradeButton:active {

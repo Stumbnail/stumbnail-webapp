@@ -17,6 +17,7 @@ import { getNavItemsForRoute } from '@/lib/constants';
 // Components
 import { Sidebar } from '@/components/layout';
 import { LoadingSpinner } from '@/components/ui';
+import { ProjectCard } from '@/components/projects';
 
 // Lazy load modals to reduce TBT
 const ProjectNameModal = dynamic(
@@ -77,6 +78,8 @@ export default function FavouritesPage() {
     // UI state
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
+    const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+    const [editingProjectName, setEditingProjectName] = useState('');
 
     // Project modals
     const [editProjectModal, setEditProjectModal] = useState<EditProjectModalState>({
@@ -136,15 +139,37 @@ export default function FavouritesPage() {
     const handleEditProject = useCallback((projectId: number) => {
         const project = projects.find(p => p.id === projectId);
         if (project) {
-            setEditProjectModal({
-                isOpen: true,
-                projectId,
-                projectName: project.name,
-                isPublic: project.isPublic
-            });
+            setEditingProjectId(projectId);
+            setEditingProjectName(project.name);
         }
         setProjectMenuOpen(null);
     }, [projects]);
+
+    const handleEditNameChange = useCallback((value: string) => {
+        setEditingProjectName(value);
+    }, []);
+
+    const handleEditSave = useCallback(() => {
+        if (editingProjectId === null || !editingProjectName.trim()) {
+            setEditingProjectId(null);
+            setEditingProjectName('');
+            return;
+        }
+
+        setProjects(prev => prev.map(project =>
+            project.id === editingProjectId
+                ? { ...project, name: editingProjectName.trim() }
+                : project
+        ));
+
+        setEditingProjectId(null);
+        setEditingProjectName('');
+    }, [editingProjectId, editingProjectName]);
+
+    const handleEditCancel = useCallback(() => {
+        setEditingProjectId(null);
+        setEditingProjectName('');
+    }, []);
 
     const handleEditProjectConfirm = useCallback((name: string, isPublic: boolean) => {
         if (editProjectModal.projectId === null) return;
@@ -283,106 +308,23 @@ export default function FavouritesPage() {
                     {/* Projects Grid */}
                     {favoriteProjects.length > 0 ? (
                         <div className={projectsStyles.projectsGrid}>
-                            {favoriteProjects.map((project) => (
-                                <div key={project.id} className={dashboardStyles.projectCard}>
-                                    <div className={dashboardStyles.projectThumbnail}>
-                                        <Image
-                                            src={project.thumbnail}
-                                            alt={project.name}
-                                            fill
-                                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                                            style={{ objectFit: 'cover' }}
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                    <div className={dashboardStyles.projectInfo}>
-                                        <div className={dashboardStyles.projectHeader}>
-                                            <h3 className={dashboardStyles.projectName}>{project.name}</h3>
-                                            <div className={dashboardStyles.projectMenu} data-project-menu>
-                                                <button
-                                                    className={dashboardStyles.projectMenuButton}
-                                                    onClick={() => handleProjectMenuClick(project.id)}
-                                                    aria-label="Project options"
-                                                >
-                                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                                        <circle cx="10" cy="4" r="1.5" fill="currentColor" />
-                                                        <circle cx="10" cy="10" r="1.5" fill="currentColor" />
-                                                        <circle cx="10" cy="16" r="1.5" fill="currentColor" />
-                                                    </svg>
-                                                </button>
-                                                {projectMenuOpen === project.id && (
-                                                    <div className={dashboardStyles.projectDropdown}>
-                                                        <button
-                                                            className={dashboardStyles.projectDropdownItem}
-                                                            onClick={() => handleEditProject(project.id)}
-                                                        >
-                                                            <Image
-                                                                src="/assets/dashboard/icons/edit-01-stroke-rounded 1.svg"
-                                                                alt=""
-                                                                width={18}
-                                                                height={18}
-                                                                aria-hidden="true"
-                                                            />
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            className={dashboardStyles.projectDropdownItem}
-                                                            onClick={() => handleToggleFavorite(project.id)}
-                                                        >
-                                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                                                                <path d="M9 15.75C9 15.75 2.0625 11.625 2.0625 6.5625C2.0625 5.50483 2.48284 4.49048 3.23041 3.74291C3.97798 2.99534 4.99233 2.575 6.05 2.575C7.3875 2.575 8.5375 3.2625 9 4.25C9.4625 3.2625 10.6125 2.575 11.95 2.575C13.0077 2.575 14.022 2.99534 14.7696 3.74291C15.5172 4.49048 15.9375 5.50483 15.9375 6.5625C15.9375 11.625 9 15.75 9 15.75Z" fill="#ff6f61" stroke="#ff6f61" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                            </svg>
-                                                            Unfavorite
-                                                        </button>
-                                                        <button
-                                                            className={dashboardStyles.projectDropdownItem}
-                                                            onClick={() => handleOpenProject(project.id)}
-                                                        >
-                                                            <Image
-                                                                src="/assets/dashboard/icons/link-square-02-stroke-rounded 1.svg"
-                                                                alt=""
-                                                                width={18}
-                                                                height={18}
-                                                                aria-hidden="true"
-                                                            />
-                                                            Open project
-                                                        </button>
-                                                        <button
-                                                            className={`${dashboardStyles.projectDropdownItem} ${dashboardStyles.projectDropdownItemDanger}`}
-                                                            onClick={() => handleDeleteProject(project.id)}
-                                                        >
-                                                            <Image
-                                                                src="/assets/dashboard/icons/delete-02-stroke-rounded 1.svg"
-                                                                alt=""
-                                                                width={18}
-                                                                height={18}
-                                                                aria-hidden="true"
-                                                            />
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className={dashboardStyles.projectMeta}>
-                                            <span className={dashboardStyles.projectDate}>{project.createdAt}</span>
-                                            <span className={dashboardStyles.projectVisibility}>
-                                                {project.isPublic ? (
-                                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                                        <path d="M1.33331 8C1.33331 8 3.33331 3.33334 7.99998 3.33334C12.6666 3.33334 14.6666 8 14.6666 8C14.6666 8 12.6666 12.6667 7.99998 12.6667C3.33331 12.6667 1.33331 8 1.33331 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                        <path d="M8 10C9.10457 10 10 9.10457 10 8C10 6.89543 9.10457 6 8 6C6.89543 6 6 6.89543 6 8C6 9.10457 6.89543 10 8 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                    </svg>
-                                                ) : (
-                                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                                        <path d="M11.96 11.96C10.8204 12.8286 9.43255 13.305 8.00004 13.3133C3.33337 13.3133 1.33337 8.64666 1.33337 8.64666C2.12568 7.06819 3.24126 5.66931 4.60671 4.53332M6.60004 3.42666C7.05891 3.29806 7.52858 3.23294 8.00004 3.23332C12.6667 3.23332 14.6667 7.89999 14.6667 7.89999C14.2474 8.75709 13.7458 9.56973 13.1694 10.3233M9.41337 9.41332C9.23022 9.61117 9.00942 9.76969 8.76424 9.87911C8.51905 9.98852 8.25445 10.0467 7.98614 10.0496C7.71783 10.0526 7.45199 9.99998 7.20453 9.89552C6.95707 9.79107 6.73296 9.63697 6.54532 9.44267C6.35768 9.24838 6.21019 9.01773 6.11291 8.76451C6.01563 8.51129 5.97061 8.24113 5.9804 7.97027C5.99019 7.69941 6.05458 7.43349 6.17002 7.18801C6.28545 6.94252 6.44968 6.72294 6.65337 6.54332" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                        <path d="M1.33337 1.33334L14.6667 14.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                                    </svg>
-                                                )}
-                                                {project.isPublic ? 'Public' : 'Private'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
+                            {favoriteProjects.map((project, index) => (
+                                <ProjectCard
+                                    key={project.id}
+                                    project={project}
+                                    isMenuOpen={projectMenuOpen === project.id}
+                                    isEditing={editingProjectId === project.id}
+                                    editingName={editingProjectName}
+                                    isPriority={index < 4}
+                                    onMenuClick={() => handleProjectMenuClick(project.id)}
+                                    onEdit={() => handleEditProject(project.id)}
+                                    onEditNameChange={handleEditNameChange}
+                                    onEditSave={handleEditSave}
+                                    onEditCancel={handleEditCancel}
+                                    onToggleFavorite={() => handleToggleFavorite(project.id)}
+                                    onOpen={() => handleOpenProject(project.id)}
+                                    onDelete={() => handleDeleteProject(project.id)}
+                                />
                             ))}
                         </div>
                     ) : (

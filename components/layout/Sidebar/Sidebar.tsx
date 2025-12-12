@@ -7,6 +7,7 @@ import { User } from 'firebase/auth';
 import { NavItem, Theme } from '@/types';
 import { NAV_ROUTES } from '@/lib/constants';
 import { useClickOutsideSingle } from '@/hooks';
+import { AnimatedBorder } from '@/components/ui';
 import styles from '@/app/dashboard/dashboard.module.css';
 
 interface SidebarProps {
@@ -172,16 +173,25 @@ export default function Sidebar({
             </div>
 
             {/* Upgrade Plan Button */}
-            <button className={styles.upgradeButton} aria-label="Upgrade to premium plan">
-                <Image
-                    src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
-                    alt=""
-                    width={32}
-                    height={32}
-                    aria-hidden="true"
-                />
-                <span>Upgrade Plan</span>
-            </button>
+            <AnimatedBorder
+                borderColor="#e8a838"
+                borderWidth={1.5}
+                radius={14}
+                gap={2}
+                duration={0.3}
+                className={styles.upgradeButtonWrapper}
+            >
+                <button className={styles.upgradeButton} aria-label="Upgrade to premium plan">
+                    <Image
+                        src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
+                        alt=""
+                        width={32}
+                        height={32}
+                        aria-hidden="true"
+                    />
+                    <span>Upgrade Plan</span>
+                </button>
+            </AnimatedBorder>
         </aside>
     );
 }

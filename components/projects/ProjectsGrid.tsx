@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Project } from '@/types';
 import ProjectCard from './ProjectCard';
+import { AnimatedBorder } from '@/components/ui';
 import styles from '@/app/dashboard/dashboard.module.css';
 
 interface ProjectsGridProps {
@@ -64,20 +65,27 @@ export default function ProjectsGrid({
                         : "No projects yet — let's create your first one!"}
                 </p>
                 {!searchQuery && (
-                    <button
-                        className={styles.startButton}
-                        onClick={onCreateProject}
-                        aria-label="Start creating your first thumbnail project"
+                    <AnimatedBorder
+                        borderWidth={1.5}
+                        radius={14}
+                        gap={2}
+                        duration={0.3}
                     >
-                        <Image
-                            src="/assets/dashboard/icons/star-for-start-creating-button.svg"
-                            alt=""
-                            width={20}
-                            height={20}
-                            aria-hidden="true"
-                        />
-                        <span>Start Creating</span>
-                    </button>
+                        <button
+                            className={styles.startButton}
+                            onClick={onCreateProject}
+                            aria-label="Start creating your first thumbnail project"
+                        >
+                            <Image
+                                src="/assets/dashboard/icons/star-for-start-creating-button.svg"
+                                alt=""
+                                width={20}
+                                height={20}
+                                aria-hidden="true"
+                            />
+                            <span>Start Creating</span>
+                        </button>
+                    </AnimatedBorder>
                 )}
             </div>
         );
