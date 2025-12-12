@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { AnimatedBorder } from '@/components/ui';
 import styles from './ProjectNameModal.module.css';
 
 interface ProjectNameModalProps {
@@ -120,18 +121,22 @@ export default function ProjectNameModal({
 
         {/* Action Buttons */}
         <div className={styles.actions}>
-          <button
-            className={styles.cancelButton}
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            className={styles.createButton}
-            onClick={handleSubmit}
-          >
-            {editMode ? 'Save Changes' : 'Create Project'}
-          </button>
+          <AnimatedBorder radius={14} borderWidth={1.5} gap={2} borderColor="#d5d5d5" fullWidth>
+            <button
+              className={styles.cancelButton}
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </AnimatedBorder>
+          <AnimatedBorder radius={14} borderWidth={1.5} gap={2} borderColor="#ff6f61" fullWidth>
+            <button
+              className={styles.createButton}
+              onClick={handleSubmit}
+            >
+              {editMode ? 'Save Changes' : 'Create Project'}
+            </button>
+          </AnimatedBorder>
         </div>
       </div>
     </div>

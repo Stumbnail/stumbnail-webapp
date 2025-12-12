@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { AnimatedBorder } from '@/components/ui';
 import styles from './ProjectActionModal.module.css';
 
 interface ProjectActionModalProps {
@@ -101,18 +102,22 @@ export default function ProjectActionModal({
         <p className={styles.description}>{getDescription()}</p>
 
         <div className={styles.buttonGroup}>
-          <button
-            className={styles.cancelButton}
-            onClick={onClose}
-          >
-            {type === 'delete' ? 'No' : 'Cancel'}
-          </button>
-          <button
-            className={styles.confirmButton}
-            onClick={onConfirm}
-          >
-            {getConfirmText()}
-          </button>
+          <AnimatedBorder radius={14} borderWidth={1.5} gap={2} borderColor="#d5d5d5" fullWidth>
+            <button
+              className={styles.cancelButton}
+              onClick={onClose}
+            >
+              {type === 'delete' ? 'No' : 'Cancel'}
+            </button>
+          </AnimatedBorder>
+          <AnimatedBorder radius={14} borderWidth={1.5} gap={2} borderColor="#ff6f61" fullWidth>
+            <button
+              className={styles.confirmButton}
+              onClick={onConfirm}
+            >
+              {getConfirmText()}
+            </button>
+          </AnimatedBorder>
         </div>
       </div>
     </div>

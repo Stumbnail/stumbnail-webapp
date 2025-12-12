@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { AnimatedBorder } from '@/components/ui';
 import styles from './CreateStyleModal.module.css';
 
 interface CreateStyleModalProps {
@@ -327,23 +328,27 @@ export default function CreateStyleModal({
 
         {/* Action Buttons */}
         <div className={styles.actions}>
-          <button className={styles.cancelButton} onClick={handleClose}>
-            Cancel
-          </button>
-          <button
-            className={styles.createButton}
-            onClick={handleSubmit}
-            disabled={!styleName.trim() || (inputMode === 'upload' && uploadedImages.length !== REQUIRED_IMAGES) || (inputMode === 'youtube' && !youtubeUrl.trim())}
-          >
-            <span>Create Style</span>
-            <div className={styles.credits}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M7 4V10M4 7H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              <span>70 Credits</span>
-            </div>
-          </button>
+          <AnimatedBorder radius={14} borderWidth={1.5} gap={2} borderColor="#d5d5d5" fullWidth>
+            <button className={styles.cancelButton} onClick={handleClose}>
+              Cancel
+            </button>
+          </AnimatedBorder>
+          <AnimatedBorder radius={14} borderWidth={1.5} gap={2} borderColor="#ff6f61" fullWidth>
+            <button
+              className={styles.createButton}
+              onClick={handleSubmit}
+              disabled={!styleName.trim() || (inputMode === 'upload' && uploadedImages.length !== REQUIRED_IMAGES) || (inputMode === 'youtube' && !youtubeUrl.trim())}
+            >
+              <span>Create Style</span>
+              <div className={styles.credits}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/>
+                  <path d="M7 4V10M4 7H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                <span>70 Credits</span>
+              </div>
+            </button>
+          </AnimatedBorder>
         </div>
       </div>
     </div>
