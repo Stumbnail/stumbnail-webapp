@@ -111,7 +111,7 @@ export default function ProjectCanvasPage() {
 
   // Prompt mode state
   const [promptText, setPromptText] = useState('');
-  const [promptModel, setPromptModel] = useState<Model | null>(null);
+  const [promptModel, setPromptModel] = useState<Model | null>(DEFAULT_MODEL);
   const [promptStyle, setPromptStyle] = useState<any>(null);
   const [thumbnailCount, setThumbnailCount] = useState(1);
   const [attachedImages, setAttachedImages] = useState<{ id: string; file: File; preview: string }[]>([]);
@@ -1155,7 +1155,49 @@ export default function ProjectCanvasPage() {
   const handleOpenConversionForm = useCallback(() => {
     setShowConversionForm(true);
     setConversionFormPosition(null); // Reset position when opening
-  }, []);
+
+    // Adjust viewport to accommodate the form in view with animation
+    setTimeout(() => {
+      if (!canvasContainerRef.current) return;
+
+      const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+      if (selectedElements.length === 0) return;
+
+      const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+      const minX = Math.min(...selectedElements.map(el => el.x));
+      const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+
+      const containerWidth = canvasContainerRef.current.clientWidth;
+      const containerHeight = canvasContainerRef.current.clientHeight;
+
+      // Estimate form height (approximately 400px at scale 1)
+      const formHeight = 400;
+      const formScale = Math.max(1, 1 / viewport.zoom);
+      const scaledFormHeight = formHeight * formScale;
+
+      // Calculate the total height needed (selected elements + gap + form)
+      const totalHeight = (maxY + scaledFormHeight + 100) * viewport.zoom;
+      const selectionWidth = (maxX - minX) * viewport.zoom;
+
+      // Calculate required zoom to fit everything
+      const heightZoom = containerHeight / (totalHeight / viewport.zoom);
+      const widthZoom = containerWidth / (selectionWidth / viewport.zoom + 200);
+      const targetZoom = Math.min(heightZoom, widthZoom, viewport.zoom * 0.9); // Max 90% of current zoom
+
+      // Clamp zoom
+      const newZoom = Math.max(0.1, Math.min(2, targetZoom));
+
+      // Calculate center position to frame the selection + form
+      const centerX = (minX + maxX) / 2;
+      const centerY = maxY / 2; // Center vertically on selection
+
+      const newX = containerWidth / 2 - centerX * newZoom;
+      const newY = containerHeight / 3 - centerY * newZoom; // Position higher to show form below
+
+      // Animate to the new viewport position
+      animateViewportTo(newX, newY, newZoom);
+    }, 50);
+  }, [canvasElements, selectedElementIds, viewport.zoom, animateViewportTo]);
 
   const handleCloseConversionForm = useCallback(() => {
     setShowConversionForm(false);
@@ -1167,44 +1209,72 @@ export default function ProjectCanvasPage() {
 
   // Conversion form drag handlers
   const handleConversionFormDragStart = useCallback((e: React.MouseEvent) => {
+    // Only allow left mouse button (button 0) for dragging
+    if (e.button !== 0) return;
+
     e.stopPropagation();
+    e.preventDefault();
     setIsConversionFormDragging(true);
     setConversionFormDragStart({ x: e.clientX, y: e.clientY });
   }, []);
 
-  const handleConversionFormDragMove = useCallback((e: React.MouseEvent) => {
-    if (!isConversionFormDragging) return;
-
-    const deltaX = (e.clientX - conversionFormDragStart.x) / viewport.zoom;
-    const deltaY = (e.clientY - conversionFormDragStart.y) / viewport.zoom;
-
-    setConversionFormPosition(prev => {
-      if (!prev) {
-        // Initialize with current position
-        const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
-        const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
-        const minX = Math.min(...selectedElements.map(el => el.x));
-        const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
-        const centerX = (minX + maxX) / 2;
-        const formScale = Math.max(1, 1 / viewport.zoom);
-
-        return {
-          x: centerX + deltaX,
-          y: maxY + (24 * formScale) + deltaY
-        };
-      }
-      return {
-        x: prev.x + deltaX,
-        y: prev.y + deltaY
-      };
-    });
-
-    setConversionFormDragStart({ x: e.clientX, y: e.clientY });
-  }, [isConversionFormDragging, conversionFormDragStart, viewport.zoom, canvasElements, selectedElementIds]);
-
   const handleConversionFormDragEnd = useCallback(() => {
     setIsConversionFormDragging(false);
   }, []);
+
+  // Handle drag move at document level to prevent losing drag when moving fast
+  useEffect(() => {
+    if (!isConversionFormDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+
+      const deltaX = (e.clientX - conversionFormDragStart.x) / viewport.zoom;
+      const deltaY = (e.clientY - conversionFormDragStart.y) / viewport.zoom;
+
+      setConversionFormPosition(prev => {
+        if (!prev) {
+          // Initialize with current position
+          const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+          const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+          const minX = Math.min(...selectedElements.map(el => el.x));
+          const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+          const centerX = (minX + maxX) / 2;
+          const formScale = Math.max(1, 1 / viewport.zoom);
+
+          return {
+            x: centerX + deltaX,
+            y: maxY + (24 * formScale) + deltaY
+          };
+        }
+        return {
+          x: prev.x + deltaX,
+          y: prev.y + deltaY
+        };
+      });
+
+      setConversionFormDragStart({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      e.preventDefault();
+      setIsConversionFormDragging(false);
+    };
+
+    const preventTextSelection = (e: Event) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('selectstart', preventTextSelection); // Prevent text selection
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('selectstart', preventTextSelection);
+    };
+  }, [isConversionFormDragging, conversionFormDragStart, viewport.zoom, canvasElements, selectedElementIds]);
 
   const handleConversionSubmit = useCallback(() => {
     if (!conversionGenre.trim()) {
@@ -1713,9 +1783,6 @@ export default function ProjectCanvasPage() {
                       cursor: isConversionFormDragging ? 'grabbing' : 'default',
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
-                    onMouseMove={handleConversionFormDragMove}
-                    onMouseUp={handleConversionFormDragEnd}
-                    onMouseLeave={handleConversionFormDragEnd}
                     onClick={(e) => e.stopPropagation()}
                     onDoubleClick={(e) => e.stopPropagation()}
                   >
@@ -1723,6 +1790,7 @@ export default function ProjectCanvasPage() {
                     <div
                       className={styles.formPanelHeader}
                       onMouseDown={handleConversionFormDragStart}
+                      onDragStart={(e) => e.preventDefault()}
                       style={{ cursor: isConversionFormDragging ? 'grabbing' : 'grab' }}
                     >
                       <h3 className={styles.formPanelTitle}>Convert Assets to Thumbnail</h3>

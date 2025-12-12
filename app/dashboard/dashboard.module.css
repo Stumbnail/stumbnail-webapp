@@ -334,7 +334,7 @@
   /* Gray filter for inactive nav items to ensure visibility */
   filter: brightness(0) saturate(100%) invert(55%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   opacity: 1;
-  transition: filter 0.15s ease, opacity 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .navItem:hover {
@@ -583,7 +583,6 @@
   width: 18px;
   height: 18px;
   filter: brightness(0) saturate(100%) invert(56%) sepia(88%) saturate(2044%) hue-rotate(329deg) brightness(101%) contrast(101%);
-  transition: filter 0.15s ease;
 }
 
 .createButton:hover {

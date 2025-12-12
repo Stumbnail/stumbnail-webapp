@@ -7,8 +7,8 @@
 
 /* Trigger Button */
 .trigger {
-  background-color: #e8e8e8;
-  border: none;
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
   border-radius: 10px;
   height: 44px;
   padding: 0 10px;
@@ -19,7 +19,7 @@
   font-size: 13px;
   color: #797979;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: all 0.2s ease;
   min-width: 44px;
   width: auto;
   justify-content: center;
@@ -42,12 +42,19 @@
   filter: brightness(0) saturate(100%) invert(52%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(94%) contrast(89%);
 }
 
-.trigger:hover {
-  background-color: #e8e8e8;
+.trigger:hover,
+.trigger[aria-expanded="true"] {
+  background-color: rgba(255, 111, 97, 0.05);
+  border-color: #ff6f61;
+}
+
+.trigger:hover img,
+.trigger[aria-expanded="true"] img {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(51%) saturate(2512%) hue-rotate(333deg) brightness(101%) contrast(101%);
 }
 
 .trigger:active {
-  background-color: #e0e0e0;
+  transform: scale(0.98);
 }
 
 /* Selected trigger state - just show the thumbnail without extra highlight */
@@ -372,9 +379,10 @@
   color: #a3a3a3;
 }
 
-.darkTheme .trigger:hover {
-  background-color: #3a3a3a;
-  border-color: #555555;
+.darkTheme .trigger:hover,
+.darkTheme .trigger[aria-expanded="true"] {
+  background-color: rgba(255, 111, 97, 0.15);
+  border-color: #ff6f61;
 }
 
 .darkTheme .trigger:active {

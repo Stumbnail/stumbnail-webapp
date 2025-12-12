@@ -7,8 +7,8 @@
 
 /* Trigger Button */
 .trigger {
-  background-color: #e8e8e8;
-  border: none;
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
   border-radius: 10px;
   height: 44px;
   padding: 0 10px;
@@ -19,7 +19,7 @@
   font-size: 13px;
   color: #797979;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: all 0.2s ease;
   min-width: 44px;
   width: auto;
   justify-content: center;
@@ -42,12 +42,19 @@
   filter: brightness(0) saturate(100%) invert(52%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(94%) contrast(89%);
 }
 
-.trigger:hover {
-  background-color: #e8e8e8;
+.trigger:hover,
+.trigger[aria-expanded="true"] {
+  background-color: rgba(255, 111, 97, 0.05);
+  border-color: #ff6f61;
+}
+
+.trigger:hover img,
+.trigger[aria-expanded="true"] img {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(51%) saturate(2512%) hue-rotate(333deg) brightness(101%) contrast(101%);
 }
 
 .trigger:active {
-  background-color: #e0e0e0;
+  transform: scale(0.98);
 }
 
 /* Selected trigger state - just show the logo without extra highlight */
@@ -85,10 +92,11 @@
   top: calc(100% + 8px);
   left: 0;
   background-color: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 2px 13.6px 0 rgba(7, 7, 14, 0.2);
-  padding: 16px;
-  min-width: 256px;
+  border: 1px solid #f0f0f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 8px;
+  min-width: 300px;
   max-height: 450px;
   overflow-y: auto;
   z-index: 100;
@@ -131,79 +139,90 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 0 4px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
 }
 
 .headerLabel {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: #141414;
   margin: 0;
-  line-height: 1.2;
 }
 
 .headerValue {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: #797979;
   margin: 0;
-  line-height: 1.2;
 }
 
 /* Model List */
 .modelList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
 }
 
 /* Model Item */
 .modelItem {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background-color: #e8e8e8;
+  gap: 12px;
+  padding: 12px;
+  background-color: transparent;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.2s ease;
   width: 100%;
 }
 
 .modelItem:hover {
-  background-color: #e8e8e8;
+  background-color: #f8f8f8;
 }
 
 .modelItem:active {
-  background-color: #e0e0e0;
+  background-color: #f0f0f0;
 }
 
 .modelItemSelected {
-  border-color: #ff6f61;
-  background-color: #e8e8e8;
+  background-color: rgba(255, 111, 97, 0.04);
+  border-color: rgba(255, 111, 97, 0.2);
 }
 
 .modelItemSelected:hover {
-  background-color: #e8e8e8;
+  background-color: rgba(255, 111, 97, 0.08);
+}
+
+/* Check Icon Wrapper */
+.checkWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ff6f61;
+  color: white;
 }
 
 .checkIcon {
-  flex-shrink: 0;
-  margin-left: 4px;
+  width: 10px;
+  height: 10px;
 }
 
 /* Model Logo */
 .modelLogo {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   overflow: hidden;
-  background-color: #ffffff;
+  background-color: #f5f5f5;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -219,18 +238,34 @@
 /* Model Info */
 .modelInfo {
   display: flex;
-  align-items: center;
-  flex: 1;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
+}
+
+.modelNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .modelName {
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #141414;
   margin: 0;
   line-height: 1.2;
+}
+
+
+
+/* Model Meta (Right side) */
+.modelMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 
 /* Credits Container */
@@ -238,129 +273,33 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  background-color: #fff9ec;
+  padding: 4px 8px;
+  border-radius: 100px;
   flex-shrink: 0;
 }
 
-.creditsContainer svg {
+.creditIcon {
   flex-shrink: 0;
-  width: 13px;
-  height: 13px;
 }
 
 .credits {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   color: #da9a28;
-  line-height: 1.2;
-  white-space: nowrap;
+  line-height: 1;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .trigger {
-    height: 40px;
-    padding: 0 10px;
-    font-size: 12px;
-    gap: 6px;
-    border-radius: 10px;
-  }
-
-  .trigger img {
-    width: 18px;
-    height: 18px;
-  }
-
   .dropdown {
-    min-width: 220px;
-    padding: 14px;
+    min-width: 260px;
   }
 
   .modelItem {
     padding: 10px;
-  }
-}
-
-@media (max-width: 640px) {
-  .trigger {
-    height: 38px;
-    padding: 0 10px;
-    font-size: 11px;
-    border-radius: 8px;
-    gap: 4px;
-  }
-
-  .trigger img {
-    width: 16px;
-    height: 16px;
-  }
-
-  .dropdown {
-    min-width: 200px;
-    padding: 12px;
-  }
-
-  .modelList {
     gap: 10px;
-  }
-
-  .modelItem {
-    padding: 8px 10px;
-    gap: 8px;
-  }
-
-  .modelName {
-    font-size: 13px;
-  }
-
-  .credits {
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 480px) {
-  .trigger {
-    height: 36px;
-    padding: 0 8px;
-    font-size: 10px;
-    border-radius: 6px;
-    gap: 3px;
-  }
-
-  .trigger img {
-    width: 14px;
-    height: 14px;
-  }
-
-  .dropdown {
-    min-width: 190px;
-  }
-
-  .modelItem {
-    padding: 8px;
-  }
-
-  .modelLogo {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 380px) {
-  .trigger {
-    height: 34px;
-    padding: 0 6px;
-    font-size: 9px;
-    border-radius: 6px;
-  }
-
-  .trigger svg {
-    display: none;
-  }
-
-  .trigger img {
-    width: 12px;
-    height: 12px;
   }
 }
 
@@ -371,35 +310,28 @@
   color: #a3a3a3;
 }
 
-.darkTheme .trigger:hover {
-  background-color: #3a3a3a;
-  border-color: #555555;
-}
-
-.darkTheme .trigger:active {
-  background-color: #2a2a2a;
+.darkTheme .trigger:hover,
+.darkTheme .trigger[aria-expanded="true"] {
+  background-color: rgba(255, 111, 97, 0.15);
+  border-color: #ff6f61;
 }
 
 .darkTheme .dropdown {
   background-color: #1c1c1c;
-  box-shadow: 0 2px 13.6px 0 rgba(0, 0, 0, 0.4);
+  border-color: #2a2a2a;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 .darkTheme .headerLabel {
-  color: #ffeae8;
+  color: #ffffff;
 }
 
 .darkTheme .headerValue {
-  color: #a3a3a3;
-}
-
-.darkTheme .modelItem {
-  background-color: #2d2d2d;
-  border-color: transparent;
+  color: #888;
 }
 
 .darkTheme .modelItem:hover {
-  background-color: #3d3d3d;
+  background-color: #2a2a2a;
 }
 
 .darkTheme .modelItem:active {
@@ -407,20 +339,30 @@
 }
 
 .darkTheme .modelItemSelected {
-  border-color: #ff6f61;
-  background-color: #2d2d2d;
+  background-color: rgba(255, 111, 97, 0.1);
+  border-color: rgba(255, 111, 97, 0.3);
 }
 
 .darkTheme .modelItemSelected:hover {
-  background-color: #2d2d2d;
+  background-color: rgba(255, 111, 97, 0.15);
 }
 
 .darkTheme .modelLogo {
-  background-color: #252525;
+  background-color: #2a2a2a;
 }
 
 .darkTheme .modelName {
-  color: #ffeae8;
+  color: #ffffff;
+}
+
+
+
+.darkTheme .creditsContainer {
+  background-color: rgba(218, 154, 40, 0.15);
+}
+
+.darkTheme .credits {
+  color: #eebb55;
 }
 
 /* Dark theme - Disabled trigger */

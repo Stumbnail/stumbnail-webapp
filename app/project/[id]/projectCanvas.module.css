@@ -988,6 +988,8 @@
   font-weight: 600;
   color: #141414;
   margin: 0;
+  user-select: none;
+  pointer-events: none;
 }
 
 .formPanelClose {
