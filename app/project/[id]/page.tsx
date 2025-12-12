@@ -29,7 +29,7 @@ const StyleDropdown = dynamic(
 import styles from './projectCanvas.module.css';
 
 // UI Components
-import { LoadingSpinner } from '@/components/ui';
+import { LoadingSpinner, AnimatedBorder } from '@/components/ui';
 
 // Types
 type CreationMode = 'url' | 'prompt';
@@ -128,6 +128,9 @@ export default function ProjectCanvasPage() {
   const [conversionGenre, setConversionGenre] = useState('');
   const [conversionIncludeText, setConversionIncludeText] = useState<'yes' | 'no' | null>(null);
   const [conversionText, setConversionText] = useState('');
+  const [conversionFormPosition, setConversionFormPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isConversionFormDragging, setIsConversionFormDragging] = useState(false);
+  const [conversionFormDragStart, setConversionFormDragStart] = useState({ x: 0, y: 0 });
 
   // Tool State
   const [toolMode, setToolMode] = useState<ToolMode>('select');
@@ -1151,6 +1154,7 @@ export default function ProjectCanvasPage() {
   // Multi-select conversion handlers
   const handleOpenConversionForm = useCallback(() => {
     setShowConversionForm(true);
+    setConversionFormPosition(null); // Reset position when opening
   }, []);
 
   const handleCloseConversionForm = useCallback(() => {
@@ -1158,6 +1162,48 @@ export default function ProjectCanvasPage() {
     setConversionGenre('');
     setConversionIncludeText(null);
     setConversionText('');
+    setConversionFormPosition(null);
+  }, []);
+
+  // Conversion form drag handlers
+  const handleConversionFormDragStart = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsConversionFormDragging(true);
+    setConversionFormDragStart({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleConversionFormDragMove = useCallback((e: React.MouseEvent) => {
+    if (!isConversionFormDragging) return;
+
+    const deltaX = (e.clientX - conversionFormDragStart.x) / viewport.zoom;
+    const deltaY = (e.clientY - conversionFormDragStart.y) / viewport.zoom;
+
+    setConversionFormPosition(prev => {
+      if (!prev) {
+        // Initialize with current position
+        const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+        const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+        const minX = Math.min(...selectedElements.map(el => el.x));
+        const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+        const centerX = (minX + maxX) / 2;
+        const formScale = Math.max(1, 1 / viewport.zoom);
+
+        return {
+          x: centerX + deltaX,
+          y: maxY + (24 * formScale) + deltaY
+        };
+      }
+      return {
+        x: prev.x + deltaX,
+        y: prev.y + deltaY
+      };
+    });
+
+    setConversionFormDragStart({ x: e.clientX, y: e.clientY });
+  }, [isConversionFormDragging, conversionFormDragStart, viewport.zoom, canvasElements, selectedElementIds]);
+
+  const handleConversionFormDragEnd = useCallback(() => {
+    setIsConversionFormDragging(false);
   }, []);
 
   const handleConversionSubmit = useCallback(() => {
@@ -1660,19 +1706,31 @@ export default function ProjectCanvasPage() {
                   <div
                     className={styles.conversionFormPanel}
                     style={{
-                      left: centerX,
-                      top: maxY + (24 * formScale),
+                      left: conversionFormPosition?.x ?? centerX,
+                      top: conversionFormPosition?.y ?? (maxY + (24 * formScale)),
                       transform: `translateX(-50%) scale(${formScale})`,
                       transformOrigin: 'top center',
+                      cursor: isConversionFormDragging ? 'grabbing' : 'default',
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
+                    onMouseMove={handleConversionFormDragMove}
+                    onMouseUp={handleConversionFormDragEnd}
+                    onMouseLeave={handleConversionFormDragEnd}
                     onClick={(e) => e.stopPropagation()}
                     onDoubleClick={(e) => e.stopPropagation()}
                   >
 
-                    <div className={styles.formPanelHeader}>
+                    <div
+                      className={styles.formPanelHeader}
+                      onMouseDown={handleConversionFormDragStart}
+                      style={{ cursor: isConversionFormDragging ? 'grabbing' : 'grab' }}
+                    >
                       <h3 className={styles.formPanelTitle}>Convert Assets to Thumbnail</h3>
-                      <button className={styles.formPanelClose} onClick={handleCloseConversionForm}>
+                      <button
+                        className={styles.formPanelClose}
+                        onClick={handleCloseConversionForm}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -1744,19 +1802,27 @@ export default function ProjectCanvasPage() {
                     </div>
                   </div>
                 ) : (
-                  <button
-                    className={styles.convertButton}
+                  <AnimatedBorder
+                    radius={14}
+                    borderWidth={1.5}
+                    gap={2}
+                    borderColor="#ff6f61"
+                    className={styles.convertButtonWrapper}
                     style={{
                       left: centerX,
                       top: maxY + (24 * buttonScale),
                       transform: `translateX(-50%) scale(${buttonScale})`,
                       transformOrigin: 'top center',
                     }}
-                    onClick={handleOpenConversionForm}
-                    onMouseDown={(e) => e.stopPropagation()}
                   >
-                    Convert assets to thumbnail
-                  </button>
+                    <button
+                      className={styles.convertButton}
+                      onClick={handleOpenConversionForm}
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
+                      Convert assets to thumbnail
+                    </button>
+                  </AnimatedBorder>
                 );
               })()
             ) : (
@@ -1954,18 +2020,20 @@ export default function ProjectCanvasPage() {
         </div>
         {/* Export button - visible when elements are selected */}
         {selectedElementIds.length > 0 && (
-          <button
-            className={styles.exportButton}
-            onClick={() => console.log('Export thumbnails:', selectedElementIds)}
-            title="Export selected thumbnails"
-          >
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Export
-          </button>
+          <AnimatedBorder radius={10} borderWidth={1.5} gap={2} borderColor="#ff6f61" className={styles.exportButtonWrapper}>
+            <button
+              className={styles.exportButton}
+              onClick={() => console.log('Export thumbnails:', selectedElementIds)}
+              title="Export selected thumbnails"
+            >
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Export
+            </button>
+          </AnimatedBorder>
         )}
 
 

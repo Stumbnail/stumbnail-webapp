@@ -19,6 +19,8 @@ interface AnimatedBorderProps {
     fullWidth?: boolean;
     /** Optional className for the wrapper */
     className?: string;
+    /** Optional inline styles for the wrapper */
+    style?: React.CSSProperties;
 }
 
 type Edge = 'top' | 'right' | 'bottom' | 'left';
@@ -41,6 +43,7 @@ export default function AnimatedBorder({
     gap = 4,
     fullWidth = false,
     className = '',
+    style,
 }: AnimatedBorderProps) {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const pathCWRef = useRef<SVGPathElement>(null);
@@ -186,6 +189,7 @@ export default function AnimatedBorder({
         <div
             ref={wrapperRef}
             className={`${styles.animatedBorderWrapper} ${fullWidth ? styles.fullWidth : ''} ${className}`}
+            style={style}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >

@@ -462,23 +462,32 @@
 .addButton {
   width: 48px;
   height: 48px;
-  background-color: #e8e8e8;
-  border: none;
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
   border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease, transform 0.1s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .addButton:hover {
-  background-color: #e5e5e5;
+  background-color: rgba(255, 111, 97, 0.05);
+  border-color: #ff6f61;
 }
 
 .addButton:active {
   transform: scale(0.95);
+}
+
+.addButton img {
+  transition: filter 0.2s ease;
+}
+
+.addButton:hover img {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(51%) saturate(2512%) hue-rotate(333deg) brightness(101%) contrast(101%);
 }
 
 .promptButtonsRow .submitButton {
@@ -515,11 +524,12 @@
   justify-content: flex-start;
   background-color: #ffffff;
   border: 1px solid #e5e5e5;
+  transition: all 0.2s ease;
 }
 
 .promptDropdownWrapper :global(.trigger:hover) {
-  background-color: #fafafa;
-  border-color: #d5d5d5;
+  background-color: rgba(255, 111, 97, 0.05);
+  border-color: #ff6f61;
 }
 
 /* Attached Images Container */
@@ -836,7 +846,7 @@
   border: 1px solid #d5d5d5;
   border-radius: 12px;
   padding: 10px 12px;
-  min-width: 580px;
+  min-width: 650px;
   height: auto;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   pointer-events: auto;
@@ -905,31 +915,34 @@
    CONVERT BUTTON (Multi-select)
    ============================================ */
 
-.convertButton {
-  position: absolute;
-  background: linear-gradient(135deg, #ff6f61 0%, #ff8a7a 100%);
-  color: #ffffff;
-  border: none;
-  border-radius: 16px;
-  padding: 16px 32px;
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(255, 111, 97, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.convertButtonWrapper {
+  position: absolute !important;
   z-index: 1001;
   pointer-events: auto;
+  display: inline-block;
+}
+
+.convertButton {
+  background-color: #ff6f61;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 28px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.25);
+  transition: box-shadow 0.15s ease, filter 0.15s ease;
   white-space: nowrap;
 }
 
 .convertButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(255, 111, 97, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 111, 97, 0.35);
 }
 
 .convertButton:active {
-  transform: translateY(0);
+  filter: brightness(0.95);
 }
 
 /* ============================================
@@ -966,6 +979,7 @@
   justify-content: space-between;
   padding: 18px 20px;
   border-bottom: 1px solid #e5e5e5;
+  user-select: none;
 }
 
 .formPanelTitle {
@@ -1111,34 +1125,37 @@
    EXPORT BUTTON
    ============================================ */
 
-.exportButton {
-  position: absolute;
+.exportButtonWrapper {
+  position: absolute !important;
   top: 16px;
   right: 16px;
+  z-index: 100;
+  display: inline-block;
+}
+
+.exportButton {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: linear-gradient(135deg, #ff6f61 0%, #ff8a7a 100%);
+  background-color: #ff6f61;
   border: none;
   border-radius: 10px;
-  color: #fff;
+  color: #ffffff;
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
-  z-index: 100;
+  transition: box-shadow 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.25);
 }
 
 .exportButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(255, 111, 97, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 111, 97, 0.35);
 }
 
 .exportButton:active {
-  transform: translateY(0);
+  filter: brightness(0.95);
 }
 
 .exportButton svg {
@@ -1265,18 +1282,27 @@
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  background-color: #f0f0f0;
-  border: none;
+  background-color: #ffffff;
+  border: 1px solid #d5d5d5;
   border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: all 0.2s ease;
 }
 
 .modifyPromptAttachButton:hover {
-  background-color: #e5e5e5;
+  background-color: rgba(255, 111, 97, 0.05);
+  border-color: #ff6f61;
+}
+
+.modifyPromptAttachButton img {
+  transition: filter 0.2s ease;
+}
+
+.modifyPromptAttachButton:hover img {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(51%) saturate(2512%) hue-rotate(333deg) brightness(101%) contrast(101%);
 }
 
 .modifyPromptAttachButton:active {
@@ -1598,8 +1624,18 @@
 }
 
 .darkTheme .addButton:hover {
-  background-color: #3a3a3a;
-  border-color: #555555;
+  background-color: rgba(255, 111, 97, 0.15);
+  border-color: #ff6f61;
+}
+
+.darkTheme .promptDropdownWrapper :global(.trigger) {
+  background-color: #333333;
+  border: 1px solid #444444;
+}
+
+.darkTheme .promptDropdownWrapper :global(.trigger:hover) {
+  background-color: rgba(255, 111, 97, 0.15);
+  border-color: #ff6f61;
 }
 
 .darkTheme .thumbnailCountLabel {
@@ -1904,10 +1940,12 @@
 /* Dark theme - Floating Prompt Attachments */
 .darkTheme .modifyPromptAttachButton {
   background-color: #333;
+  border: 1px solid #444;
 }
 
 .darkTheme .modifyPromptAttachButton:hover {
-  background-color: #444;
+  background-color: rgba(255, 111, 97, 0.15);
+  border-color: #ff6f61;
 }
 
 .darkTheme .modifyPromptAttachedImages {
