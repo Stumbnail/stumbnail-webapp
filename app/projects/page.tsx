@@ -10,6 +10,7 @@ import { Project, EditProjectModalState, ProjectActionModalState } from '@/types
 
 // Hooks
 import { useAuth, useTheme, useMobile } from '@/hooks';
+import { useProjectsContext } from '@/contexts';
 
 // Constants
 import { getNavItemsForRoute, PROJECTS_PER_PAGE } from '@/lib/constants';
@@ -33,45 +34,6 @@ const ProjectActionModal = dynamic(
 import styles from './projects.module.css';
 import dashboardStyles from '@/app/dashboard/dashboard.module.css';
 
-// Generate mock projects data
-const generateMockProjects = (): Project[] => {
-    const projectNames = [
-        'Summer Vlog Thumbnail', 'Gaming Stream Cover', 'Product Review',
-        'Tech Unboxing', 'Travel Adventure', 'Cooking Tutorial',
-        'Fitness Journey', 'Music Cover Art', 'Podcast Episode',
-        'DIY Crafts', 'Beauty Tips', 'Car Review',
-        'Pet Video', 'Comedy Sketch', 'Documentary Preview',
-        'Educational Content', 'Fashion Lookbook', 'Home Tour',
-        'Interview Session', 'Live Stream Promo', 'Meditation Guide',
-        'News Brief', 'Outdoor Camping', 'Photography Tips',
-        'Quick Recipe', 'Room Makeover', 'Sports Highlights',
-        'Tutorial Series', 'Unboxing Haul', 'Vlog Compilation',
-        'Workout Routine', 'Yoga Session', 'Zen Moments'
-    ];
-
-    const thumbnails = [
-        '/assets/dashboard/template1.png',
-        '/assets/dashboard/template2.png',
-        '/assets/dashboard/template3.png',
-        '/assets/dashboard/template4.png',
-    ];
-
-    const timeAgo = [
-        'Just now', '1 hour ago', '2 hours ago', '5 hours ago',
-        '1 day ago', '2 days ago', '3 days ago', '5 days ago',
-        '1 week ago', '2 weeks ago', '3 weeks ago', '1 month ago'
-    ];
-
-    return projectNames.map((name, index) => ({
-        id: index + 1,
-        name,
-        thumbnail: thumbnails[index % thumbnails.length],
-        createdAt: timeAgo[index % timeAgo.length],
-        isPublic: Math.random() > 0.5,
-        isFavorite: Math.random() > 0.7
-    }));
-};
-
 export default function ProjectsPage() {
     const router = useRouter();
 
@@ -79,6 +41,18 @@ export default function ProjectsPage() {
     const { user, loading: authLoading, signOut } = useAuth();
     const { theme, setTheme } = useTheme({ userId: user?.uid });
     const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
+    const {
+        projects,
+        loading: projectsLoading,
+        error: projectsError,
+        hasMore,
+        createNewProject,
+        removeProject,
+        toggleFavorite,
+        updateProject,
+        loadMore,
+        refetch,
+    } = useProjectsContext();
 
     // Navigation
     const navItems = useMemo(() => getNavItemsForRoute('projects'), []);
@@ -98,12 +72,11 @@ export default function ProjectsPage() {
         projectName: ''
     });
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-    const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
-    const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+    const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null);
+    const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
     const [editingProjectName, setEditingProjectName] = useState('');
 
-    // Projects state
-    const [projects, setProjects] = useState<Project[]>(() => generateMockProjects());
+    // Local pagination for visible items
     const [itemsToShow, setItemsToShow] = useState(PROJECTS_PER_PAGE);
 
     // Search state
@@ -136,7 +109,7 @@ export default function ProjectsPage() {
         [filteredProjects, itemsToShow]
     );
 
-    const hasMore = itemsToShow < filteredProjects.length;
+    const hasMoreLocal = itemsToShow < filteredProjects.length;
 
     // Click outside for project menus
     useEffect(() => {
@@ -165,9 +138,14 @@ export default function ProjectsPage() {
     }, [projectMenuOpen]);
 
     // Handlers
-    const handleCreateProject = useCallback((name: string, isPublic: boolean) => {
-        console.log('Creating project:', { name, isPublic });
-    }, []);
+    const handleCreateProject = useCallback(async (name: string, isPublic: boolean) => {
+        const newProject = await createNewProject(name, isPublic);
+        if (newProject) {
+            setIsModalOpen(false);
+            // Navigate to the new project
+            router.push(`/project/${newProject.id}`);
+        }
+    }, [createNewProject, router]);
 
     const handleSignOut = useCallback(async () => {
         try {
@@ -182,11 +160,11 @@ export default function ProjectsPage() {
         setTheme(newTheme);
     }, [setTheme]);
 
-    const handleProjectMenuClick = useCallback((projectId: number) => {
+    const handleProjectMenuClick = useCallback((projectId: string) => {
         setProjectMenuOpen(prev => prev === projectId ? null : projectId);
     }, []);
 
-    const handleEditProject = useCallback((projectId: number) => {
+    const handleEditProject = useCallback((projectId: string) => {
         const project = projects.find(p => p.id === projectId);
         if (project) {
             setEditingProjectId(projectId);
@@ -206,15 +184,12 @@ export default function ProjectsPage() {
             return;
         }
 
-        setProjects(prev => prev.map(project =>
-            project.id === editingProjectId
-                ? { ...project, name: editingProjectName.trim() }
-                : project
-        ));
+        // Update locally (API update can be added later)
+        updateProject(editingProjectId, { name: editingProjectName.trim() });
 
         setEditingProjectId(null);
         setEditingProjectName('');
-    }, [editingProjectId, editingProjectName]);
+    }, [editingProjectId, editingProjectName, updateProject]);
 
     const handleEditCancel = useCallback(() => {
         setEditingProjectId(null);
@@ -224,11 +199,10 @@ export default function ProjectsPage() {
     const handleEditProjectConfirm = useCallback((name: string, isPublic: boolean) => {
         if (editProjectModal.projectId === null) return;
 
-        setProjects(prev => prev.map(project =>
-            project.id === editProjectModal.projectId
-                ? { ...project, name, isPublic }
-                : project
-        ));
+        updateProject(editProjectModal.projectId, {
+            name,
+            privacy: isPublic ? 'public' : 'private'
+        });
 
         setEditProjectModal({
             isOpen: false,
@@ -236,21 +210,19 @@ export default function ProjectsPage() {
             projectName: '',
             isPublic: true
         });
-    }, [editProjectModal.projectId]);
+    }, [editProjectModal.projectId, updateProject]);
 
-    const handleToggleFavorite = useCallback((projectId: number) => {
-        setProjects(prev => prev.map(p =>
-            p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p
-        ));
+    const handleToggleFavorite = useCallback((projectId: string) => {
+        toggleFavorite(projectId);
         setProjectMenuOpen(null);
-    }, []);
+    }, [toggleFavorite]);
 
-    const handleOpenProject = useCallback((projectId: number) => {
-        console.log('Open project:', projectId);
+    const handleOpenProject = useCallback((projectId: string) => {
+        router.push(`/project/${projectId}`);
         setProjectMenuOpen(null);
-    }, []);
+    }, [router]);
 
-    const handleDeleteProject = useCallback((projectId: number) => {
+    const handleDeleteProject = useCallback((projectId: string) => {
         const project = projects.find(p => p.id === projectId);
         if (project) {
             setProjectActionModal({
@@ -263,28 +235,13 @@ export default function ProjectsPage() {
         setProjectMenuOpen(null);
     }, [projects]);
 
-    const handleProjectActionConfirm = useCallback(() => {
+    const handleProjectActionConfirm = useCallback(async () => {
         if (projectActionModal.projectId === null) return;
 
         const projectId = projectActionModal.projectId;
 
-        switch (projectActionModal.type) {
-            case 'delete':
-                setProjects(prev => prev.filter(project => project.id !== projectId));
-                break;
-
-            case 'duplicate':
-                const projectToDuplicate = projects.find(p => p.id === projectId);
-                if (projectToDuplicate) {
-                    const newProject: Project = {
-                        ...projectToDuplicate,
-                        id: Math.max(...projects.map(p => p.id)) + 1,
-                        name: `${projectToDuplicate.name} (Copy)`,
-                        createdAt: 'Just now'
-                    };
-                    setProjects(prev => [newProject, ...prev]);
-                }
-                break;
+        if (projectActionModal.type === 'delete') {
+            await removeProject(projectId);
         }
 
         setProjectActionModal({
@@ -293,7 +250,7 @@ export default function ProjectsPage() {
             projectId: null,
             projectName: ''
         });
-    }, [projectActionModal, projects]);
+    }, [projectActionModal, removeProject]);
 
     const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
@@ -304,7 +261,7 @@ export default function ProjectsPage() {
     }, []);
 
     // Loading state
-    if (authLoading) {
+    if (authLoading || projectsLoading) {
         return (
             <LoadingSpinner theme={theme} text="Loading..." fullScreen />
         );
@@ -502,7 +459,7 @@ export default function ProjectsPage() {
                             </div>
 
                             {/* Load More Button */}
-                            {hasMore && (
+                            {hasMoreLocal && (
                                 <div className={styles.loadMoreContainer}>
                                     <button
                                         className={styles.loadMoreButton}

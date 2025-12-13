@@ -51,9 +51,10 @@ export const signInWithGoogle = async (): Promise<User> => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error signing in with Google:', error);
-    throw new Error(error.message || 'Failed to sign in with Google');
+    const message = error instanceof Error ? error.message : 'Failed to sign in with Google';
+    throw new Error(message);
   }
 };
 
@@ -66,9 +67,10 @@ export const logOut = async (): Promise<void> => {
 
   try {
     await signOut(auth);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error signing out:', error);
-    throw new Error(error.message || 'Failed to sign out');
+    const message = error instanceof Error ? error.message : 'Failed to sign out';
+    throw new Error(message);
   }
 };
 

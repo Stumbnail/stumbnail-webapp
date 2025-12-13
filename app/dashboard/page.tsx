@@ -16,12 +16,12 @@ import {
 } from '@/types';
 
 // Hooks
-import { useAuth, useTheme, useMobile } from '@/hooks';
+import { useAuth, useTheme, useMobile, useTemplates } from '@/hooks';
+import { useProjectsContext } from '@/contexts';
 
 // Constants
 import {
   getNavItemsForRoute,
-  TEMPLATES,
   TEMPLATES_PER_PAGE,
   DEFAULT_MODEL,
   MAX_PROJECTS_DISPLAY,
@@ -60,34 +60,6 @@ const CreateStyleModal = dynamic(
 // Styles
 import styles from './dashboard.module.css';
 
-// Initial mock project data
-const initialMockProjects: Project[] = [
-  {
-    id: 1,
-    name: 'Summer Vlog Thumbnail',
-    thumbnail: '/assets/dashboard/template1.png',
-    createdAt: '2 days ago',
-    isPublic: true,
-    isFavorite: false
-  },
-  {
-    id: 2,
-    name: 'Gaming Stream Cover',
-    thumbnail: '/assets/dashboard/template2.png',
-    createdAt: '5 days ago',
-    isPublic: false,
-    isFavorite: true
-  },
-  {
-    id: 3,
-    name: 'Product Review',
-    thumbnail: '/assets/dashboard/template3.png',
-    createdAt: '1 week ago',
-    isPublic: true,
-    isFavorite: false
-  },
-];
-
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -95,6 +67,15 @@ export default function DashboardPage() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { theme, setTheme } = useTheme({ userId: user?.uid });
   const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
+  const { templates, loading: templatesLoading } = useTemplates();
+  const {
+    projects,
+    loading: projectsLoading,
+    createNewProject,
+    removeProject,
+    toggleFavorite,
+    updateProject,
+  } = useProjectsContext();
 
   // Navigation
   const navItems = useMemo(() => getNavItemsForRoute('dashboard'), []);
@@ -124,14 +105,13 @@ export default function DashboardPage() {
   const [promptInfoOpen, setPromptInfoOpen] = useState(false);
   const [urlInfoOpen, setUrlInfoOpen] = useState(false);
   const [creationContainerFocused, setCreationContainerFocused] = useState(false);
-  const [projects, setProjects] = useState<Project[]>(initialMockProjects);
-  const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
+  const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
   // Edit project state
-  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
 
   // Image attachment state
@@ -148,13 +128,13 @@ export default function DashboardPage() {
   const urlInfoRef = useRef<HTMLDivElement>(null);
 
   // Memoized values
-  const totalPages = Math.ceil(TEMPLATES.length / TEMPLATES_PER_PAGE);
+  const totalPages = Math.ceil(templates.length / TEMPLATES_PER_PAGE);
 
   const displayedTemplates = useMemo(() =>
     viewingAllTemplates
-      ? TEMPLATES.slice((currentPage - 1) * TEMPLATES_PER_PAGE, currentPage * TEMPLATES_PER_PAGE)
-      : TEMPLATES,
-    [viewingAllTemplates, currentPage]
+      ? templates.slice((currentPage - 1) * TEMPLATES_PER_PAGE, currentPage * TEMPLATES_PER_PAGE)
+      : templates,
+    [viewingAllTemplates, currentPage, templates]
   );
 
   const filteredProjects = useMemo(() =>
@@ -271,9 +251,13 @@ export default function DashboardPage() {
     }
   }, [handleYoutubeLinkSubmit]);
 
-  const handleCreateProject = useCallback((name: string, isPublic: boolean) => {
-    console.log('Creating project:', { name, isPublic });
-  }, []);
+  const handleCreateProject = useCallback(async (name: string, isPublic: boolean) => {
+    const newProject = await createNewProject(name, isPublic);
+    if (newProject) {
+      setIsModalOpen(false);
+      router.push(`/project/${newProject.id}`);
+    }
+  }, [createNewProject, router]);
 
   const handleSelectStyle = useCallback((style: Style | null) => {
     setSelectedStyle(style);
@@ -320,53 +304,47 @@ export default function DashboardPage() {
     setTheme(newTheme);
   }, [setTheme]);
 
-  const handleProjectMenuClick = useCallback((projectId: number) => {
+  const handleProjectMenuClick = useCallback((projectId: string) => {
     setProjectMenuOpen(prev => prev === projectId ? null : projectId);
   }, []);
 
-  const handleEditProject = useCallback((projectId: number) => {
+  const handleEditProject = useCallback((projectId: string) => {
     const project = projects.find(p => p.id === projectId);
     if (project) {
       setEditProjectModal({
         isOpen: true,
         projectId,
         projectName: project.name,
-        isPublic: project.isPublic
+        isPublic: project.privacy === 'public'
       });
     }
     setProjectMenuOpen(null);
   }, [projects]);
 
-  const handleSaveProjectName = useCallback((projectId: number) => {
+  const handleSaveProjectName = useCallback((projectId: string) => {
     if (editingProjectName.trim()) {
-      setProjects(prev => prev.map(project =>
-        project.id === projectId
-          ? { ...project, name: editingProjectName.trim() }
-          : project
-      ));
+      updateProject(projectId, { name: editingProjectName.trim() });
     }
     setEditingProjectId(null);
     setEditingProjectName('');
-  }, [editingProjectName]);
+  }, [editingProjectName, updateProject]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingProjectId(null);
     setEditingProjectName('');
   }, []);
 
-  const handleToggleFavorite = useCallback((projectId: number) => {
-    setProjects(prev => prev.map(p =>
-      p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p
-    ));
+  const handleToggleFavorite = useCallback((projectId: string) => {
+    toggleFavorite(projectId);
     setProjectMenuOpen(null);
-  }, []);
+  }, [toggleFavorite]);
 
-  const handleOpenProject = useCallback((projectId: number) => {
-    console.log('Open project:', projectId);
+  const handleOpenProject = useCallback((projectId: string) => {
+    router.push(`/project/${projectId}`);
     setProjectMenuOpen(null);
-  }, []);
+  }, [router]);
 
-  const handleDeleteProject = useCallback((projectId: number) => {
+  const handleDeleteProject = useCallback((projectId: string) => {
     const project = projects.find(p => p.id === projectId);
     if (project) {
       setProjectActionModal({
@@ -382,11 +360,10 @@ export default function DashboardPage() {
   const handleEditProjectConfirm = useCallback((name: string, isPublic: boolean) => {
     if (editProjectModal.projectId === null) return;
 
-    setProjects(prev => prev.map(project =>
-      project.id === editProjectModal.projectId
-        ? { ...project, name, isPublic }
-        : project
-    ));
+    updateProject(editProjectModal.projectId, {
+      name,
+      privacy: isPublic ? 'public' : 'private'
+    });
 
     setEditProjectModal({
       isOpen: false,
@@ -394,30 +371,15 @@ export default function DashboardPage() {
       projectName: '',
       isPublic: true
     });
-  }, [editProjectModal.projectId]);
+  }, [editProjectModal.projectId, updateProject]);
 
-  const handleProjectActionConfirm = useCallback(() => {
+  const handleProjectActionConfirm = useCallback(async () => {
     if (projectActionModal.projectId === null) return;
 
     const projectId = projectActionModal.projectId;
 
-    switch (projectActionModal.type) {
-      case 'delete':
-        setProjects(prev => prev.filter(project => project.id !== projectId));
-        break;
-
-      case 'duplicate':
-        const projectToDuplicate = projects.find(p => p.id === projectId);
-        if (projectToDuplicate) {
-          const newProject: Project = {
-            ...projectToDuplicate,
-            id: Math.max(...projects.map(p => p.id)) + 1,
-            name: `${projectToDuplicate.name} (Copy)`,
-            createdAt: 'Just now'
-          };
-          setProjects(prev => [newProject, ...prev]);
-        }
-        break;
+    if (projectActionModal.type === 'delete') {
+      await removeProject(projectId);
     }
 
     setProjectActionModal({
@@ -426,7 +388,7 @@ export default function DashboardPage() {
       projectId: null,
       projectName: ''
     });
-  }, [projectActionModal, projects]);
+  }, [projectActionModal, removeProject]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -441,7 +403,7 @@ export default function DashboardPage() {
     if (!files) return;
 
     const newImages = Array.from(files).map(file => ({
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       file,
       preview: URL.createObjectURL(file)
     }));
@@ -528,7 +490,6 @@ export default function DashboardPage() {
             </h2>
 
             <ProjectsGrid
-              projects={projects}
               filteredProjects={filteredProjects}
               displayedProjects={displayedProjects}
               hasMoreProjects={hasMoreProjects}
@@ -536,6 +497,7 @@ export default function DashboardPage() {
               projectMenuOpen={projectMenuOpen}
               editingProjectId={editingProjectId}
               editingProjectName={editingProjectName}
+              theme={theme}
               onCreateProject={() => setIsModalOpen(true)}
               onProjectMenuClick={handleProjectMenuClick}
               onEditProject={handleEditProject}
@@ -800,16 +762,20 @@ export default function DashboardPage() {
                   aria-label={`Use ${template.title} template`}
                 >
                   <div className={styles.templateImage}>
-                    <Image
-                      src={template.image}
-                      alt={template.title}
-                      fill
-                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px"
-                      priority={index < 4}
-                      loading={index < 4 ? undefined : 'lazy'}
-                      fetchPriority={index < 2 ? 'high' : 'auto'}
-                      style={{ objectFit: 'cover' }}
-                    />
+                    {template.image ? (
+                      <Image
+                        src={template.image}
+                        alt={template.title}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px"
+                        priority={index < 4}
+                        loading={index < 4 ? undefined : 'lazy'}
+                        fetchPriority={index < 2 ? 'high' : 'auto'}
+                        style={{ objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div className={styles.templatePlaceholder} />
+                    )}
                   </div>
                   <h3 className={styles.templateTitle}>{template.title}</h3>
                   <p className={styles.templateDescription}>{template.description}</p>

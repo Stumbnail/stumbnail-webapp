@@ -50,7 +50,8 @@ function generateMockThumbnails(): Thumbnail[] {
         name: creators[i % creators.length].name,
         avatar: creators[i % creators.length].avatar,
         model: models[i % models.length],
-        likes: Math.floor(Math.random() * 1000),
+        // Deterministic value based on index to prevent SSR/client hydration mismatch
+        likes: ((i * 37) % 1000) + 10,
         isLiked: false
     }));
 }

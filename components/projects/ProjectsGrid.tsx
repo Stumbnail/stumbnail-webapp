@@ -2,33 +2,32 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Project } from '@/types';
+import { Project, Theme } from '@/types';
 import ProjectCard from './ProjectCard';
 import { AnimatedBorder } from '@/components/ui';
 import styles from '@/app/dashboard/dashboard.module.css';
 
 interface ProjectsGridProps {
-    projects: Project[];
     filteredProjects: Project[];
     displayedProjects: Project[];
     hasMoreProjects: boolean;
     searchQuery: string;
-    projectMenuOpen: number | null;
-    editingProjectId: number | null;
+    projectMenuOpen: string | null;
+    editingProjectId: string | null;
     editingProjectName: string;
+    theme?: Theme;
     onCreateProject: () => void;
-    onProjectMenuClick: (projectId: number) => void;
-    onEditProject: (projectId: number) => void;
+    onProjectMenuClick: (projectId: string) => void;
+    onEditProject: (projectId: string) => void;
     onEditNameChange: (value: string) => void;
-    onEditSave: (projectId: number) => void;
+    onEditSave: (projectId: string) => void;
     onEditCancel: () => void;
-    onToggleFavorite: (projectId: number) => void;
-    onOpenProject: (projectId: number) => void;
-    onDeleteProject: (projectId: number) => void;
+    onToggleFavorite: (projectId: string) => void;
+    onOpenProject: (projectId: string) => void;
+    onDeleteProject: (projectId: string) => void;
 }
 
 export default function ProjectsGrid({
-    projects,
     filteredProjects,
     displayedProjects,
     hasMoreProjects,
@@ -36,6 +35,7 @@ export default function ProjectsGrid({
     projectMenuOpen,
     editingProjectId,
     editingProjectName,
+    theme = 'dark',
     onCreateProject,
     onProjectMenuClick,
     onEditProject,
@@ -121,6 +121,7 @@ export default function ProjectsGrid({
                         isEditing={editingProjectId === project.id}
                         editingName={editingProjectName}
                         isPriority={index < 4}
+                        theme={theme}
                         onMenuClick={() => onProjectMenuClick(project.id)}
                         onEdit={() => onEditProject(project.id)}
                         onEditNameChange={onEditNameChange}

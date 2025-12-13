@@ -2,9 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Theme } from '@/types';
+import { apiGet, apiPost } from '@/lib/api';
 
 interface UseThemeOptions {
     userId?: string;
+}
+
+interface ThemeResponse {
+    theme: Theme;
 }
 
 /**
@@ -33,7 +38,7 @@ function getInitialTheme(): Theme {
 
 /**
  * Custom hook for managing theme state
- * Handles local storage, system preference, and database sync
+ * Handles local storage, system preference, and backend API sync
  * Defers API calls to reduce initial load blocking
  */
 export function useTheme(options: UseThemeOptions = {}) {
@@ -51,6 +56,7 @@ export function useTheme(options: UseThemeOptions = {}) {
             setThemeState(correctTheme);
         }
         setIsInitialized(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally only run on mount
     }, []);
 
     // Sync theme with HTML element class for global theme application
@@ -67,19 +73,17 @@ export function useTheme(options: UseThemeOptions = {}) {
     useEffect(() => {
         if (!userId || hasFetchedFromDb.current) return;
 
-        // Use requestIdleCallback to defer API call until browser is idle
-        const fetchThemeFromDb = async () => {
+        // Fetch theme from backend API
+        const fetchThemeFromBackend = async () => {
             try {
-                const response = await fetch(`/api/user/theme?userId=${userId}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.theme && (data.theme === 'light' || data.theme === 'dark')) {
-                        setThemeState(data.theme);
-                        localStorage.setItem('theme', data.theme);
-                    }
+                const data = await apiGet<ThemeResponse>('/api/user/theme');
+                if (data.theme && (data.theme === 'light' || data.theme === 'dark')) {
+                    setThemeState(data.theme);
+                    localStorage.setItem('theme', data.theme);
                 }
             } catch (error) {
-                console.error('Error fetching theme from database:', error);
+                // Silently fail - user will keep their local preference
+                console.error('Error fetching theme from backend:', error);
             }
             hasFetchedFromDb.current = true;
         };
@@ -87,11 +91,11 @@ export function useTheme(options: UseThemeOptions = {}) {
         // Defer the API call to reduce blocking during initial load
         if ('requestIdleCallback' in window) {
             (window as typeof window & { requestIdleCallback: (cb: () => void) => number }).requestIdleCallback(() => {
-                fetchThemeFromDb();
+                fetchThemeFromBackend();
             });
         } else {
             // Fallback for browsers without requestIdleCallback
-            setTimeout(fetchThemeFromDb, 100);
+            setTimeout(fetchThemeFromBackend, 100);
         }
     }, [userId]);
 
@@ -99,20 +103,11 @@ export function useTheme(options: UseThemeOptions = {}) {
         setThemeState(newTheme);
         localStorage.setItem('theme', newTheme);
 
-        // Persist theme to database for cross-device sync (non-blocking)
+        // Persist theme to backend API for cross-device sync (non-blocking)
         if (userId) {
-            // Don't await - fire and forget for better performance
-            fetch('/api/user/theme', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    userId,
-                    theme: newTheme,
-                }),
-            }).catch(error => {
-                console.error('Error updating theme:', error);
+            // Use toggle endpoint to sync with backend
+            apiPost<ThemeResponse>('/api/user/theme/toggle').catch(error => {
+                console.error('Error toggling theme on backend:', error);
             });
         }
     }, [userId]);
@@ -130,3 +125,4 @@ export function useTheme(options: UseThemeOptions = {}) {
         isInitialized,
     };
 }
+

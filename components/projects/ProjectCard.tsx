@@ -3,9 +3,14 @@
 import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Project } from '@/types';
+import { Project, Theme } from '@/types';
+import { formatRelativeTime } from '@/lib/utils/formatTime';
 import styles from '@/app/dashboard/dashboard.module.css';
 import AnimatedBorder from '@/components/ui/AnimatedBorder';
+
+// Default placeholders for projects without a preview image
+const PROJECT_PLACEHOLDER_DARK = '/assets/dashboard/project-placeholder.svg';
+const PROJECT_PLACEHOLDER_LIGHT = '/assets/dashboard/project-placeholder-light.svg';
 
 interface ProjectCardProps {
     project: Project;
@@ -14,6 +19,8 @@ interface ProjectCardProps {
     editingName: string;
     /** Set to true for first visible cards to optimize LCP */
     isPriority?: boolean;
+    /** Theme for placeholder selection */
+    theme?: Theme;
     onMenuClick: () => void;
     onEdit: () => void;
     onEditNameChange: (value: string) => void;
@@ -30,6 +37,7 @@ export default function ProjectCard({
     isEditing,
     editingName,
     isPriority = false,
+    theme = 'dark',
     onMenuClick,
     onEdit,
     onEditNameChange,
@@ -41,6 +49,9 @@ export default function ProjectCard({
 }: ProjectCardProps) {
     const router = useRouter();
     const editInputRef = useRef<HTMLInputElement>(null);
+
+    // Select placeholder based on theme
+    const placeholderImage = theme === 'light' ? PROJECT_PLACEHOLDER_LIGHT : PROJECT_PLACEHOLDER_DARK;
 
     const handleEditKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
@@ -76,7 +87,7 @@ export default function ProjectCard({
                     aria-label={`Open ${project.name}`}
                 >
                     <Image
-                        src={project.thumbnail}
+                        src={project.previewImage || placeholderImage}
                         alt={project.name}
                         fill
                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -174,9 +185,9 @@ export default function ProjectCard({
                         </div>
                     </div>
                     <div className={styles.projectMeta}>
-                        <span className={styles.projectDate}>{project.createdAt}</span>
+                        <span className={styles.projectDate}>{formatRelativeTime(project.createdAt)}</span>
                         <span className={styles.projectVisibility}>
-                            {project.isPublic ? (
+                            {project.privacy === 'public' ? (
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M1.33331 8C1.33331 8 3.33331 3.33334 7.99998 3.33334C12.6666 3.33334 14.6666 8 14.6666 8C14.6666 8 12.6666 12.6667 7.99998 12.6667C3.33331 12.6667 1.33331 8 1.33331 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                     <path d="M8 10C9.10457 10 10 9.10457 10 8C10 6.89543 9.10457 6 8 6C6.89543 6 6 6.89543 6 8C6 9.10457 6.89543 10 8 10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -187,7 +198,7 @@ export default function ProjectCard({
                                     <path d="M1.33337 1.33334L14.6667 14.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                             )}
-                            {project.isPublic ? 'Public' : 'Private'}
+                            {project.privacy === 'public' ? 'Public' : 'Private'}
                         </span>
                     </div>
                 </div>

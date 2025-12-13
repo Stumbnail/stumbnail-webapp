@@ -10,6 +10,7 @@ import { Project, EditProjectModalState, ProjectActionModalState } from '@/types
 
 // Hooks
 import { useAuth, useTheme, useMobile } from '@/hooks';
+import { useProjectsContext } from '@/contexts';
 
 // Constants
 import { getNavItemsForRoute } from '@/lib/constants';
@@ -33,37 +34,6 @@ const ProjectActionModal = dynamic(
 import dashboardStyles from '@/app/dashboard/dashboard.module.css';
 import projectsStyles from '@/app/projects/projects.module.css';
 
-// Mock data generator
-const generateMockProjects = (): Project[] => {
-    const projectNames = [
-        'Epic Gaming Montage', 'Summer Vlog Thumbnail', 'Tech Review',
-        'Cooking Tutorial', 'Fitness Journey', 'Music Cover Art',
-        'Travel Adventure', 'DIY Crafts', 'Beauty Tips', 'Car Review'
-    ];
-
-    const thumbnails = [
-        '/assets/dashboard/template1.png',
-        '/assets/dashboard/template2.png',
-        '/assets/dashboard/template3.png',
-        '/assets/dashboard/template4.png',
-    ];
-
-    const timeAgo = [
-        'Just now', '1 hour ago', '2 hours ago', '5 hours ago',
-        '1 day ago', '2 days ago', '3 days ago', '5 days ago',
-        '1 week ago', '2 weeks ago'
-    ];
-
-    return projectNames.map((name, index) => ({
-        id: index + 1,
-        name,
-        thumbnail: thumbnails[index % thumbnails.length],
-        createdAt: timeAgo[index % timeAgo.length],
-        isPublic: Math.random() > 0.5,
-        isFavorite: index < 3 // First 3 are favorites by default for demo
-    }));
-};
-
 export default function FavouritesPage() {
     const router = useRouter();
 
@@ -71,14 +41,21 @@ export default function FavouritesPage() {
     const { user, loading: authLoading, signOut } = useAuth();
     const { theme, setTheme } = useTheme({ userId: user?.uid });
     const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
+    const {
+        projects,
+        loading: projectsLoading,
+        toggleFavorite,
+        updateProject,
+        removeProject,
+    } = useProjectsContext();
 
     // Navigation
     const navItems = useMemo(() => getNavItemsForRoute('favourites'), []);
 
     // UI state
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-    const [projectMenuOpen, setProjectMenuOpen] = useState<number | null>(null);
-    const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+    const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null);
+    const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
     const [editingProjectName, setEditingProjectName] = useState('');
 
     // Project modals
@@ -96,10 +73,7 @@ export default function FavouritesPage() {
         projectName: ''
     });
 
-    // Projects state
-    const [projects, setProjects] = useState<Project[]>(() => generateMockProjects());
-
-    // Filtered favorites
+    // Filtered favorites from API projects
     const favoriteProjects = useMemo(() =>
         projects.filter(p => p.isFavorite),
         [projects]
@@ -132,11 +106,11 @@ export default function FavouritesPage() {
         setTheme(newTheme);
     }, [setTheme]);
 
-    const handleProjectMenuClick = useCallback((projectId: number) => {
+    const handleProjectMenuClick = useCallback((projectId: string) => {
         setProjectMenuOpen(prev => prev === projectId ? null : projectId);
     }, []);
 
-    const handleEditProject = useCallback((projectId: number) => {
+    const handleEditProject = useCallback((projectId: string) => {
         const project = projects.find(p => p.id === projectId);
         if (project) {
             setEditingProjectId(projectId);
@@ -156,15 +130,11 @@ export default function FavouritesPage() {
             return;
         }
 
-        setProjects(prev => prev.map(project =>
-            project.id === editingProjectId
-                ? { ...project, name: editingProjectName.trim() }
-                : project
-        ));
+        updateProject(editingProjectId, { name: editingProjectName.trim() });
 
         setEditingProjectId(null);
         setEditingProjectName('');
-    }, [editingProjectId, editingProjectName]);
+    }, [editingProjectId, editingProjectName, updateProject]);
 
     const handleEditCancel = useCallback(() => {
         setEditingProjectId(null);
@@ -174,11 +144,10 @@ export default function FavouritesPage() {
     const handleEditProjectConfirm = useCallback((name: string, isPublic: boolean) => {
         if (editProjectModal.projectId === null) return;
 
-        setProjects(prev => prev.map(project =>
-            project.id === editProjectModal.projectId
-                ? { ...project, name, isPublic }
-                : project
-        ));
+        updateProject(editProjectModal.projectId, {
+            name,
+            privacy: isPublic ? 'public' : 'private'
+        });
 
         setEditProjectModal({
             isOpen: false,
@@ -186,21 +155,19 @@ export default function FavouritesPage() {
             projectName: '',
             isPublic: true
         });
-    }, [editProjectModal.projectId]);
+    }, [editProjectModal.projectId, updateProject]);
 
-    const handleToggleFavorite = useCallback((projectId: number) => {
-        setProjects(prev => prev.map(p =>
-            p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p
-        ));
+    const handleToggleFavorite = useCallback((projectId: string) => {
+        toggleFavorite(projectId);
         setProjectMenuOpen(null);
-    }, []);
+    }, [toggleFavorite]);
 
-    const handleOpenProject = useCallback((projectId: number) => {
-        console.log('Open project:', projectId);
+    const handleOpenProject = useCallback((projectId: string) => {
+        router.push(`/project/${projectId}`);
         setProjectMenuOpen(null);
-    }, []);
+    }, [router]);
 
-    const handleDeleteProject = useCallback((projectId: number) => {
+    const handleDeleteProject = useCallback((projectId: string) => {
         const project = projects.find(p => p.id === projectId);
         if (project) {
             setProjectActionModal({
@@ -213,19 +180,19 @@ export default function FavouritesPage() {
         setProjectMenuOpen(null);
     }, [projects]);
 
-    const handleProjectActionConfirm = useCallback(() => {
+    const handleProjectActionConfirm = useCallback(async () => {
         if (projectActionModal.projectId === null) return;
-        setProjects(prev => prev.filter(project => project.id !== projectActionModal.projectId));
+        await removeProject(projectActionModal.projectId);
         setProjectActionModal({
             isOpen: false,
             type: 'delete',
             projectId: null,
             projectName: ''
         });
-    }, [projectActionModal.projectId]);
+    }, [projectActionModal.projectId, removeProject]);
 
     // Loading state
-    if (authLoading) {
+    if (authLoading || projectsLoading) {
         return (
             <LoadingSpinner theme={theme} text="Loading..." fullScreen />
         );

@@ -10,8 +10,20 @@ export interface NavItem {
     active: boolean;
 }
 
-// Project types
+// Project types (matches API response)
 export interface Project {
+    id: string;
+    name: string;
+    previewImage: string | null;
+    privacy: 'public' | 'private';
+    thumbnailsCount: number;
+    createdAt: string;
+    updatedAt: string;
+    isFavorite: boolean; // Client-side state (not from API)
+}
+
+// Legacy project type for backwards compatibility during migration
+export interface LegacyProject {
     id: number;
     name: string;
     thumbnail: string;
@@ -66,7 +78,7 @@ export interface Thumbnail {
 // Modal state types
 export interface EditProjectModalState {
     isOpen: boolean;
-    projectId: number | null;
+    projectId: string | null;
     projectName: string;
     isPublic: boolean;
 }
@@ -74,7 +86,7 @@ export interface EditProjectModalState {
 export interface ProjectActionModalState {
     isOpen: boolean;
     type: 'delete' | 'duplicate';
-    projectId: number | null;
+    projectId: string | null;
     projectName: string;
 }
 
