@@ -1736,6 +1736,16 @@ export default function ProjectCanvasPage() {
           <h2 className={styles.createNewTitle}>Create New</h2>
           <div className={styles.createOptionsGrid}>
             <button
+              className={`${styles.createOption} ${selectedMode === 'prompt' ? styles.createOptionSelected : ''}`}
+              onClick={() => handleModeSelect('prompt')}
+            >
+              <div className={styles.createOptionIcon}>
+                <Image src="/assets/project/icons/prompt.svg" alt="" width={34} height={34} />
+              </div>
+              <span className={styles.createOptionLabel}>Prompt</span>
+            </button>
+
+            <button
               className={`${styles.createOption} ${selectedMode === 'url' ? styles.createOptionSelected : ''}`}
               onClick={() => {
                 handleModeSelect('url');
@@ -1750,16 +1760,6 @@ export default function ProjectCanvasPage() {
                 <Image src="/assets/project/icons/attachment-02-stroke-rounded 1.svg" alt="" width={34} height={34} />
               </div>
               <span className={styles.createOptionLabel}>Using URL</span>
-            </button>
-
-            <button
-              className={`${styles.createOption} ${selectedMode === 'prompt' ? styles.createOptionSelected : ''}`}
-              onClick={() => handleModeSelect('prompt')}
-            >
-              <div className={styles.createOptionIcon}>
-                <Image src="/assets/project/icons/prompt.svg" alt="" width={34} height={34} />
-              </div>
-              <span className={styles.createOptionLabel}>Prompt</span>
             </button>
           </div>
 
@@ -1808,19 +1808,19 @@ export default function ProjectCanvasPage() {
                 rows={1}
               />
               <div className={styles.promptButtonsRow}>
+                <div className={styles.costDisplay} title="Cost in credits">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                    <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                  <span>{sidebarCredits}</span>
+                </div>
                 <button
                   className={styles.submitButton}
                   onClick={handlePromptSubmit}
                   disabled={!promptText.trim()}
-                  title={`Generate (${sidebarCredits} credits)`}
+                  title="Generate Thumbnail"
                 >
-                  <span className={styles.submitButtonCredits}>
-                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
-                      <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-                    </svg>
-                    {sidebarCredits}
-                  </span>
                   <Image src="/assets/project/icons/send-prompt.svg" alt="" width={20} height={20} />
                 </button>
               </div>

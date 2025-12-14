@@ -72,6 +72,8 @@ export default function DashboardPage() {
   const {
     projects,
     loading: projectsLoading,
+    isStale,
+    cacheHit,
     createNewProject,
     removeProject,
     toggleFavorite,
@@ -487,9 +489,46 @@ export default function DashboardPage() {
         <div className={styles.content}>
           {/* My Projects Section */}
           <section className={styles.projectsSection}>
-            <h2 className={styles.sectionTitle}>
-              My <span className={styles.titleAccent}>Projects</span>
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h2 className={styles.sectionTitle}>
+                My <span className={styles.titleAccent}>Projects</span>
+              </h2>
+              {isStale && (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    background: 'var(--background-secondary)',
+                  }}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ animation: 'spin 1s linear infinite' }}
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeDasharray="31.4 31.4"
+                      strokeLinecap="round"
+                      opacity="0.5"
+                    />
+                  </svg>
+                  <span>Syncing...</span>
+                </div>
+              )}
+            </div>
 
             <ProjectsGrid
               filteredProjects={filteredProjects}

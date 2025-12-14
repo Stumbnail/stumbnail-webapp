@@ -364,13 +364,34 @@
   line-height: normal;
 }
 
+.costDisplay {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  margin-right: 12px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.costDisplay:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #141414;
+}
+
 .submitButton {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  min-width: 56px;
+  /* Button itself */
+  position: relative;
+  width: 56px;
+  /* Fixed width */
   height: 56px;
-  padding: 0 16px;
+  padding: 0;
   background-color: #ff6f61;
   border: none;
   border-radius: 12px;
@@ -378,8 +399,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   transition: background-color 0.2s ease, transform 0.1s ease;
+  flex-shrink: 0;
 }
 
 .submitButton:hover:not(:disabled) {
@@ -393,16 +414,6 @@
 .submitButton:disabled {
   background-color: #d5d5d5;
   cursor: not-allowed;
-}
-
-.submitButtonCredits {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: #ffffff;
 }
 
 .inputError {
@@ -505,7 +516,7 @@
 .promptButtonsRow .submitButton {
   width: 48px;
   height: 48px;
-  position: static;
+  position: relative;
   flex-shrink: 0;
 }
 

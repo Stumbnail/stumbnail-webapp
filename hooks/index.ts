@@ -9,4 +9,5 @@ export { useTemplates } from './useTemplates';
 export { useProjectsFirestore } from './useProjectsFirestore';
 export { useThumbnailsFirestore } from './useThumbnailsFirestore';
 export { useDebouncedFirestoreUpdate, useDebouncedBatchUpdate } from './useDebouncedFirestoreUpdate';
+export { useCachedFirestoreData, clearCache, clearAllFirestoreCaches } from './useCachedFirestoreData';
 

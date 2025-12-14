@@ -44,6 +44,8 @@ interface ProjectsContextValue {
     projects: Project[];
     loading: boolean;
     error: string | null;
+    isStale: boolean; // true if showing cached data while loading fresh data
+    cacheHit: boolean; // true if data was loaded from cache
     createNewProject: (name: string, isPublic: boolean) => Promise<Project | null>;
     removeProject: (projectId: string) => Promise<boolean>;
     toggleFavorite: (projectId: string) => void;
@@ -60,8 +62,8 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
     // Get authenticated user
     const { user } = useAuth();
 
-    // Subscribe to Firestore projects (real-time)
-    const { projects: firestoreProjects, loading, error } = useProjectsFirestore(user);
+    // Subscribe to Firestore projects (real-time with caching)
+    const { projects: firestoreProjects, loading, error, isStale, cacheHit } = useProjectsFirestore(user);
 
     // Track favorites in localStorage
     const [favorites, setFavorites] = useState<Set<string>>(() => {
@@ -174,6 +176,8 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
                 projects,
                 loading,
                 error,
+                isStale,
+                cacheHit,
                 createNewProject,
                 removeProject,
                 toggleFavorite,
