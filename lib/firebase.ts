@@ -2,6 +2,7 @@
 // Uses dynamic imports for code splitting to reduce initial bundle size
 
 import type { Auth, User } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -16,6 +17,8 @@ const firebaseConfig = {
 // Cached references to avoid re-importing
 let authInstance: Auth | null = null;
 let authInitPromise: Promise<Auth> | null = null;
+let firestoreInstance: Firestore | null = null;
+let firestoreInitPromise: Promise<Firestore> | null = null;
 
 /**
  * Lazily initialize Firebase Auth
@@ -86,3 +89,24 @@ export const onAuthChange = async (
 
   return onAuthStateChanged(auth, callback);
 };
+
+/**
+ * Lazily initialize Firestore
+ * This prevents the large Firebase bundle from blocking initial page load
+ */
+export async function getFirestore(): Promise<Firestore> {
+  if (firestoreInstance) return firestoreInstance;
+
+  if (!firestoreInitPromise) {
+    firestoreInitPromise = (async () => {
+      const { initializeApp, getApps, getApp } = await import('firebase/app');
+      const { getFirestore: getFirestoreInstance } = await import('firebase/firestore');
+
+      const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+      firestoreInstance = getFirestoreInstance(app);
+      return firestoreInstance;
+    })();
+  }
+
+  return firestoreInitPromise;
+}

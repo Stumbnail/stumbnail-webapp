@@ -13,6 +13,11 @@ export interface ApiProject {
     ownerEmail: string;
     name: string;
     privacy: 'public' | 'private';
+    viewport: {
+        x: number;
+        y: number;
+        zoom: number;
+    };
     thumbnailsCount: number;
     previewImage: string | null;
     createdAt: string;

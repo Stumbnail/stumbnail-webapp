@@ -16,7 +16,7 @@ import {
 } from '@/types';
 
 // Hooks
-import { useAuth, useTheme, useMobile, useTemplates } from '@/hooks';
+import { useAuth, useUserData, useTheme, useMobile, useTemplates } from '@/hooks';
 import { useProjectsContext } from '@/contexts';
 
 // Constants
@@ -65,6 +65,7 @@ export default function DashboardPage() {
 
   // Custom hooks
   const { user, loading: authLoading, signOut } = useAuth();
+  const { userData } = useUserData(user);
   const { theme, setTheme } = useTheme({ userId: user?.uid });
   const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
   const { templates, loading: templatesLoading } = useTemplates();
@@ -459,6 +460,7 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <Sidebar
         user={user}
+        userData={userData}
         navItems={navItems}
         theme={theme}
         sidebarOpen={sidebarOpen}
@@ -622,28 +624,40 @@ export default function DashboardPage() {
 
                     {/* Attached Images Preview */}
                     {attachedImages.length > 0 && (
-                      <div className={styles.attachedImagesContainer}>
-                        {attachedImages.map((img) => (
-                          <div key={img.id} className={styles.attachedImageWrapper}>
-                            <Image
-                              src={img.preview}
-                              alt={`Attached: ${img.file.name}`}
-                              width={60}
-                              height={60}
-                              className={styles.attachedImagePreview}
-                            />
-                            <button
-                              className={styles.removeImageButton}
-                              onClick={() => handleRemoveImage(img.id)}
-                              aria-label={`Remove ${img.file.name}`}
-                            >
-                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            </button>
-                            <span className={styles.attachedImageName}>{img.file.name}</span>
-                          </div>
-                        ))}
+                      <div className={styles.attachedImagesSection}>
+                        <div className={styles.attachedImagesHeader}>
+                          <span className={styles.attachedImagesLabel}>Reference Images</span>
+                          <span
+                            className={styles.attachedImagesHint}
+                            title="Reference images in prompts: 'Use the face from Image 1 with the style of Image 2'"
+                          >
+                            💡 Tip
+                          </span>
+                        </div>
+                        <div className={styles.attachedImagesContainer}>
+                          {attachedImages.map((img, index) => (
+                            <div key={img.id} className={styles.attachedImageWrapper}>
+                              <div className={styles.attachedImageIndex}>{index + 1}</div>
+                              <Image
+                                src={img.preview}
+                                alt={`Image ${index + 1}: ${img.file.name}`}
+                                width={60}
+                                height={60}
+                                className={styles.attachedImagePreview}
+                              />
+                              <button
+                                className={styles.removeImageButton}
+                                onClick={() => handleRemoveImage(img.id)}
+                                aria-label={`Remove ${img.file.name}`}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </button>
+                              <span className={styles.attachedImageName}>{img.file.name}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

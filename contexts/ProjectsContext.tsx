@@ -1,29 +1,42 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Project } from '@/types';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useProjectsFirestore } from '@/hooks/useProjectsFirestore';
+import { Project as FirestoreProject } from '@/lib/services/firestoreProjectService';
 import {
-    getProjects,
     createProject,
     deleteProject,
     updateProject as updateProjectApi,
-    ApiProject,
-    ProjectsResponse,
 } from '@/lib/services/projectService';
 
 /**
- * Transform API project to frontend Project type
+ * Frontend Project type (matches existing type definitions)
  */
-function transformProject(apiProject: ApiProject, favorites: Set<string>): Project {
+export interface Project {
+    id: string;
+    name: string;
+    previewImage: string | null;
+    privacy: 'public' | 'private';
+    thumbnailsCount: number;
+    createdAt: string;
+    updatedAt: string;
+    isFavorite: boolean; // Client-side state
+}
+
+/**
+ * Transform Firestore project to frontend Project type with favorites
+ */
+function transformProject(firestoreProject: FirestoreProject, favorites: Set<string>): Project {
     return {
-        id: apiProject.id,
-        name: apiProject.name,
-        previewImage: apiProject.previewImage,
-        privacy: apiProject.privacy,
-        thumbnailsCount: apiProject.thumbnailsCount,
-        createdAt: apiProject.createdAt,
-        updatedAt: apiProject.updatedAt,
-        isFavorite: favorites.has(apiProject.id),
+        id: firestoreProject.id,
+        name: firestoreProject.name,
+        previewImage: firestoreProject.previewImage,
+        privacy: firestoreProject.privacy,
+        thumbnailsCount: firestoreProject.thumbnailsCount,
+        createdAt: firestoreProject.createdAt,
+        updatedAt: firestoreProject.updatedAt,
+        isFavorite: favorites.has(firestoreProject.id),
     };
 }
 
@@ -31,10 +44,6 @@ interface ProjectsContextValue {
     projects: Project[];
     loading: boolean;
     error: string | null;
-    hasMore: boolean;
-    hasFetched: boolean;
-    refetch: () => Promise<void>;
-    loadMore: () => Promise<void>;
     createNewProject: (name: string, isPublic: boolean) => Promise<Project | null>;
     removeProject: (projectId: string) => Promise<boolean>;
     toggleFavorite: (projectId: string) => void;
@@ -48,12 +57,11 @@ interface ProjectsProviderProps {
 }
 
 export function ProjectsProvider({ children }: ProjectsProviderProps) {
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [hasMore, setHasMore] = useState(false);
-    const [nextCursor, setNextCursor] = useState<string | null>(null);
-    const [hasFetched, setHasFetched] = useState(false);
+    // Get authenticated user
+    const { user } = useAuth();
+
+    // Subscribe to Firestore projects (real-time)
+    const { projects: firestoreProjects, loading, error } = useProjectsFirestore(user);
 
     // Track favorites in localStorage
     const [favorites, setFavorites] = useState<Set<string>>(() => {
@@ -76,64 +84,36 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
         }
     }, [favorites]);
 
-    // Fetch projects
-    const fetchProjects = useCallback(async (cursor?: string) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const response: ProjectsResponse = await getProjects(20, cursor);
-
-            const transformedProjects = response.projects.map((p) =>
-                transformProject(p, favorites)
-            );
-
-            if (cursor) {
-                setProjects((prev) => [...prev, ...transformedProjects]);
-            } else {
-                setProjects(transformedProjects);
-            }
-
-            setHasMore(response.hasMore);
-            setNextCursor(response.nextPageCursor);
-            setHasFetched(true);
-        } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to fetch projects';
-            setError(message);
-            console.error('Error fetching projects:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [favorites]);
-
-    // Initial fetch - only once
-    useEffect(() => {
-        if (!hasFetched) {
-            fetchProjects();
-        }
-    }, [hasFetched, fetchProjects]);
-
-    const refetch = useCallback(async () => {
-        await fetchProjects();
-    }, [fetchProjects]);
-
-    const loadMore = useCallback(async () => {
-        if (!hasMore || !nextCursor || loading) return;
-        await fetchProjects(nextCursor);
-    }, [hasMore, nextCursor, loading, fetchProjects]);
+    // Transform Firestore projects with favorites
+    const projects = useMemo(() => {
+        return firestoreProjects.map((p) => transformProject(p, favorites));
+    }, [firestoreProjects, favorites]);
 
     const createNewProject = useCallback(async (
         name: string,
         isPublic: boolean
     ): Promise<Project | null> => {
         try {
+            // API call creates the project in Firestore
+            // Real-time listener will automatically pick it up
             const response = await createProject(name, isPublic ? 'public' : 'private');
-            const newProject = transformProject(response.project, favorites);
-            setProjects((prev) => [newProject, ...prev]);
-            return newProject;
+
+            // Return a temporary project object for immediate UI update
+            // The real-time listener will sync the actual data shortly
+            return transformProject({
+                id: response.project.id,
+                ownerId: response.project.ownerId,
+                ownerEmail: response.project.ownerEmail,
+                name: response.project.name,
+                privacy: response.project.privacy,
+                viewport: response.project.viewport,
+                thumbnailsCount: response.project.thumbnailsCount,
+                previewImage: response.project.previewImage,
+                createdAt: response.project.createdAt,
+                updatedAt: response.project.updatedAt,
+            }, favorites);
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to create project';
-            setError(message);
             console.error('Error creating project:', err);
             return null;
         }
@@ -141,8 +121,11 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
 
     const removeProject = useCallback(async (projectId: string): Promise<boolean> => {
         try {
+            // API call deletes the project from Firestore
+            // Real-time listener will automatically remove it from the UI
             await deleteProject(projectId);
-            setProjects((prev) => prev.filter((p) => p.id !== projectId));
+
+            // Remove from favorites
             setFavorites((prev) => {
                 const next = new Set(prev);
                 next.delete(projectId);
@@ -151,7 +134,6 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
             return true;
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to delete project';
-            setError(message);
             console.error('Error deleting project:', err);
             return false;
         }
@@ -167,12 +149,7 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
             }
             return next;
         });
-
-        setProjects((prev) =>
-            prev.map((p) =>
-                p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p
-            )
-        );
+        // The projects memo will automatically update when favorites changes
     }, []);
 
     const updateProject = useCallback(async (
@@ -180,21 +157,16 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
         updates: { name?: string; privacy?: 'public' | 'private' }
     ): Promise<boolean> => {
         try {
-            const response = await updateProjectApi(projectId, updates);
-            const updatedProject = transformProject(response.project, favorites);
-            setProjects((prev) =>
-                prev.map((p) =>
-                    p.id === projectId ? { ...updatedProject, isFavorite: p.isFavorite } : p
-                )
-            );
+            // API call updates the project in Firestore
+            // Real-time listener will automatically sync the changes
+            await updateProjectApi(projectId, updates);
             return true;
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to update project';
-            setError(message);
             console.error('Error updating project:', err);
             return false;
         }
-    }, [favorites]);
+    }, []);
 
     return (
         <ProjectsContext.Provider
@@ -202,10 +174,6 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
                 projects,
                 loading,
                 error,
-                hasMore,
-                hasFetched,
-                refetch,
-                loadMore,
                 createNewProject,
                 removeProject,
                 toggleFavorite,

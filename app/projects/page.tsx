@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import { Project, EditProjectModalState, ProjectActionModalState } from '@/types';
 
 // Hooks
-import { useAuth, useTheme, useMobile } from '@/hooks';
+import { useAuth, useUserData, useTheme, useMobile } from '@/hooks';
 import { useProjectsContext } from '@/contexts';
 
 // Constants
@@ -39,19 +39,17 @@ export default function ProjectsPage() {
 
     // Custom hooks
     const { user, loading: authLoading, signOut } = useAuth();
+    const { userData } = useUserData(user);
     const { theme, setTheme } = useTheme({ userId: user?.uid });
     const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
     const {
         projects,
         loading: projectsLoading,
         error: projectsError,
-        hasMore,
         createNewProject,
         removeProject,
         toggleFavorite,
         updateProject,
-        loadMore,
-        refetch,
     } = useProjectsContext();
 
     // Navigation
@@ -293,6 +291,7 @@ export default function ProjectsPage() {
             {/* Sidebar */}
             <Sidebar
                 user={user}
+                userData={userData}
                 navItems={navItems}
                 theme={theme}
                 sidebarOpen={sidebarOpen}

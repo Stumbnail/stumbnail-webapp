@@ -10,7 +10,7 @@ const nextConfig = {
     // Remove console.log in production
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  // Allow external images from Google (for user profile photos) and YouTube (for templates)
+  // Allow external images from various sources
   images: {
     remotePatterns: [
       {
@@ -25,7 +25,22 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'i.ytimg.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'storage.googleapis.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'example.com',
         pathname: '/**',
       },
     ],

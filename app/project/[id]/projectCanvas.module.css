@@ -368,8 +368,9 @@
   position: absolute;
   bottom: 16px;
   right: 16px;
-  width: 56px;
+  min-width: 56px;
   height: 56px;
+  padding: 0 16px;
   background-color: #ff6f61;
   border: none;
   border-radius: 12px;
@@ -377,6 +378,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
@@ -391,6 +393,16 @@
 .submitButton:disabled {
   background-color: #d5d5d5;
   cursor: not-allowed;
+}
+
+.submitButtonCredits {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 .inputError {
@@ -532,6 +544,42 @@
   border-color: #ff6f61;
 }
 
+/* Attached Images Section */
+.attachedImagesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 310px;
+}
+
+.attachedImagesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.attachedImagesLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #141414;
+}
+
+.attachedImagesHint {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 12px;
+  color: #ff6f61;
+  cursor: help;
+  padding: 2px 8px;
+  background: rgba(255, 111, 97, 0.1);
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.attachedImagesHint:hover {
+  background: rgba(255, 111, 97, 0.2);
+}
+
 /* Attached Images Container */
 .attachedImagesContainer {
   display: flex;
@@ -541,7 +589,6 @@
   background-color: #f8f8f8;
   border-radius: 12px;
   border: 1px dashed #d5d5d5;
-  width: 310px;
 }
 
 .attachedImageWrapper {
@@ -550,6 +597,26 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
+}
+
+.attachedImageIndex {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 22px;
+  height: 22px;
+  background: #2196f3;
+  color: #ffffff;
+  border-radius: 50%;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .attachedImagePreview {
@@ -700,6 +767,39 @@
   background-size: 20px 20px;
   /* Prevent browser zoom gestures */
   touch-action: none;
+}
+
+/* Credits Badge - Top Right */
+.creditsBadge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  user-select: none;
+}
+
+.creditsBadgeIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.creditsBadgeText {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #141414;
+  line-height: 1;
 }
 
 .canvasViewport {
@@ -885,8 +985,9 @@
 
 .promptPanelSubmit {
   flex-shrink: 0;
-  width: 40px;
+  min-width: 40px;
   height: 40px;
+  padding: 0 12px;
   background-color: #ff6f61;
   border: none;
   border-radius: 10px;
@@ -894,6 +995,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
@@ -909,6 +1011,16 @@
   background-color: #d5d5d5;
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.promptPanelCredits {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 /* ============================================
@@ -1343,6 +1455,26 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
+.modifyPromptImageIndex {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 18px;
+  height: 18px;
+  background: #2196f3;
+  color: #ffffff;
+  border-radius: 50%;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
 .modifyPromptRemoveImage {
   position: absolute;
   top: -5px;
@@ -1369,6 +1501,17 @@
   width: 8px;
   height: 8px;
   color: #fff;
+}
+
+/* Floating panel options row */
+.modifyPromptOptionsRow {
+  display: flex;
+  justify-content: center;
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* ============================================
@@ -1663,6 +1806,22 @@
 }
 
 /* Dark theme - Attached Images */
+.darkTheme .attachedImagesLabel {
+  color: #ffffff;
+}
+
+.darkTheme .attachedImagesHint {
+  background: rgba(255, 111, 97, 0.15);
+}
+
+.darkTheme .attachedImagesHint:hover {
+  background: rgba(255, 111, 97, 0.25);
+}
+
+.darkTheme .attachedImageIndex {
+  border-color: #2a2a2a;
+}
+
 .darkTheme .attachedImagesContainer {
   background-color: #2a2a2a;
   border-color: #444;
@@ -1706,6 +1865,16 @@
 .darkTheme .canvas {
   background-color: #1a1a1a;
   background-image: radial-gradient(circle, #333 1px, transparent 1px);
+}
+
+/* Dark Theme - Credits Badge */
+.darkTheme .creditsBadge {
+  background: rgba(42, 42, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.darkTheme .creditsBadgeText {
+  color: #ffffff;
 }
 
 .darkTheme .toolPalette {
@@ -1955,8 +2124,17 @@
   border-color: #444;
 }
 
+.darkTheme .modifyPromptImageIndex {
+  border-color: #2a2a2a;
+}
+
 .darkTheme .modifyPromptAttachedImage {
   border-color: #333;
+}
+
+.darkTheme .modifyPromptOptionsRow {
+  background: #2a2a2a;
+  border-color: #444;
 }
 
 /* ============================================

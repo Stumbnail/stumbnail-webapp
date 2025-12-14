@@ -65,21 +65,121 @@ Refine user prompt via GPT to make it more descriptive for image generation.
 ---
 
 ### POST `/api/thumbnail/generateThumbnail` 🔒
-Generate a thumbnail using Seedream 4 AI model.
+Generate a thumbnail using AI models.
 
-**Request:**
+**Common Parameters:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userEmail` | string | ✅ | User's email |
+| `userName` | string | ❌ | Display name |
+| `prompt` | string | ✅ | Image generation prompt |
+| `publicFlag` | boolean | ❌ | Show in community gallery |
+| `gen_model` | string | ❌ | Model to use (default: `seedream-4`) |
+| `aspectRatio` | string | ❌ | Aspect ratio (varies by model) |
+| `imageInput` | string/array | ❌ | Reference image(s) URL or base64 |
+
+---
+
+#### Model: `seedream-4` (Default)
+**Cost:** 15 credits
+
+| Param | Type | Options | Default |
+|-------|------|---------|---------|
+| `aspectRatio` | string | 16:9, 1:1, 9:16, 3:2, 2:3, 4:3, 3:4 | 16:9 |
+| `size` | string | 1K, 2K, 4K | 4K |
+| `imageInput` | array | Up to 10 images | - |
+| `width` | number | 256-2048 | - |
+| `height` | number | 256-2048 | - |
+
 ```json
 {
   "userEmail": "user@example.com",
-  "userName": "JohnDoe",
-  "prompt": "A cinematic gaming thumbnail with explosive fire effects and dramatic lighting",
-  "publicFlag": true,
+  "prompt": "A gaming thumbnail with fire effects",
   "gen_model": "seedream-4",
-  "aspectRatio": "16:9"
+  "aspectRatio": "16:9",
+  "size": "4K"
 }
 ```
 
-**Response:**
+---
+
+#### Model: `nano-banana`
+**Cost:** 8 credits
+
+| Param | Type | Options | Default |
+|-------|------|---------|---------|
+| `aspectRatio` | string | 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9, match_input_image | 16:9 |
+| `outputFormat` | string | jpg, png | jpg |
+| `imageInput` | array | Up to 10 images | - |
+
+```json
+{
+  "userEmail": "user@example.com",
+  "prompt": "A vibrant travel thumbnail",
+  "gen_model": "nano-banana",
+  "aspectRatio": "16:9",
+  "outputFormat": "jpg"
+}
+```
+
+---
+
+#### Model: `nano-banana-pro`
+**Cost:** 19 credits (1K/2K), **38 credits (4K)**
+
+| Param | Type | Options | Default |
+|-------|------|---------|---------|
+| `aspectRatio` | string | 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9, match_input_image | 16:9 |
+| `resolution` | string | 1K, 2K, 4K | 2K |
+| `outputFormat` | string | jpg, png | jpg |
+| `safetyFilterLevel` | string | block_low_and_above, block_medium_and_above, block_only_high | block_only_high |
+| `imageInput` | array | Up to 14 images | - |
+
+```json
+{
+  "userEmail": "user@example.com",
+  "prompt": "A premium lifestyle thumbnail",
+  "gen_model": "nano-banana-pro",
+  "aspectRatio": "16:9",
+  "resolution": "4K",
+  "safetyFilterLevel": "block_only_high"
+}
+```
+
+---
+
+#### Model: `flux-2-pro`
+**Cost:** 8 credits
+
+| Param | Type | Options | Default |
+|-------|------|---------|---------|
+| `aspectRatio` | string | 1:1, 16:9, 3:2, 2:3, 4:5, 5:4, 9:16, 3:4, 4:3, custom, match_input_image | 1:1 |
+| `resolution` | string | 0.5 MP, 1 MP, 2 MP, 4 MP, match_input_image | 1 MP |
+| `outputFormat` | string | webp, jpg, png | webp |
+| `outputQuality` | number | 0-100 | 80 |
+| `safetyTolerance` | number | 1-5 (1=strict, 5=permissive) | 2 |
+| `seed` | number | Any integer | - |
+| `width` | number | 256-2048 (only with aspectRatio: custom) | - |
+| `height` | number | 256-2048 (only with aspectRatio: custom) | - |
+| `imageInput` | array | Up to 8 images | - |
+
+```json
+{
+  "userEmail": "user@example.com",
+  "prompt": "A cinematic movie poster thumbnail",
+  "gen_model": "flux-2-pro",
+  "aspectRatio": "16:9",
+  "resolution": "2 MP",
+  "outputFormat": "webp",
+  "outputQuality": 90,
+  "safetyTolerance": 3,
+  "seed": 42
+}
+```
+
+---
+
+**Response (all models):**
 ```json
 {
   "success": true,
@@ -368,6 +468,27 @@ List available generation models.
       "description": "High-resolution 4K image generation",
       "provider": "replicate",
       "supportedFeatures": ["multiReference", "highResolution"]
+    },
+    {
+      "id": "nano-banana",
+      "displayName": "Nano Banana",
+      "description": "Google image generation with multi-reference support",
+      "provider": "replicate",
+      "supportedFeatures": ["multiReference", "aspectRatio"]
+    },
+    {
+      "id": "nano-banana-pro",
+      "displayName": "Nano Banana Pro",
+      "description": "Premium Google image generation with up to 4K resolution",
+      "provider": "replicate",
+      "supportedFeatures": ["multiReference", "resolution", "safetyFilter"]
+    },
+    {
+      "id": "flux-2-pro",
+      "displayName": "Flux 2 Pro",
+      "description": "Advanced image generation with high resolution",
+      "provider": "replicate",
+      "supportedFeatures": ["multiReference", "highResolution", "seed"]
     }
   ],
   "defaultModel": "seedream-4"
@@ -572,7 +693,7 @@ Search YouTube channels.
 
 ## Projects
 
-### POST `/api/projects` �
+### POST `/api/projects` 🔒
 Create a new project.
 
 **Request:**
@@ -593,6 +714,7 @@ Create a new project.
     "ownerEmail": "user@example.com",
     "name": "My Gaming Channel",
     "privacy": "private",
+    "viewport": { "x": 0, "y": 0, "zoom": 1 },
     "thumbnailsCount": 0,
     "previewImage": null,
     "createdAt": "2025-12-12T10:00:00.000Z",
@@ -619,10 +741,9 @@ List user's projects with pagination.
   "projects": [
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
-      "ownerId": "user_123",
-      "ownerEmail": "user@example.com",
       "name": "My Gaming Channel",
       "privacy": "private",
+      "viewport": { "x": 100, "y": -50, "zoom": 0.8 },
       "thumbnailsCount": 12,
       "previewImage": "https://storage.googleapis.com/stumbnail/thumbnails/first.jpg",
       "createdAt": "2025-12-12T10:00:00.000Z",
@@ -639,23 +760,7 @@ List user's projects with pagination.
 ### GET `/api/projects/:projectId` 🔒
 Get a specific project by ID.
 
-**Response:**
-```json
-{
-  "success": true,
-  "project": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "ownerId": "user_123",
-    "ownerEmail": "user@example.com",
-    "name": "My Gaming Channel",
-    "privacy": "private",
-    "thumbnailsCount": 12,
-    "previewImage": "https://storage.googleapis.com/stumbnail/thumbnails/first.jpg",
-    "createdAt": "2025-12-12T10:00:00.000Z",
-    "updatedAt": "2025-12-12T10:00:00.000Z"
-  }
-}
-```
+**Response:** Same structure as project in list response.
 
 ---
 
@@ -672,21 +777,27 @@ Update a project's name and/or privacy.
 
 > Both fields are optional, but at least one must be provided.
 
+---
+
+### PATCH `/api/projects/:projectId/viewport` 🔒
+Update canvas viewport state.
+
+**Request:**
+```json
+{
+  "x": 150,
+  "y": -200,
+  "zoom": 1.5
+}
+```
+
+> All fields are optional, but at least one must be provided.
+
 **Response:**
 ```json
 {
   "success": true,
-  "project": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "ownerId": "user_123",
-    "ownerEmail": "user@example.com",
-    "name": "Updated Project Name",
-    "privacy": "public",
-    "thumbnailsCount": 12,
-    "previewImage": "https://storage.googleapis.com/stumbnail/thumbnails/first.jpg",
-    "createdAt": "2025-12-12T10:00:00.000Z",
-    "updatedAt": "2025-12-13T13:45:00.000Z"
-  }
+  "viewport": { "x": 150, "y": -200, "zoom": 1.5 }
 }
 ```
 
@@ -695,13 +806,97 @@ Update a project's name and/or privacy.
 ### DELETE `/api/projects/:projectId` 🔒
 Delete a project.
 
+---
+
+## Project Thumbnails
+
+Thumbnails are stored as a subcollection under projects: `/projects/{projectId}/thumbnails/`
+
+### POST `/api/projects/:projectId/thumbnails` 🔒
+Add a thumbnail to a project (for uploads/YouTube thumbnails).
+
+**Request:**
+```json
+{
+  "thumbnailUrl": "https://storage.googleapis.com/stumbnail/thumbnails/image.jpg",
+  "type": "uploaded",
+  "x": 300,
+  "y": 150,
+  "width": 1280,
+  "height": 720,
+  "naturalWidth": 1920,
+  "naturalHeight": 1080,
+  "prompt": null
+}
+```
+
 **Response:**
 ```json
 {
   "success": true,
-  "message": "Project deleted successfully"
+  "thumbnail": {
+    "id": "5f215cd9-8dbd-4a57-a635-4d9daf474a61",
+    "projectId": "550e8400-e29b-41d4-a716-446655440000",
+    "ownerId": "user_123",
+    "thumbnailUrl": "https://...",
+    "type": "uploaded",
+    "status": "complete",
+    "x": 300,
+    "y": 150,
+    "width": 1280,
+    "height": 720,
+    "naturalWidth": 1920,
+    "naturalHeight": 1080,
+    "aspectRatio": 1.78,
+    "prompt": null,
+    "model": null,
+    "style": null,
+    "refImages": [],
+    "likesCount": 0,
+    "createdAt": "2025-12-13T13:10:40.704Z",
+    "updatedAt": "2025-12-13T13:10:40.704Z"
+  }
 }
 ```
+
+---
+
+### GET `/api/projects/:projectId/thumbnails` 🔒
+List all thumbnails in a project.
+
+**Response:**
+```json
+{
+  "success": true,
+  "thumbnails": [ /* array of thumbnail objects */ ],
+  "count": 5
+}
+```
+
+---
+
+### GET `/api/projects/:projectId/thumbnails/:thumbnailId` 🔒
+Get a specific thumbnail.
+
+---
+
+### PATCH `/api/projects/:projectId/thumbnails/:thumbnailId` 🔒
+Update thumbnail position or metadata.
+
+**Request (all fields optional):**
+```json
+{
+  "x": 500,
+  "y": 300,
+  "width": 640,
+  "height": 360
+}
+```
+
+---
+
+### DELETE `/api/projects/:projectId/thumbnails/:thumbnailId` 🔒
+Delete a thumbnail from a project.
 
 ---
 

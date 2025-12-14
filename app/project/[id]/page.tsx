@@ -6,13 +6,18 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
 // Hooks
-import { useAuth, useTheme } from '@/hooks';
+import { useAuth, useUserData, useTheme } from '@/hooks';
 
 // Types
 import { Model } from '@/types';
 
 // Constants
 import { DEFAULT_MODEL } from '@/lib/constants';
+
+// Services
+import { generateThumbnail, addThumbnail, getProjectThumbnails, deleteThumbnail, updateThumbnail, updateThumbnailPositions, uploadThumbnail, GenerateThumbnailRequest, ApiThumbnail } from '@/lib/services/thumbnailService';
+import { getProject } from '@/lib/services/projectService';
+import { calculateTotalCredits } from '@/lib/services/userService';
 
 // Lazy load dropdowns
 const ModelDropdown = dynamic(
@@ -30,6 +35,7 @@ import styles from './projectCanvas.module.css';
 
 // UI Components
 import { LoadingSpinner, AnimatedBorder } from '@/components/ui';
+import { ModelOptionsBar } from '@/components/generation';
 
 // Types
 type CreationMode = 'url' | 'prompt';
@@ -92,6 +98,7 @@ export default function ProjectCanvasPage() {
 
   // Custom hooks
   const { user, loading: authLoading } = useAuth();
+  const { userData } = useUserData(user);
   const { theme } = useTheme({ userId: user?.uid });
 
   // Refs
@@ -104,6 +111,7 @@ export default function ProjectCanvasPage() {
   // UI State
   const [projectName, setProjectName] = useState('My First Thumbnail');
   const [isPublic, setIsPublic] = useState(true);
+  const [isLoadingProject, setIsLoadingProject] = useState(true);
   const [selectedMode, setSelectedMode] = useState<CreationMode>('prompt');
   const [youtubeLink, setYoutubeLink] = useState('');
   const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
@@ -123,6 +131,18 @@ export default function ProjectCanvasPage() {
   const modifyImageInputRef = useRef<HTMLInputElement>(null);
   const [activeModifyElementId, setActiveModifyElementId] = useState<string | null>(null);
 
+  // Model-specific options state
+  const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [resolution, setResolution] = useState<string | undefined>();
+  const [size, setSize] = useState<string | undefined>();
+  const [megapixels, setMegapixels] = useState<string | undefined>();
+
+  // Per-element options for floating panel
+  const [elementAspectRatios, setElementAspectRatios] = useState<Record<string, string>>({});
+  const [elementResolutions, setElementResolutions] = useState<Record<string, string>>({});
+  const [elementSizes, setElementSizes] = useState<Record<string, string>>({});
+  const [elementMegapixels, setElementMegapixels] = useState<Record<string, string>>({});
+
   // Multi-select conversion form state
   const [showConversionForm, setShowConversionForm] = useState(false);
   const [conversionGenre, setConversionGenre] = useState('');
@@ -140,6 +160,8 @@ export default function ProjectCanvasPage() {
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
   const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([]);
   const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Interaction State
   const [isPanning, setIsPanning] = useState(false);
@@ -175,6 +197,55 @@ export default function ProjectCanvasPage() {
   // Snap alignment
   const [snapLines, setSnapLines] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] });
   const SNAP_THRESHOLD = 8;
+
+  // Fetch project data and thumbnails on mount
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      if (!projectId || !user) return;
+
+      setIsLoadingProject(true);
+      try {
+        // Fetch project details
+        const projectResponse = await getProject(projectId);
+        if (projectResponse.success && projectResponse.project) {
+          setProjectName(projectResponse.project.name);
+          setIsPublic(projectResponse.project.privacy === 'public');
+
+          // Restore viewport if saved
+          if (projectResponse.project.viewport) {
+            setViewport(projectResponse.project.viewport);
+          }
+        }
+
+        // Fetch thumbnails
+        const thumbnailsResponse = await getProjectThumbnails(projectId);
+        if (thumbnailsResponse.success && thumbnailsResponse.thumbnails) {
+          // Convert API thumbnails to canvas elements
+          // Use exact stored dimensions to preserve positions correctly
+          const elements: CanvasElement[] = thumbnailsResponse.thumbnails.map((thumb: ApiThumbnail) => ({
+            id: thumb.id,
+            type: thumb.type === 'uploaded' ? 'image' : thumb.type,
+            src: thumb.thumbnailUrl,
+            x: thumb.x,
+            y: thumb.y,
+            width: thumb.width,
+            height: thumb.height,
+            naturalWidth: thumb.naturalWidth,
+            naturalHeight: thumb.naturalHeight,
+            aspectRatio: thumb.aspectRatio,
+            status: thumb.status === 'generating' ? 'generating' : 'complete',
+          }));
+          setCanvasElements(elements);
+        }
+      } catch (error) {
+        console.error('Error fetching project data:', error);
+      } finally {
+        setIsLoadingProject(false);
+      }
+    };
+
+    fetchProjectData();
+  }, [projectId, user]);
 
   // Handlers
   const handleBack = useCallback(() => {
@@ -329,10 +400,10 @@ export default function ProjectCanvasPage() {
       const centerY = minY + boundingHeight / 2;
 
       // Calculate zoom to fit all elements with padding
-      const padding = 100;
+      const padding = 50; // Reduced for closer zoom
       const zoomX = (containerRect.width - padding * 2) / boundingWidth;
       const zoomY = (containerRect.height - padding * 2) / boundingHeight;
-      const targetZoom = Math.min(Math.min(zoomX, zoomY), viewport.zoom, 1); // Don't zoom in more than current or 100%
+      const targetZoom = Math.min(Math.min(zoomX, zoomY), 0.8); // Allow up to 80% zoom for closer view
 
       // Calculate viewport position to center the bounding box
       const targetX = -(centerX * targetZoom - containerRect.width / 2);
@@ -362,8 +433,11 @@ export default function ProjectCanvasPage() {
       containerRect.top + containerRect.height / 2
     );
 
-    // Scale image to reasonable size (max 600px width)
-    const scale = Math.min(1, 600 / naturalWidth);
+    // Scale image to fit reasonable display size on canvas
+    // Max 600px width to fit multiple thumbnails on screen
+    // Preserves aspect ratio - actual quality stored in naturalWidth/naturalHeight
+    const maxDisplayWidth = 600;
+    const scale = Math.min(1, maxDisplayWidth / naturalWidth);
     const width = naturalWidth * scale;
     const height = naturalHeight * scale;
 
@@ -475,20 +549,37 @@ export default function ProjectCanvasPage() {
     img.src = thumbnailUrl;
   }, [youtubeLink, addElementAtViewportCenter]);
 
+  // Calculate generation credits based on model and selected options
+  // Only Nano Banana Pro credits change based on resolution (2K/4K)
+  const getGenerationCredits = useCallback((model: Model | null, res?: string) => {
+    if (!model) return 0;
+
+    // Only Nano Banana Pro - resolution affects credits
+    if (model.id === 'nano-banana-pro' || model.baseModel === 'nano-banana-pro') {
+      const r = res || model.defaultResolution || '2K';
+      if (r === '4K') return 38;
+      // 1K and 2K both cost 19 credits
+      return 19;
+    }
+
+    // All other models have fixed credits
+    return model.credits;
+  }, []);
+
+  // Memoized credits for sidebar (only pass resolution for nano-banana-pro)
+  const sidebarCredits = getGenerationCredits(promptModel, resolution);
+
   // Prompt mode handlers
   const handlePromptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPromptText(e.target.value);
   }, []);
 
-  const handlePromptSubmit = useCallback(() => {
-    if (!promptText.trim()) return;
+  const handlePromptSubmit = useCallback(async () => {
+    if (!promptText.trim() || !user?.email) return;
+    if (isGenerating) return; // Prevent double submission
 
-    console.log('Generating thumbnails with prompt:', {
-      prompt: promptText,
-      model: promptModel,
-      style: promptStyle,
-      count: thumbnailCount
-    });
+    setIsGenerating(true);
+    setGenerationError(null);
 
     // Create placeholder elements for each thumbnail being generated
     // Default thumbnail size: 1920x1080 (16:9 aspect ratio)
@@ -511,10 +602,73 @@ export default function ProjectCanvasPage() {
       }
     }, 50);
 
-    // TODO: Call API endpoint here, then update elements with status: 'complete' and src: imageUrl
-    // For now, just clear the prompt
-    setPromptText('');
-  }, [promptText, promptModel, promptStyle, thumbnailCount, addElementAtViewportCenter, fitElementsInView]);
+    // Get attached image URLs for reference
+    const imageInputs: string[] = attachedImages.map(img => img.preview);
+
+    // Generate thumbnails via API
+    try {
+      // Generate each thumbnail
+      for (let i = 0; i < thumbnailCount; i++) {
+        const elementId = newElementIds[i];
+        if (!elementId) continue;
+
+        const request: GenerateThumbnailRequest = {
+          userEmail: user.email || '',
+          userName: user.displayName || undefined,
+          prompt: promptText,
+          projectId: projectId,
+          gen_model: promptModel?.baseModel || promptModel?.id || 'nano-banana-pro',
+          aspectRatio: aspectRatio,
+          // Model-specific options
+          ...(promptModel?.options?.resolutions && resolution && { resolution }),
+          ...(promptModel?.options?.sizes && size && { size }),
+          ...(promptModel?.options?.megapixels && megapixels && { resolution: megapixels }), // Flux uses resolution field for MP
+        };
+
+        // Add reference images if available (respect model limit)
+        const modelLimit = promptModel?.maxImages || 10;
+        if (imageInputs.length > 0) {
+          request.imageInput = imageInputs.slice(0, modelLimit);
+        }
+
+        // Call API
+        const response = await generateThumbnail(request);
+
+        if (response.success && response.image) {
+          // Update the element with the generated image
+          setCanvasElements(prev => prev.map(el =>
+            el.id === elementId
+              ? {
+                ...el,
+                src: response.image,
+                status: 'complete' as const,
+                naturalWidth: response.thumbnail?.naturalWidth || el.naturalWidth,
+                naturalHeight: response.thumbnail?.naturalHeight || el.naturalHeight,
+              }
+              : el
+          ));
+        } else {
+          // Mark as failed
+          setCanvasElements(prev => prev.map(el =>
+            el.id === elementId
+              ? { ...el, status: 'complete' as const }
+              : el
+          ));
+          setGenerationError('Failed to generate thumbnail');
+        }
+      }
+    } catch (error) {
+      console.error('Generation error:', error);
+      setGenerationError(error instanceof Error ? error.message : 'Generation failed');
+
+      // Remove placeholder elements on error
+      setCanvasElements(prev => prev.filter(el => !newElementIds.includes(el.id)));
+    } finally {
+      setIsGenerating(false);
+      setPromptText('');
+      setAttachedImages([]);
+    }
+  }, [promptText, promptModel, thumbnailCount, addElementAtViewportCenter, fitElementsInView, user, projectId, isPublic, attachedImages, isGenerating]);
 
   const handleThumbnailCountChange = useCallback((count: number) => {
     setThumbnailCount(count);
@@ -525,22 +679,62 @@ export default function ProjectCanvasPage() {
     // TODO: Implement style creation logic
   }, []);
 
-  // Image upload handler
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // Image upload handler - registers with backend
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !projectId) return;
 
-    const objectUrl = URL.createObjectURL(file);
-    const img = new window.Image();
-    img.onload = () => {
-      addElementAtViewportCenter(objectUrl, 'image', img.naturalWidth, img.naturalHeight);
-    };
-    img.src = objectUrl;
+    // Convert file to base64
+    const toBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(f);
+    });
+
+    try {
+      const base64 = await toBase64(file);
+      const img = new window.Image();
+
+      img.onload = async () => {
+        // Scale image to reasonable size (max 600px width)
+        const scale = Math.min(1, 600 / img.naturalWidth);
+        const width = img.naturalWidth * scale;
+        const height = img.naturalHeight * scale;
+
+        // Add to canvas locally first (optimistic UI)
+        const newId = addElementAtViewportCenter(base64, 'image', img.naturalWidth, img.naturalHeight);
+
+        // Get the element's position
+        const element = canvasElements.find(el => el.id === newId) ||
+          { x: 0, y: 0, width, height };
+
+        // Register with backend
+        try {
+          await uploadThumbnail(projectId, {
+            imageData: base64,
+            x: element.x,
+            y: element.y,
+            width: element.width,
+            height: element.height,
+            naturalWidth: img.naturalWidth,
+            naturalHeight: img.naturalHeight,
+            fileName: file.name,
+          });
+        } catch (err) {
+          console.error('Failed to upload image to backend:', err);
+          // Image stays on canvas (optimistic UI) - could add sync status indicator
+        }
+      };
+      img.src = base64;
+    } catch (err) {
+      console.error('Failed to process image:', err);
+    }
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [addElementAtViewportCenter]);
+  }, [projectId, addElementAtViewportCenter, canvasElements]);
 
   const triggerImageUpload = useCallback(() => {
     fileInputRef.current?.click();
@@ -767,13 +961,38 @@ export default function ProjectCanvasPage() {
       }
     }
 
+    // Persist position/size changes after drag or resize
+    if (dragState.isDragging && dragState.elementIds.length > 0) {
+      // Get current positions of dragged elements
+      const updates = canvasElements
+        .filter(el => dragState.elementIds.includes(el.id))
+        .map(el => ({ id: el.id, x: el.x, y: el.y }));
+
+      // Persist to backend (fire and forget)
+      updateThumbnailPositions(projectId, updates).catch(err => {
+        console.error('Failed to persist drag positions:', err);
+      });
+    }
+
+    if (resizeState.isResizing && resizeState.elementIds.length > 0) {
+      // Get current positions and sizes of resized elements
+      const updates = canvasElements
+        .filter(el => resizeState.elementIds.includes(el.id))
+        .map(el => ({ id: el.id, x: el.x, y: el.y, width: el.width, height: el.height }));
+
+      // Persist to backend (fire and forget)
+      updateThumbnailPositions(projectId, updates).catch(err => {
+        console.error('Failed to persist resize positions:', err);
+      });
+    }
+
     setIsPanning(false);
     setIsRubberbanding(false);
     setSelectionBox(null);
     setDragState(prev => ({ ...prev, isDragging: false, elementIds: [], elementStarts: [] }));
     setResizeState(prev => ({ ...prev, isResizing: false, elementIds: [], elementStarts: [] }));
     setSnapLines({ x: [], y: [] }); // Clear snap lines
-  }, [isRubberbanding, selectionBox, canvasElements, isElementInSelectionBox, shiftPressed]);
+  }, [isRubberbanding, selectionBox, canvasElements, isElementInSelectionBox, shiftPressed, dragState, resizeState, projectId]);
 
   // Element interaction handlers
   const handleElementMouseDown = useCallback((e: React.MouseEvent, elementId: string) => {
@@ -898,6 +1117,14 @@ export default function ProjectCanvasPage() {
 
       // Delete selected elements
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementIds.length > 0) {
+        // Delete from backend (fire and forget)
+        selectedElementIds.forEach(id => {
+          deleteThumbnail(projectId, id).catch(err => {
+            console.error('Failed to delete thumbnail:', err);
+          });
+        });
+
+        // Delete from local state
         setCanvasElements(prev => prev.filter(el => !selectedElementIds.includes(el.id)));
 
         // Clean up prompts and models for deleted elements
@@ -952,11 +1179,27 @@ export default function ProjectCanvasPage() {
         if (e.key === 'ArrowLeft') dx = -nudge;
         if (e.key === 'ArrowRight') dx = nudge;
 
-        setCanvasElements(prev => prev.map(el =>
-          selectedElementIds.includes(el.id)
-            ? { ...el, x: el.x + dx, y: el.y + dy }
-            : el
-        ));
+        setCanvasElements(prev => {
+          const newElements = prev.map(el =>
+            selectedElementIds.includes(el.id)
+              ? { ...el, x: el.x + dx, y: el.y + dy }
+              : el
+          );
+
+          // Persist nudged positions (debounced via timeout)
+          const updates = newElements
+            .filter(el => selectedElementIds.includes(el.id))
+            .map(el => ({ id: el.id, x: el.x, y: el.y }));
+
+          // Use a small delay to batch rapid arrow key presses
+          setTimeout(() => {
+            updateThumbnailPositions(projectId, updates).catch(err => {
+              console.error('Failed to persist nudge positions:', err);
+            });
+          }, 300);
+
+          return newElements;
+        });
         e.preventDefault();
       }
 
@@ -1107,35 +1350,113 @@ export default function ProjectCanvasPage() {
     }));
   }, []);
 
-  const handleModifyPromptSubmit = useCallback((elementId: string) => {
+  const handleModifyPromptSubmit = useCallback(async (elementId: string) => {
     const prompt = elementPrompts[elementId];
     const model = elementModels[elementId] || DEFAULT_MODEL;
+    const attachedImgs = modifyAttachedImages[elementId] || [];
+    const sourceElement = canvasElements.find(el => el.id === elementId);
 
-    if (!prompt?.trim()) return;
+    // Get per-element options or use defaults
+    const elAspectRatio = elementAspectRatios[elementId] || model.defaultAspectRatio || '16:9';
+    const elResolution = elementResolutions[elementId] || model.defaultResolution;
+    const elSize = elementSizes[elementId] || model.defaultSize;
+    const elMegapixels = elementMegapixels[elementId] || model.defaultMegapixels;
 
-    console.log('Modifying element:', elementId, 'with prompt:', prompt, 'using model:', model);
+    if (!prompt?.trim() || !user || isGenerating) return;
 
-    // Create a NEW placeholder element next to the current one (don't replace it)
-    const defaultWidth = 1920;
-    const defaultHeight = 1080;
+    setIsGenerating(true);
+    setGenerationError(null);
 
-    const newId = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
+    try {
+      // Create a NEW placeholder element
+      const defaultWidth = 1920;
+      const defaultHeight = 1080;
+      const newId = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
 
-    // Animate to show the new placeholder
-    if (newId) {
-      setTimeout(() => {
-        fitElementsInView([newId]);
-      }, 50);
+      // Animate to show the new placeholder
+      if (newId) {
+        setTimeout(() => {
+          fitElementsInView([newId]);
+        }, 50);
+      }
+
+      // Prepare image inputs (include source element as reference if it has an image)
+      const imageInputs: string[] = [];
+
+      // Add the source element's image as a reference if available
+      if (sourceElement?.src) {
+        imageInputs.push(sourceElement.src);
+      }
+
+      // Add any attached reference images
+      for (const img of attachedImgs) {
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(img.file);
+        });
+        imageInputs.push(base64);
+      }
+
+      // Build request
+      const request: GenerateThumbnailRequest = {
+        userEmail: user.email || '',
+        userName: user.displayName || undefined,
+        prompt: prompt,
+        projectId: projectId,
+        gen_model: model?.baseModel || model?.id || 'nano-banana-pro',
+        aspectRatio: elAspectRatio,
+        // Model-specific options
+        ...(model?.options?.resolutions && elResolution && { resolution: elResolution }),
+        ...(model?.options?.sizes && elSize && { size: elSize }),
+        ...(model?.options?.megapixels && elMegapixels && { resolution: elMegapixels }),
+      };
+
+      // Add reference images if available (respect model limit)
+      const modelLimit = model?.maxImages || 10;
+      if (imageInputs.length > 0) {
+        request.imageInput = imageInputs.slice(0, modelLimit);
+      }
+
+      // Call API
+      const response = await generateThumbnail(request);
+
+      if (response.success && response.image) {
+        // Update the placeholder with the generated image
+        setCanvasElements(prev => prev.map(el =>
+          el.id === newId
+            ? {
+              ...el,
+              src: response.image!,
+              status: 'complete' as const,
+            }
+            : el
+        ));
+      } else {
+        // Mark as failed
+        setCanvasElements(prev => prev.map(el =>
+          el.id === newId
+            ? { ...el, status: 'complete' as const }
+            : el
+        ));
+        setGenerationError('Failed to generate thumbnail');
+      }
+    } catch (error) {
+      console.error('Modify generation error:', error);
+      setGenerationError(error instanceof Error ? error.message : 'Generation failed');
+    } finally {
+      setIsGenerating(false);
+      // Clear the prompt and attached images after submission
+      setElementPrompts(prev => ({
+        ...prev,
+        [elementId]: '',
+      }));
+      setModifyAttachedImages(prev => ({
+        ...prev,
+        [elementId]: [],
+      }));
     }
-
-    // TODO: Implement actual API call, then update element with status: 'complete' and new src
-
-    // Clear the prompt after submission
-    setElementPrompts(prev => ({
-      ...prev,
-      [elementId]: '',
-    }));
-  }, [elementPrompts, elementModels, addElementAtViewportCenter, fitElementsInView]);
+  }, [elementPrompts, elementModels, modifyAttachedImages, canvasElements, user, isGenerating, projectId, isPublic, addElementAtViewportCenter, fitElementsInView]);
 
   const handleModifyPromptKeyDown = useCallback((elementId: string, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -1338,6 +1659,13 @@ export default function ProjectCanvasPage() {
     return null;
   }
 
+  // Show loading state while fetching project data
+  if (isLoadingProject) {
+    return (
+      <LoadingSpinner theme={theme} text="Loading project..." fullScreen />
+    );
+  }
+
   return (
     <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : styles.lightTheme}`}>
       {/* Hidden file input */}
@@ -1484,7 +1812,15 @@ export default function ProjectCanvasPage() {
                   className={styles.submitButton}
                   onClick={handlePromptSubmit}
                   disabled={!promptText.trim()}
+                  title={`Generate (${sidebarCredits} credits)`}
                 >
+                  <span className={styles.submitButtonCredits}>
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                      <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                    </svg>
+                    {sidebarCredits}
+                  </span>
                   <Image src="/assets/project/icons/send-prompt.svg" alt="" width={20} height={20} />
                 </button>
               </div>
@@ -1542,38 +1878,63 @@ export default function ProjectCanvasPage() {
               </div>
             </div>
 
+            {/* Model-specific options */}
+            {promptModel?.options && (
+              <ModelOptionsBar
+                model={promptModel}
+                aspectRatio={aspectRatio}
+                resolution={resolution}
+                size={size}
+                megapixels={megapixels}
+                onAspectRatioChange={setAspectRatio}
+                onResolutionChange={setResolution}
+                onSizeChange={setSize}
+                onMegapixelsChange={setMegapixels}
+                theme={theme}
+              />
+            )}
+
             {/* Attached Images Preview */}
             {attachedImages.length > 0 && (
-              <div className={styles.attachedImagesContainer}>
-                {attachedImages.map((img) => (
-                  <div key={img.id} className={styles.attachedImageWrapper}>
-                    <Image
-                      src={img.preview}
-                      alt={`Attached: ${img.file.name}`}
-                      width={60}
-                      height={60}
-                      className={styles.attachedImagePreview}
-                    />
-                    <button
-                      className={styles.removeImageButton}
-                      onClick={() => {
-                        setAttachedImages(prev => {
-                          const imageToRemove = prev.find(i => i.id === img.id);
-                          if (imageToRemove) {
-                            URL.revokeObjectURL(imageToRemove.preview);
-                          }
-                          return prev.filter(i => i.id !== img.id);
-                        });
-                      }}
-                      aria-label={`Remove ${img.file.name}`}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                    <span className={styles.attachedImageName}>{img.file.name}</span>
-                  </div>
-                ))}
+              <div className={styles.attachedImagesSection}>
+                <div className={styles.attachedImagesHeader}>
+                  <span className={styles.attachedImagesLabel}>Reference Images</span>
+                  <span className={styles.attachedImagesHint} title="Reference images in prompts: 'Use the face from Image 1 with the style of Image 2'">
+                    💡 Tip
+                  </span>
+                </div>
+                <div className={styles.attachedImagesContainer}>
+                  {attachedImages.map((img, index) => (
+                    <div key={img.id} className={styles.attachedImageWrapper}>
+                      <div className={styles.attachedImageIndex}>{index + 1}</div>
+                      <Image
+                        src={img.preview}
+                        alt={`Image ${index + 1}: ${img.file.name}`}
+                        width={60}
+                        height={60}
+                        className={styles.attachedImagePreview}
+                      />
+                      <button
+                        className={styles.removeImageButton}
+                        onClick={() => {
+                          setAttachedImages(prev => {
+                            const imageToRemove = prev.find(i => i.id === img.id);
+                            if (imageToRemove) {
+                              URL.revokeObjectURL(imageToRemove.preview);
+                            }
+                            return prev.filter(i => i.id !== img.id);
+                          });
+                        }}
+                        aria-label={`Remove ${img.file.name}`}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      <span className={styles.attachedImageName}>{img.file.name}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -1607,6 +1968,21 @@ export default function ProjectCanvasPage() {
         onMouseLeave={handleCanvasMouseUp}
         onContextMenu={(e) => e.preventDefault()}
       >
+        {/* Credits Badge - Top Right */}
+        {userData && (
+          <div className={styles.creditsBadge}>
+            <Image
+              src="/assets/dashboard/icons/credits.svg"
+              alt=""
+              width={16}
+              height={16}
+              className={styles.creditsBadgeIcon}
+              aria-hidden="true"
+            />
+            <span className={styles.creditsBadgeText}>{calculateTotalCredits(userData).toLocaleString()}</span>
+          </div>
+        )}
+
         <div ref={canvasContainerRef} className={styles.canvasViewport}>
           {/* Infinite canvas workspace */}
           <div
@@ -1903,6 +2279,12 @@ export default function ProjectCanvasPage() {
                 const elementModel = elementModels[elementId] || DEFAULT_MODEL;
                 const elementAttachedImages = modifyAttachedImages[elementId] || [];
 
+                // Calculate credits for this element (only resolution matters for nano-banana-pro)
+                const elementCredits = getGenerationCredits(
+                  elementModel,
+                  elementResolutions[elementId]
+                );
+
                 // Calculate dampened inverse scale to maintain visibility when zoomed out
                 const panelScale = Math.max(1, Math.sqrt(1 / viewport.zoom));
 
@@ -1973,27 +2355,56 @@ export default function ProjectCanvasPage() {
                         />
                       </div>
 
+
                       <button
                         className={styles.promptPanelSubmit}
                         onClick={() => handleModifyPromptSubmit(elementId)}
                         disabled={!elementPrompt.trim()}
+                        title={`Generate (${elementCredits} credits)`}
                       >
+                        <span className={styles.promptPanelCredits}>
+                          <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                            <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                          </svg>
+                          {elementCredits}
+                        </span>
                         <Image
                           src="/assets/project/icons/send-prompt.svg"
                           alt=""
-                          width={24}
-                          height={24}
+                          width={18}
+                          height={18}
                           aria-hidden="true"
                         />
                       </button>
                     </div>
 
+                    {/* Compact model options row */}
+                    {elementModel?.options && (
+                      <div className={styles.modifyPromptOptionsRow}>
+                        <ModelOptionsBar
+                          model={elementModel}
+                          aspectRatio={elementAspectRatios[elementId] || elementModel.defaultAspectRatio || '16:9'}
+                          resolution={elementResolutions[elementId]}
+                          size={elementSizes[elementId]}
+                          megapixels={elementMegapixels[elementId]}
+                          onAspectRatioChange={(val) => setElementAspectRatios(prev => ({ ...prev, [elementId]: val }))}
+                          onResolutionChange={(val) => setElementResolutions(prev => ({ ...prev, [elementId]: val }))}
+                          onSizeChange={(val) => setElementSizes(prev => ({ ...prev, [elementId]: val }))}
+                          onMegapixelsChange={(val) => setElementMegapixels(prev => ({ ...prev, [elementId]: val }))}
+                          theme={theme}
+                          compact
+                        />
+                      </div>
+                    )}
+
                     {/* Attached images strip */}
                     {elementAttachedImages.length > 0 && (
                       <div className={styles.modifyPromptAttachedImages}>
-                        {elementAttachedImages.map((img) => (
+                        {elementAttachedImages.map((img, index) => (
                           <div key={img.id} className={styles.modifyPromptAttachedImage}>
-                            <img src={img.preview} alt="" />
+                            <div className={styles.modifyPromptImageIndex}>{index + 1}</div>
+                            <img src={img.preview} alt={`Image ${index + 1}`} />
                             <button
                               className={styles.modifyPromptRemoveImage}
                               onClick={(e) => {

@@ -1,0 +1,177 @@
+/* Model Options Bar - Compact pill dropdowns */
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.compact {
+    gap: 6px;
+}
+
+.optionGroup {
+    position: relative;
+}
+
+.optionPill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: var(--font-space-grotesk), sans-serif;
+    transition: all 0.15s ease;
+}
+
+.optionPill:hover {
+    border-color: #ff6f61;
+    background: rgba(255, 111, 97, 0.05);
+}
+
+.optionPill.active {
+    border-color: #ff6f61;
+    background: rgba(255, 111, 97, 0.1);
+}
+
+.optionLabel {
+    font-size: 11px;
+    font-weight: 500;
+    color: #8d8d8d;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.optionValue {
+    font-size: 13px;
+    font-weight: 600;
+    color: #141414;
+}
+
+.chevron {
+    color: #8d8d8d;
+    transition: transform 0.15s ease;
+}
+
+.optionPill.active .chevron {
+    transform: rotate(180deg);
+    color: #ff6f61;
+}
+
+/* Dropdown menu */
+.dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 100%;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    padding: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdownItem {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #141414;
+    text-align: left;
+    transition: background 0.1s ease;
+    white-space: nowrap;
+}
+
+.dropdownItem:hover {
+    background: rgba(255, 111, 97, 0.1);
+}
+
+.dropdownItem.selected {
+    background: rgba(255, 111, 97, 0.15);
+    color: #ff6f61;
+    font-weight: 600;
+}
+
+/* Compact variant */
+.compact .optionPill {
+    padding: 4px 8px;
+}
+
+.compact .optionLabel {
+    font-size: 10px;
+}
+
+.compact .optionValue {
+    font-size: 12px;
+}
+
+/* Dark theme */
+.dark .optionPill {
+    background: #2a2a2a;
+    border-color: #444;
+}
+
+.dark .optionPill:hover {
+    background: rgba(255, 111, 97, 0.1);
+    border-color: #ff6f61;
+}
+
+.dark .optionPill.active {
+    background: rgba(255, 111, 97, 0.15);
+}
+
+.dark .optionLabel {
+    color: #888;
+}
+
+.dark .optionValue {
+    color: #ffffff;
+}
+
+.dark .chevron {
+    color: #888;
+}
+
+.dark .dropdown {
+    background: #2a2a2a;
+    border-color: #444;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .dropdownItem {
+    color: #ffffff;
+}
+
+.dark .dropdownItem:hover {
+    background: rgba(255, 111, 97, 0.15);
+}
+
+.dark .dropdownItem.selected {
+    background: rgba(255, 111, 97, 0.2);
+    color: #ff6f61;
+}

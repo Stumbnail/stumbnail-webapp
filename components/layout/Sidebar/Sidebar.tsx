@@ -1,17 +1,19 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { User } from 'firebase/auth';
-import { NavItem, Theme } from '@/types';
+import { NavItem, Theme, UserData } from '@/types';
 import { NAV_ROUTES } from '@/lib/constants';
 import { useClickOutsideSingle } from '@/hooks';
 import { AnimatedBorder } from '@/components/ui';
+import { calculateDisplayCredits, getUserPlan } from '@/lib/services/userService';
 import styles from '@/app/dashboard/dashboard.module.css';
 
 interface SidebarProps {
     user: User | null;
+    userData: UserData | null;
     navItems: NavItem[];
     theme: Theme;
     sidebarOpen: boolean;
@@ -25,6 +27,7 @@ interface SidebarProps {
 
 export default function Sidebar({
     user,
+    userData,
     navItems,
     theme,
     sidebarOpen,
@@ -37,6 +40,7 @@ export default function Sidebar({
 }: SidebarProps) {
     const router = useRouter();
     const profileMenuRef = useRef<HTMLDivElement>(null);
+    const [showCreditBreakdown, setShowCreditBreakdown] = useState(false);
 
     useClickOutsideSingle(profileMenuRef, onProfileMenuClose, profileMenuOpen);
 
@@ -47,6 +51,12 @@ export default function Sidebar({
             onCloseSidebar();
         }
     };
+
+    // Calculate credits and plan
+    const displayCredits = calculateDisplayCredits(userData);
+    const plan = getUserPlan(userData);
+    const hasTrialCredits = (userData?.trialCredits || 0) > 0;
+    const totalCredits = displayCredits + (userData?.trialCredits || 0);
 
     return (
         <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
@@ -152,46 +162,102 @@ export default function Sidebar({
                 ))}
             </nav>
 
-            {/* Progress Section */}
-            <div className={styles.progressSection}>
-                <div className={styles.progressHeader}>
+            {/* Credits Section */}
+            <div className={styles.creditsSection}>
+                {/* Compact Display */}
+                <div
+                    className={styles.creditsHeader}
+                    onClick={() => setShowCreditBreakdown(!showCreditBreakdown)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Toggle credit breakdown"
+                    aria-expanded={showCreditBreakdown}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setShowCreditBreakdown(!showCreditBreakdown);
+                        }
+                    }}
+                >
                     <Image
                         src="/assets/dashboard/icons/credits.svg"
                         alt=""
-                        width={24}
-                        height={24}
-                        className={styles.progressIcon}
+                        width={20}
+                        height={20}
+                        className={styles.creditsIcon}
                         aria-hidden="true"
                     />
-                    <p className={styles.progressText}>
-                        <span className={styles.progressCurrent}>7</span> / 10
-                    </p>
+                    <div className={styles.creditsInfo}>
+                        <div className={styles.creditsTotal}>{totalCredits.toLocaleString()}</div>
+                        <div className={styles.creditsPlan}>{plan.name} Plan</div>
+                    </div>
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        className={`${styles.creditsArrow} ${showCreditBreakdown ? styles.creditsArrowExpanded : ''}`}
+                    >
+                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                 </div>
-                <div className={styles.progressBar}>
-                    <div className={styles.progressFill} style={{ width: '70%' }} />
-                </div>
+
+                {/* Expandable Breakdown */}
+                {showCreditBreakdown && (
+                    <div className={styles.creditsBreakdown}>
+                        {plan.type !== 'free' && (
+                            <div className={styles.creditRow}>
+                                <div className={styles.creditRowLeft}>
+                                    <div className={styles.creditDot} style={{ background: '#4CAF50' }}></div>
+                                    <span className={styles.creditRowLabel}>Monthly</span>
+                                </div>
+                                <span className={styles.creditRowValue}>{userData?.subscriptionCredits?.toLocaleString() || 0}</span>
+                            </div>
+                        )}
+                        {(userData?.toppedUpBalance || 0) > 0 && (
+                            <div className={styles.creditRow}>
+                                <div className={styles.creditRowLeft}>
+                                    <div className={styles.creditDot} style={{ background: '#2196F3' }}></div>
+                                    <span className={styles.creditRowLabel}>Topped Up</span>
+                                </div>
+                                <span className={styles.creditRowValue}>{userData?.toppedUpBalance?.toLocaleString() || 0}</span>
+                            </div>
+                        )}
+                        {hasTrialCredits && (
+                            <div className={styles.creditRow}>
+                                <div className={styles.creditRowLeft}>
+                                    <div className={styles.creditDot} style={{ background: '#FF9800' }}></div>
+                                    <span className={styles.creditRowLabel}>Trial</span>
+                                </div>
+                                <span className={styles.creditRowValue}>{userData?.trialCredits?.toLocaleString() || 0}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* Upgrade Plan Button */}
-            <AnimatedBorder
-                borderColor="#e8a838"
-                borderWidth={1.5}
-                radius={14}
-                gap={2}
-                duration={0.3}
-                className={styles.upgradeButtonWrapper}
-            >
-                <button className={styles.upgradeButton} aria-label="Upgrade to premium plan">
-                    <Image
-                        src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
-                        alt=""
-                        width={32}
-                        height={32}
-                        aria-hidden="true"
-                    />
-                    <span>Upgrade Plan</span>
-                </button>
-            </AnimatedBorder>
+            {/* Upgrade Plan Button - Hidden for Automation plan users */}
+            {plan.type !== 'automation' && (
+                <AnimatedBorder
+                    borderColor="#e8a838"
+                    borderWidth={1.5}
+                    radius={14}
+                    gap={2}
+                    duration={0.3}
+                    className={styles.upgradeButtonWrapper}
+                >
+                    <button className={styles.upgradeButton} aria-label="Upgrade to premium plan">
+                        <Image
+                            src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
+                            alt=""
+                            width={32}
+                            height={32}
+                            aria-hidden="true"
+                        />
+                        <span>Upgrade Plan</span>
+                    </button>
+                </AnimatedBorder>
+            )}
         </aside>
     );
 }

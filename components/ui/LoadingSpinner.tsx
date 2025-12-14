@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './LoadingSpinner.module.css';
 
 interface LoadingSpinnerProps {
@@ -28,9 +28,17 @@ export default function LoadingSpinner({
     fullScreen = false,
     className = '',
 }: LoadingSpinnerProps) {
+    // Defer theme class application to avoid hydration mismatch
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const containerClasses = [
         styles.container,
-        theme && styles[theme], // Apply explicit theme if provided
+        // Only apply theme class after hydration to avoid mismatch
+        mounted && theme && styles[theme],
         fullScreen && styles.fullScreen,
         className,
     ].filter(Boolean).join(' ');
@@ -58,4 +66,3 @@ export default function LoadingSpinner({
         </div>
     );
 }
-

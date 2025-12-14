@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import { Project, EditProjectModalState, ProjectActionModalState } from '@/types';
 
 // Hooks
-import { useAuth, useTheme, useMobile } from '@/hooks';
+import { useAuth, useUserData, useTheme, useMobile } from '@/hooks';
 import { useProjectsContext } from '@/contexts';
 
 // Constants
@@ -39,6 +39,7 @@ export default function FavouritesPage() {
 
     // Custom hooks
     const { user, loading: authLoading, signOut } = useAuth();
+    const { userData } = useUserData(user);
     const { theme, setTheme } = useTheme({ userId: user?.uid });
     const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
     const {
@@ -220,6 +221,7 @@ export default function FavouritesPage() {
             {/* Sidebar */}
             <Sidebar
                 user={user}
+                userData={userData}
                 navItems={navItems}
                 theme={theme}
                 sidebarOpen={sidebarOpen}

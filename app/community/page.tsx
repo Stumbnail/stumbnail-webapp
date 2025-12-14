@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { Thumbnail } from '@/types';
 
 // Hooks
-import { useAuth, useTheme, useMobile } from '@/hooks';
+import { useAuth, useUserData, useTheme, useMobile } from '@/hooks';
 
 // Constants
 import { getNavItemsForRoute } from '@/lib/constants';
@@ -63,6 +63,7 @@ export default function CommunityPage() {
 
     // Custom hooks
     const { user, loading: authLoading, signOut } = useAuth();
+    const { userData } = useUserData(user);
     const { theme, setTheme } = useTheme({ userId: user?.uid });
     const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
 
@@ -170,6 +171,7 @@ export default function CommunityPage() {
             {/* Sidebar */}
             <Sidebar
                 user={user}
+                userData={userData}
                 navItems={navItems}
                 theme={theme}
                 sidebarOpen={sidebarOpen}
