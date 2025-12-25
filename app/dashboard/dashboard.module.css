@@ -1090,6 +1090,15 @@
   height: 64px;
 }
 
+.emptyTitle {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin: 0;
+  text-align: center;
+}
+
 .emptyText {
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 18px;
@@ -1098,6 +1107,40 @@
   margin: 0;
   text-align: center;
   max-width: 400px;
+}
+
+.goToProjectsButton {
+  background-color: #ff6f61;
+  border: none;
+  border-radius: 14px;
+  height: 48px;
+  padding: 0 24px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.goToProjectsButton:hover {
+  background-color: #e85a4d;
+  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
+  transform: translateY(-1px);
+}
+
+.goToProjectsButton:active {
+  background-color: #d04b3e;
+  transform: translateY(0);
+}
+
+.goToProjectsButton:focus-visible {
+  outline: 2px solid #ff6f61;
+  outline-offset: 2px;
 }
 
 .startButton {
@@ -1136,298 +1179,6 @@
   flex-shrink: 0;
   width: 18px;
   height: 18px;
-}
-
-/* Create Section */
-.createSection {
-  margin-top: 0;
-  margin-bottom: 40px;
-}
-
-/* Creation Container with Shaded Background */
-.creationContainer {
-  position: relative;
-  border-radius: 18px;
-}
-
-/* .creationContainerFocused removed */
-
-.creationContainerInner {
-  background: #ffffff;
-  border: 1px solid #f0f0f0;
-  border-radius: 18px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
-}
-
-/* Quick Create Header */
-.quickCreateHeader {
-  margin-bottom: 24px;
-}
-
-.quickCreateSubtitle {
-  display: none;
-}
-
-.createRow {
-  display: flex;
-  align-items: flex-end;
-  /* Align to bottom for inputs */
-  gap: 24px;
-}
-
-.createPromptWrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.youtubeInputWrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.orDividerWrapper {
-  flex-shrink: 0;
-  padding: 0;
-  height: 60px;
-  /* Match input height */
-  display: flex;
-  align-items: center;
-}
-
-.verticalDivider {
-  width: 1px;
-  height: 40px;
-  background-color: #f0f0f0;
-}
-
-.createPrompt {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background-color: #fcfcfc;
-  border: 1px solid #f0f0f0;
-  border-radius: 14px;
-  height: 60px;
-  padding: 0 12px 0 16px;
-  gap: 10px;
-  cursor: text;
-  flex-wrap: nowrap;
-  transition: all 0.2s ease;
-}
-
-.createPrompt:focus-within {
-  border-color: #ff6f61;
-}
-
-.promptInput {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  color: #141414;
-  outline: none;
-  background: transparent;
-  width: 100%;
-}
-
-.promptInput::placeholder {
-  color: #a3a3a3;
-}
-
-.promptInput:focus {
-  outline: none;
-}
-
-.createPrompt:focus-within {
-  border-color: #ff6f61;
-  box-shadow: 0 0 0 1px #ff6f61;
-}
-
-.promptOptions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.dropdown {
-  background-color: #e8e8e8;
-  border: none;
-  border-radius: 10px;
-  height: 44px;
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 13px;
-  color: #797979;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.dropdown img {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  filter: brightness(0) saturate(100%) invert(52%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(94%) contrast(89%);
-}
-
-.dropdown:hover {
-  background-color: #e8e8e8;
-}
-
-.dropdown:active {
-  background-color: #e0e0e0;
-}
-
-.dropdown svg {
-  width: 8px;
-  height: 8px;
-}
-
-.addButton {
-  background-color: #e8e8e8;
-  border: none;
-  border-radius: 10px;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #797979;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-  flex-shrink: 0;
-}
-
-.addButton img {
-  width: 18px;
-  height: 18px;
-  filter: brightness(0) saturate(100%) invert(52%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(94%) contrast(89%);
-  transition: filter 0.15s ease;
-}
-
-.addButton:hover {
-  background-color: #e8e8e8;
-}
-
-.addButton:hover img {
-  filter: brightness(0) saturate(100%) invert(56%) sepia(88%) saturate(2044%) hue-rotate(329deg) brightness(101%) contrast(101%);
-}
-
-.addButton:active {
-  background-color: #e0e0e0;
-}
-
-.addButton:focus-visible {
-  outline: 2px solid #ff6f61;
-  outline-offset: 2px;
-}
-
-.generateButton {
-  background-color: #ff6f61;
-  border: none;
-  border-radius: 10px;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: box-shadow 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
-}
-
-.generateButton img {
-  width: 18px;
-  height: 18px;
-}
-
-.generateButton:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.4);
-}
-
-.generateButton:active:not(:disabled) {
-  filter: brightness(0.95);
-}
-
-.generateButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.generateButton:focus-visible {
-  outline: 2px solid #ff6f61;
-  outline-offset: 2px;
-}
-
-/* YouTube Section */
-.youtubeInput {
-  display: flex;
-  align-items: center;
-  background-color: #fcfcfc;
-  border: 1px solid #f0f0f0;
-  border-radius: 14px;
-  height: 60px;
-  padding: 0 12px;
-  gap: 10px;
-  cursor: text;
-  transition: all 0.2s ease;
-}
-
-.youtubeInput:focus-within {
-  border-color: #ff6f61;
-}
-
-.youtubeIconWrapper {
-  width: 36px;
-  height: 36px;
-  background-color: #ff6f61;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.youtubeIcon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  filter: brightness(0) saturate(100%) invert(100%) !important;
-}
-
-.linkInput {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 14px;
-  color: #141414;
-  background: transparent;
-  width: 100%;
-}
-
-.linkInput::placeholder {
-  color: #a3a3a3;
-}
-
-.linkInput:focus {
-  outline: none;
-}
-
-.youtubeInput:focus-within {
-  border-color: #ff6f61;
-  box-shadow: 0 0 0 1px #ff6f61;
 }
 
 /* Templates Section */
@@ -1757,23 +1508,6 @@
     margin-right: 28px;
   }
 
-  .createRow {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-  }
-
-  .createPromptWrapper,
-  .youtubeInputWrapper {
-    width: 100%;
-  }
-
-  .orDividerWrapper {
-    padding: 0;
-    text-align: center;
-    padding-bottom: 0;
-  }
-
   .header {
     padding: 0 20px;
     height: auto;
@@ -1803,15 +1537,6 @@
     font-size: 18px;
   }
 
-  .promptOptions {
-    gap: 5px;
-  }
-
-  .dropdown {
-    padding: 0 9px;
-    font-size: 12px;
-  }
-
   /* Adjust fade for 2-column grid */
   /* Commented out for A/B testing */
   /*
@@ -1826,31 +1551,6 @@
 }
 
 @media (max-width: 900px) {
-
-  .createPrompt,
-  .youtubeInput {
-    height: 58px;
-  }
-
-  .promptOptions {
-    gap: 4px;
-  }
-
-  .dropdown {
-    padding: 0 8px;
-    height: 42px;
-  }
-
-  .dropdown span {
-    display: none;
-  }
-
-  .addButton,
-  .generateButton {
-    width: 42px;
-    height: 42px;
-  }
-
   .templatesGrid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -2035,109 +1735,6 @@
     border-radius: 12px;
   }
 
-  .createSection {
-    margin-bottom: 16px;
-  }
-
-  .creationContainerInner {
-    padding: 16px;
-  }
-
-  .createRow {
-    gap: 12px;
-  }
-
-  .createPromptWrapper,
-  .youtubeInputWrapper {
-    gap: 8px;
-  }
-
-  .createPrompt {
-    height: auto;
-    padding: 12px;
-    border-radius: 12px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .promptInput {
-    width: 100%;
-    flex-basis: 100%;
-    height: 36px;
-    padding: 8px 0;
-  }
-
-  .promptOptions {
-    flex: 1;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .dropdown {
-    height: 40px;
-    padding: 0 12px;
-    font-size: 12px;
-    gap: 6px;
-    border-radius: 10px;
-    flex: 0 0 auto;
-    min-width: auto;
-    justify-content: center;
-  }
-
-  .dropdown span {
-    display: inline;
-  }
-
-  .dropdown img {
-    width: 18px;
-    height: 18px;
-  }
-
-  .addButton {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-  }
-
-  .createPrompt .generateButton {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    flex-shrink: 0;
-    margin-left: auto;
-  }
-
-  .youtubeInput {
-    height: auto;
-    padding: 12px;
-    border-radius: 12px;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .youtubeIconWrapper {
-    width: 36px;
-    height: 36px;
-  }
-
-  .youtubeInput .linkInput {
-    flex: 1;
-    min-width: 0;
-    height: 36px;
-  }
-
-  .youtubeInput .generateButton {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-  }
-
-  .orDividerWrapper {
-    padding: 4px 0;
-  }
-
   .templatesSection {
     margin-top: 4px;
   }
@@ -2277,106 +1874,6 @@
     height: 44px;
     padding: 0 22px;
     font-size: 14px;
-  }
-
-  .createSection {
-    margin-bottom: 12px;
-  }
-
-  .creationContainer {
-    border-radius: 14px;
-  }
-
-  .creationContainerInner {
-    padding: 14px;
-    border-radius: 12px;
-  }
-
-  .createRow {
-    gap: 10px;
-  }
-
-  .createPromptWrapper,
-  .youtubeInputWrapper {
-    gap: 6px;
-  }
-
-  .createPrompt {
-    padding: 10px;
-    border-radius: 10px;
-    gap: 8px;
-  }
-
-  .promptInput {
-    height: 36px;
-    padding: 6px 0;
-    font-size: 13px;
-  }
-
-  .promptOptions {
-    gap: 6px;
-  }
-
-  .dropdown {
-    height: 38px;
-    padding: 0 10px;
-    font-size: 11px;
-    border-radius: 8px;
-    flex: 1;
-    min-width: 70px;
-  }
-
-  .dropdown img {
-    width: 16px;
-    height: 16px;
-  }
-
-  .addButton {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
-  }
-
-  .addButton img {
-    width: 16px;
-    height: 16px;
-  }
-
-  .createPrompt .generateButton {
-    height: 42px;
-    border-radius: 8px;
-  }
-
-  .youtubeInput {
-    padding: 10px;
-    border-radius: 10px;
-    gap: 8px;
-  }
-
-  .youtubeIconWrapper {
-    width: 32px;
-    height: 32px;
-  }
-
-  .youtubeInput .linkInput {
-    flex: 1;
-    min-width: 0;
-    height: 32px;
-    font-size: 13px;
-  }
-
-  .youtubeInput .generateButton {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
-  }
-
-  .orDividerWrapper {
-    padding: 2px 0;
-  }
-
-  .orDivider {
-    font-size: 13px;
   }
 
   .templatesHeader {
@@ -2563,115 +2060,6 @@
     border-radius: 10px;
   }
 
-  .createSection {
-    margin-bottom: 10px;
-  }
-
-  .creationContainer {
-    border-radius: 12px;
-  }
-
-  .creationContainerInner {
-    padding: 12px;
-    border-radius: 10px;
-  }
-
-  .createRow {
-    gap: 8px;
-  }
-
-  .createPromptWrapper,
-  .youtubeInputWrapper {
-    gap: 5px;
-  }
-
-  .createPrompt {
-    padding: 10px;
-    gap: 8px;
-    border-radius: 10px;
-  }
-
-  .promptInput {
-    height: 34px;
-    padding: 6px 0;
-    font-size: 12px;
-  }
-
-  .promptOptions {
-    gap: 6px;
-  }
-
-  .dropdown {
-    height: 36px;
-    padding: 0 8px;
-    font-size: 10px;
-    border-radius: 8px;
-    gap: 4px;
-  }
-
-  .dropdown img {
-    width: 14px;
-    height: 14px;
-  }
-
-  .addButton {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-  }
-
-  .addButton img {
-    width: 14px;
-    height: 14px;
-  }
-
-  .createPrompt .generateButton {
-    height: 40px;
-    border-radius: 8px;
-  }
-
-  .youtubeInput {
-    padding: 10px;
-    gap: 8px;
-    border-radius: 10px;
-    flex-direction: row;
-    flex-wrap: nowrap;
-  }
-
-  .youtubeIconWrapper {
-    width: 30px;
-    height: 30px;
-    flex-shrink: 0;
-  }
-
-  .youtubeIcon {
-    width: 14px;
-    height: 14px;
-    filter: brightness(0) saturate(100%) invert(100%) !important;
-  }
-
-  .youtubeInput .linkInput {
-    flex: 1;
-    min-width: 0;
-    height: 30px;
-    font-size: 12px;
-  }
-
-  .youtubeInput .generateButton {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    flex-shrink: 0;
-  }
-
-  .orDividerWrapper {
-    padding: 2px 0;
-  }
-
-  .orDivider {
-    font-size: 12px;
-  }
-
   .templatesHeader {
     margin-bottom: 8px;
   }
@@ -2804,108 +2192,6 @@
     padding: 0 18px;
     font-size: 12px;
     border-radius: 10px;
-  }
-
-  .createSection {
-    margin-bottom: 8px;
-  }
-
-  .creationContainer {
-    border-radius: 10px;
-  }
-
-  .creationContainerInner {
-    padding: 10px;
-    border-radius: 8px;
-  }
-
-  .createRow {
-    gap: 6px;
-  }
-
-  .createPromptWrapper,
-  .youtubeInputWrapper {
-    gap: 4px;
-  }
-
-  .createPrompt {
-    padding: 8px;
-    gap: 6px;
-    border-radius: 8px;
-  }
-
-  .promptInput {
-    height: 32px;
-    font-size: 11px;
-  }
-
-  .promptOptions {
-    gap: 4px;
-  }
-
-  .dropdown {
-    height: 34px;
-    padding: 0 6px;
-    font-size: 9px;
-    border-radius: 6px;
-    gap: 3px;
-  }
-
-  .dropdown svg {
-    display: none;
-  }
-
-  .dropdown img {
-    width: 12px;
-    height: 12px;
-  }
-
-  .addButton {
-    width: 34px;
-    height: 34px;
-    border-radius: 6px;
-  }
-
-  .addButton img {
-    width: 12px;
-    height: 12px;
-  }
-
-  .createPrompt .generateButton {
-    height: 38px;
-    border-radius: 6px;
-  }
-
-  .youtubeInput {
-    padding: 8px;
-    gap: 6px;
-    border-radius: 8px;
-  }
-
-  .youtubeIconWrapper {
-    width: 28px;
-    height: 28px;
-  }
-
-  .youtubeIcon {
-    width: 12px;
-    height: 12px;
-    filter: brightness(0) saturate(100%) invert(100%) !important;
-  }
-
-  .youtubeInput .linkInput {
-    height: 28px;
-    font-size: 11px;
-  }
-
-  .youtubeInput .generateButton {
-    width: 38px;
-    height: 38px;
-    border-radius: 6px;
-  }
-
-  .orDivider {
-    font-size: 11px;
   }
 
   .templatesHeader {
@@ -3253,16 +2539,6 @@
     max-width: 44px;
     font-size: 8px;
   }
-}
-
-/* YouTube Input Error State */
-.youtubeInputError {
-  border-color: #ff6f61;
-}
-
-.youtubeInputError:focus-within {
-  border-color: #ff6f61;
-  box-shadow: 0 0 0 2px rgba(255, 111, 97, 0.2);
 }
 
 /* Input Error Message */
@@ -3686,93 +2962,6 @@
   border-color: #e85a4d;
 }
 
-/* Dark Theme - Creation Section */
-.darkTheme .creationContainerInner {
-  background: #1c1c1c;
-  border-color: #2d2d2d;
-  box-shadow: none;
-}
-
-.darkTheme .quickCreateSubtitle {
-  color: #a3a3a3;
-}
-
-.darkTheme .createPrompt {
-  background-color: #2d2d2d;
-  border-color: #2d2d2d;
-}
-
-.darkTheme .createPrompt:focus-within {
-  border-color: #ff6f61;
-  box-shadow: 0 0 0 1px #ff6f61;
-}
-
-.darkTheme .promptInput {
-  color: #ffeae8;
-  background: transparent;
-}
-
-.darkTheme .promptInput::placeholder {
-  color: #a3a3a3;
-}
-
-.darkTheme .dropdown {
-  background-color: #252525;
-  color: #a3a3a3;
-}
-
-.darkTheme .dropdown:hover {
-  background-color: #3a3a3a;
-}
-
-.darkTheme .dropdown:active {
-  background-color: #1c1c1c;
-}
-
-.darkTheme .addButton {
-  background-color: #252525;
-  color: #a3a3a3;
-}
-
-.darkTheme .addButton:hover {
-  background-color: #3a3a3a;
-}
-
-.darkTheme .addButton:active {
-  background-color: #1c1c1c;
-}
-
-.darkTheme .youtubeInput {
-  background-color: #2d2d2d;
-  border-color: #2d2d2d;
-}
-
-.darkTheme .youtubeInput:focus-within {
-  border-color: #ff6f61;
-  box-shadow: 0 0 0 1px #ff6f61;
-}
-
-.darkTheme .linkInput {
-  color: #ffeae8;
-  background: transparent;
-}
-
-.darkTheme .linkInput::placeholder {
-  color: #a3a3a3;
-}
-
-.darkTheme .youtubeInputError {
-  border-color: #ff6f61;
-}
-
-.darkTheme .orDivider {
-  color: #a3a3a3;
-}
-
-.darkTheme .verticalDivider {
-  background-color: #2d2d2d;
-}
-
 /* Dark Theme - Templates Section */
 .darkTheme .templatesSubtitle {
   color: #a3a3a3;
@@ -3799,6 +2988,10 @@
 }
 
 /* Dark Theme - Empty State */
+.darkTheme .emptyTitle {
+  color: #ffeae8;
+}
+
 .darkTheme .emptyText {
   color: #a3a3a3;
 }

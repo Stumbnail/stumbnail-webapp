@@ -16,6 +16,7 @@ interface ModelOptionsBarProps {
     onMegapixelsChange?: (value: string) => void;
     theme?: 'light' | 'dark';
     compact?: boolean;
+    showMatchInput?: boolean;
 }
 
 export default function ModelOptionsBar({
@@ -29,7 +30,8 @@ export default function ModelOptionsBar({
     onSizeChange,
     onMegapixelsChange,
     theme = 'light',
-    compact = false
+    compact = false,
+    showMatchInput = true,
 }: ModelOptionsBarProps) {
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -93,15 +95,17 @@ export default function ModelOptionsBar({
                 </button>
                 {openDropdown === 'aspectRatio' && (
                     <div className={styles.dropdown}>
-                        {aspectRatios.map(ar => (
-                            <button
-                                key={ar}
-                                className={`${styles.dropdownItem} ${ar === aspectRatio ? styles.selected : ''}`}
-                                onClick={() => handleSelect('aspectRatio', ar)}
-                            >
-                                {formatAR(ar)}
-                            </button>
-                        ))}
+                        {aspectRatios
+                            .filter(ar => showMatchInput || ar !== 'match_input_image')
+                            .map(ar => (
+                                <button
+                                    key={ar}
+                                    className={`${styles.dropdownItem} ${ar === aspectRatio ? styles.selected : ''}`}
+                                    onClick={() => handleSelect('aspectRatio', ar)}
+                                >
+                                    {formatAR(ar)}
+                                </button>
+                            ))}
                     </div>
                 )}
             </div>

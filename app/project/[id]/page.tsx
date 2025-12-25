@@ -13,20 +13,26 @@ import { Model } from '@/types';
 
 // Constants
 import { DEFAULT_MODEL } from '@/lib/constants';
+import { AVAILABLE_MODELS } from '@/lib/constants/models';
+import {
+  CONTENT_TYPES,
+  EMOTIONAL_TONES,
+  TEXT_PLACEMENTS,
+  TEXT_STYLES,
+  getContentTypeDefaults,
+  createDefaultSmartMergeConfig,
+  SmartMergeConfig as SmartMergeConfigType,
+  TextIncludeOption,
+} from '@/lib/constants/smartMerge';
 
 // Services
-import { generateThumbnail, addThumbnail, getProjectThumbnails, deleteThumbnail, updateThumbnail, updateThumbnailPositions, uploadThumbnail, GenerateThumbnailRequest, ApiThumbnail } from '@/lib/services/thumbnailService';
+import { addThumbnail, getProjectThumbnails, deleteThumbnail, updateThumbnail, updateThumbnailPositions, uploadThumbnail, trackThumbnailDownload, startGenerationJob, pollGenerationJob, startSmartMergeJob, pollSmartMergeJob, GenerateThumbnailRequest, ApiThumbnail, SmartMergeRequest } from '@/lib/services/thumbnailService';
 import { getProject } from '@/lib/services/projectService';
 import { calculateTotalCredits } from '@/lib/services/userService';
 
 // Lazy load dropdowns
 const ModelDropdown = dynamic(
   () => import('@/app/dashboard/ModelDropdown'),
-  { ssr: false }
-);
-
-const StyleDropdown = dynamic(
-  () => import('@/app/dashboard/StyleDropdown'),
   { ssr: false }
 );
 
@@ -43,7 +49,7 @@ type ToolMode = 'select' | 'hand';
 
 interface CanvasElement {
   id: string;
-  type: 'image' | 'youtube-thumbnail' | 'generated';
+  type: 'image' | 'youtube-thumbnail' | 'generated' | 'uploaded';
   src: string;
   x: number;
   y: number;
@@ -52,7 +58,10 @@ interface CanvasElement {
   naturalWidth: number;
   naturalHeight: number;
   aspectRatio: number;
-  status?: 'generating' | 'complete';
+  status?: 'generating' | 'complete' | 'uploading';
+  statusText?: string;  // Human-readable status message (e.g., "Analyzing your images...")
+  progress?: number;    // Progress percentage (0-100)
+  prompt?: string;
 }
 
 interface Viewport {
@@ -91,6 +100,136 @@ interface ResizeState {
   elementStarts: { id: string; x: number; y: number; width: number; height: number }[];
 }
 
+// Helper component for individual canvas elements to handle loading state independently
+const CanvasItem = ({
+  element,
+  isSelected,
+  onMouseDown,
+  theme
+}: {
+  element: CanvasElement;
+  isSelected: boolean;
+  onMouseDown: (e: React.MouseEvent, elementId: string) => void;
+  theme: 'light' | 'dark';
+}) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  // Check if the src is valid (not empty, not just whitespace)
+  const hasValidSrc = element.src && element.src.trim().length > 0;
+
+  // Reset loaded state when src changes (e.g. from placeholder to generated image)
+  useEffect(() => {
+    setIsLoaded(false);
+    setHasError(false);
+  }, [element.src]);
+
+  // Reset error state when element starts generating
+  useEffect(() => {
+    if (element.status === 'generating') {
+      setHasError(false);
+      setIsLoaded(false);
+    }
+  }, [element.status]);
+
+  // If src is empty or invalid AND not generating, show error
+  useEffect(() => {
+    if (!hasValidSrc && element.status !== 'generating') {
+      setHasError(true);
+      setIsLoaded(true);
+    }
+  }, [hasValidSrc, element.status]);
+
+  return (
+    <div
+      className={`${styles.canvasElement} ${isSelected ? styles.canvasElementSelected : ''}`}
+      style={{
+        left: element.x,
+        top: element.y,
+        width: element.width,
+        height: element.height,
+      }}
+      onMouseDown={(e) => onMouseDown(e, element.id)}
+    >
+      {element.status === 'generating' ? (
+        <div className={styles.generatingPlaceholder}>
+          <LoadingSpinner theme={theme} size="medium" />
+          <div className={styles.generatingStatus}>
+            <span className={styles.generatingStatusText}>
+              {element.statusText || 'Generating...'}
+            </span>
+            {typeof element.progress === 'number' && (
+              <div className={styles.progressContainer}>
+                <div className={styles.progressBar}>
+                  <div
+                    className={styles.progressFill}
+                    style={{ width: `${element.progress}%` }}
+                  />
+                </div>
+                <span className={styles.progressPercent}>{element.progress}%</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Show loading placeholder until image is fully loaded */}
+          {!isLoaded && !hasError && (
+            <div className={styles.loadingPlaceholder}>
+              <LoadingSpinner theme={theme} />
+            </div>
+          )}
+          {hasValidSrc && (
+            <img
+              src={element.src}
+              alt={element.prompt || "Thumbnail"}
+              className={styles.elementImage}
+              draggable={false}
+              onLoad={() => setIsLoaded(true)}
+              onError={() => {
+                console.error('Image failed to load:', element.src?.substring(0, 100));
+                setHasError(true);
+                setIsLoaded(true);
+              }}
+              style={{
+                opacity: isLoaded ? 1 : 0,
+                transition: 'opacity 0.3s ease'
+              }}
+            />
+          )}
+          {hasError && (
+            <div className={styles.errorPlaceholder}>
+              <span>Failed to load image</span>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Uploading Indicator */}
+      {element.status === 'uploading' && (
+        <div className={styles.uploadingOverlay} title="Syncing...">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={styles.uploadingSpinner}
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+        </div>
+      )}
+
+      {/* Selection overlay (no handles on individual elements) */}
+      {isSelected && (
+        <div className={styles.selectionOverlay} />
+      )}
+    </div>
+  );
+};
+
 export default function ProjectCanvasPage() {
   const router = useRouter();
   const params = useParams();
@@ -101,12 +240,67 @@ export default function ProjectCanvasPage() {
   const { userData } = useUserData(user);
   const { theme } = useTheme({ userId: user?.uid });
 
+  const [showSidebarTooltip, setShowSidebarTooltip] = useState(false);
+
   // Refs
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const canvasMainRef = useRef<HTMLElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
   const promptImageInputRef = useRef<HTMLInputElement>(null);
+  const hasPerformedInitialFit = useRef(false);
+
+  // Resolution Constants
+  const RESOLUTION_MAP: Record<string, number> = {
+    '1K': 1024,
+    '2K': 1440,
+    '4K': 2160,
+    '0.25 MP': 512, // approx
+    '0.5 MP': 768, // approx
+    '1 MP': 1024,
+    '2 MP': 1440,
+    '4 MP': 2048
+  };
+
+  const getDimensionsFromAspectRatio = (ratio: string, resolutionKey: string = '2K'): { width: number; height: number } => {
+    // Default base height based on resolution
+    let baseHeight = RESOLUTION_MAP[resolutionKey] || 1080;
+
+    // Default base width (usually 16:9 equivalent)
+    if (!RESOLUTION_MAP[resolutionKey]) {
+      // Fallback logic if resolution key not found
+      if (resolutionKey.includes('4K')) baseHeight = 2160;
+      else if (resolutionKey.includes('2K')) baseHeight = 1440;
+      else baseHeight = 1080;
+    }
+
+    if (ratio === '1:1') return { width: baseHeight, height: baseHeight };
+
+    const [w, h] = ratio.split(':').map(Number);
+    if (!w || !h) return { width: 1920, height: 1080 }; // Default 16:9
+
+    // Calculate dimensions
+    let width, height;
+
+    if (w > h) {
+      // Landscape (e.g., 16:9)
+      // Maintain height as base resolution height (e.g. 1080p -> 1080 height)
+      height = baseHeight;
+      width = Math.round(height * (w / h));
+    } else {
+      // Portrait or Vertical (e.g., 9:16)
+      // If we kept height=1080, width would be ~600, which is low res for a "2K" vertical image
+      // Usually "2K" vertical means the SHORTER side is 1440, or LONGER is 2560? 
+      // Let's assume input resolution refers to the shortest side for consistency with film standards,
+      // OR adhering to max dimension.
+
+      // Let's use the resolution value as the WIDTH for vertical images to ensure high quality
+      width = baseHeight;
+      height = Math.round(width * (h / w));
+    }
+
+    return { width, height };
+  };
 
   // UI State
   const [projectName, setProjectName] = useState('My First Thumbnail');
@@ -120,7 +314,6 @@ export default function ProjectCanvasPage() {
   // Prompt mode state
   const [promptText, setPromptText] = useState('');
   const [promptModel, setPromptModel] = useState<Model | null>(DEFAULT_MODEL);
-  const [promptStyle, setPromptStyle] = useState<any>(null);
   const [thumbnailCount, setThumbnailCount] = useState(1);
   const [attachedImages, setAttachedImages] = useState<{ id: string; file: File; preview: string }[]>([]);
 
@@ -143,14 +336,18 @@ export default function ProjectCanvasPage() {
   const [elementSizes, setElementSizes] = useState<Record<string, string>>({});
   const [elementMegapixels, setElementMegapixels] = useState<Record<string, string>>({});
 
-  // Multi-select conversion form state
-  const [showConversionForm, setShowConversionForm] = useState(false);
-  const [conversionGenre, setConversionGenre] = useState('');
-  const [conversionIncludeText, setConversionIncludeText] = useState<'yes' | 'no' | null>(null);
-  const [conversionText, setConversionText] = useState('');
-  const [conversionFormPosition, setConversionFormPosition] = useState<{ x: number; y: number } | null>(null);
-  const [isConversionFormDragging, setIsConversionFormDragging] = useState(false);
-  const [conversionFormDragStart, setConversionFormDragStart] = useState({ x: 0, y: 0 });
+  // Smart Merge state (multi-select conversion)
+  const [showSmartMergePanel, setShowSmartMergePanel] = useState(false);
+  const [smartMergeConfig, setSmartMergeConfig] = useState<SmartMergeConfigType>(
+    createDefaultSmartMergeConfig('gaming')
+  );
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [smartMergePanelPosition, setSmartMergePanelPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isSmartMergeDragging, setIsSmartMergeDragging] = useState(false);
+
+  const [isSmartMergeGenerating, setIsSmartMergeGenerating] = useState(false);
+  // Smart Merge model state - default to Pro (19 credits)
+  const [smartMergeModel, setSmartMergeModel] = useState<string>('nano-banana-pro');
 
   // Tool State
   const [toolMode, setToolMode] = useState<ToolMode>('select');
@@ -162,6 +359,7 @@ export default function ProjectCanvasPage() {
   const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string, type: 'error' | 'success' } | null>(null);
 
   // Interaction State
   const [isPanning, setIsPanning] = useState(false);
@@ -211,10 +409,10 @@ export default function ProjectCanvasPage() {
           setProjectName(projectResponse.project.name);
           setIsPublic(projectResponse.project.privacy === 'public');
 
-          // Restore viewport if saved
-          if (projectResponse.project.viewport) {
-            setViewport(projectResponse.project.viewport);
-          }
+          // Restore viewport if saved - handled after loading thumbnails to prioritize content fit
+          // if (projectResponse.project.viewport) {
+          //   setViewport(projectResponse.project.viewport);
+          // }
         }
 
         // Fetch thumbnails
@@ -222,20 +420,57 @@ export default function ProjectCanvasPage() {
         if (thumbnailsResponse.success && thumbnailsResponse.thumbnails) {
           // Convert API thumbnails to canvas elements
           // Use exact stored dimensions to preserve positions correctly
-          const elements: CanvasElement[] = thumbnailsResponse.thumbnails.map((thumb: ApiThumbnail) => ({
-            id: thumb.id,
-            type: thumb.type === 'uploaded' ? 'image' : thumb.type,
-            src: thumb.thumbnailUrl,
-            x: thumb.x,
-            y: thumb.y,
-            width: thumb.width,
-            height: thumb.height,
-            naturalWidth: thumb.naturalWidth,
-            naturalHeight: thumb.naturalHeight,
-            aspectRatio: thumb.aspectRatio,
-            status: thumb.status === 'generating' ? 'generating' : 'complete',
-          }));
+          const elements: CanvasElement[] = thumbnailsResponse.thumbnails
+            .filter((thumb: ApiThumbnail) => {
+              // Filter out thumbnails with missing critical data
+              if (!thumb.thumbnailUrl) {
+                console.warn('Thumbnail missing URL:', thumb.id);
+                return false;
+              }
+              return true;
+            })
+            .map((thumb: ApiThumbnail) => {
+              // Provide sensible defaults for missing dimensions
+              const naturalWidth = thumb.naturalWidth || 1920;
+              const naturalHeight = thumb.naturalHeight || 1080;
+              const aspectRatio = thumb.aspectRatio || (naturalWidth / naturalHeight) || (16 / 9);
+
+              // Calculate display dimensions if missing
+              let width = thumb.width;
+              let height = thumb.height;
+
+              if (!width || !height || width <= 0 || height <= 0) {
+                // Default display size based on natural dimensions
+                const maxDisplayWidth = 600;
+                const scale = Math.min(1, maxDisplayWidth / naturalWidth);
+                width = naturalWidth * scale;
+                height = naturalHeight * scale;
+              }
+
+              return {
+                id: thumb.id,
+                type: thumb.type === 'uploaded' ? 'image' : thumb.type,
+                src: thumb.thumbnailUrl,
+                x: thumb.x || 0,
+                y: thumb.y || 0,
+                width,
+                height,
+                naturalWidth,
+                naturalHeight,
+                aspectRatio,
+                status: thumb.status === 'generating' ? 'generating' : 'complete',
+                prompt: thumb.prompt || undefined,
+              };
+            });
           setCanvasElements(elements);
+
+
+          // Note: Initial viewport fitting is now handled by a dedicated useEffect
+          // that waits for the canvas DOM to be ready.
+
+        } else if (projectResponse.project?.viewport) {
+          // No thumbnails, restore saved viewport
+          setViewport(projectResponse.project.viewport);
         }
       } catch (error) {
         console.error('Error fetching project data:', error);
@@ -246,6 +481,60 @@ export default function ProjectCanvasPage() {
 
     fetchProjectData();
   }, [projectId, user]);
+
+  // Handle initial viewport fitting
+  useEffect(() => {
+    // Run only once when loading is done and we have elements
+    if (!isLoadingProject && !hasPerformedInitialFit.current && canvasContainerRef.current) {
+      // If no elements, we don't need to fit (saved viewport might have been set)
+      if (canvasElements.length === 0) {
+        hasPerformedInitialFit.current = true;
+        return;
+      }
+
+      const containerRect = canvasContainerRef.current.getBoundingClientRect();
+
+      // Calculate bounding box of all elements
+      const minX = Math.min(...canvasElements.map(el => el.x));
+      const minY = Math.min(...canvasElements.map(el => el.y));
+      const maxX = Math.max(...canvasElements.map(el => el.x + el.width));
+      const maxY = Math.max(...canvasElements.map(el => el.y + el.height));
+
+      const contentWidth = maxX - minX;
+      const contentHeight = maxY - minY;
+      const centerX = minX + contentWidth / 2;
+      const centerY = minY + contentHeight / 2;
+
+      // Calculate zoom to fit with comfortable padding (e.g. 100px)
+      const padding = 100;
+
+      // Ensure we don't divide by zero
+      const safeContentWidth = Math.max(contentWidth, 1);
+      const safeContentHeight = Math.max(contentHeight, 1);
+
+      const zoomX = (containerRect.width - padding) / safeContentWidth;
+      const zoomY = (containerRect.height - padding) / safeContentHeight;
+
+      // Fit to screen, but don't zoom in too much (max 1.0)
+      // Also ensures we don't zoom out too aggressively (min 0.1)
+      let finalZoom = Math.min(Math.min(zoomX, zoomY), 1.0);
+      finalZoom = Math.max(finalZoom, 0.1);
+
+      // Center the content
+      const targetX = -(centerX * finalZoom - containerRect.width / 2);
+      const targetY = -(centerY * finalZoom - containerRect.height / 2);
+
+      console.log("Auto-fitting viewport:", { targetX, targetY, finalZoom, contentWidth, contentHeight });
+
+      setViewport({
+        x: targetX,
+        y: targetY,
+        zoom: finalZoom
+      });
+
+      hasPerformedInitialFit.current = true;
+    }
+  }, [isLoadingProject, canvasElements]);
 
   // Handlers
   const handleBack = useCallback(() => {
@@ -419,11 +708,14 @@ export default function ProjectCanvasPage() {
   // Add element at viewport center with non-overlapping logic
   const addElementAtViewportCenter = useCallback((
     src: string,
-    type: 'image' | 'youtube-thumbnail' | 'generated',
+    type: 'image' | 'youtube-thumbnail' | 'generated' | 'uploaded',
     naturalWidth: number,
     naturalHeight: number,
-    status?: 'generating' | 'complete',
-    skipAnimation = false
+    status?: 'generating' | 'complete' | 'uploading',
+    skipAnimation = false,
+    prompt?: string,
+    overrideX?: number,
+    overrideY?: number
   ): string => {
     if (!canvasContainerRef.current) return '';
 
@@ -451,7 +743,12 @@ export default function ProjectCanvasPage() {
     let finalPosition = { x: preferredX, y: preferredY };
 
     setCanvasElements(prev => {
-      finalPosition = findNonOverlappingPosition(width, height, prev, preferredX, preferredY);
+      // Use override position if provided, otherwise find a non-overlapping spot
+      if (overrideX !== undefined && overrideY !== undefined) {
+        finalPosition = { x: overrideX, y: overrideY };
+      } else {
+        finalPosition = findNonOverlappingPosition(width, height, prev, preferredX, preferredY);
+      }
 
       const newElement: CanvasElement = {
         id: newElementId,
@@ -465,6 +762,7 @@ export default function ProjectCanvasPage() {
         naturalHeight,
         aspectRatio: naturalWidth / naturalHeight,
         status,
+        prompt,
       };
 
       setSelectedElementIds(ids => [...ids, newElement.id]);
@@ -533,16 +831,130 @@ export default function ProjectCanvasPage() {
     const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
     const img = new window.Image();
-    img.onload = () => {
-      addElementAtViewportCenter(thumbnailUrl, 'youtube-thumbnail', img.naturalWidth, img.naturalHeight);
+    img.onload = async () => {
+      if (!canvasContainerRef.current) return;
+
+      // Calculate position explicitly to ensure backend and frontend match
+      const maxDisplayWidth = 600;
+      const scale = Math.min(1, maxDisplayWidth / img.naturalWidth);
+      const width = img.naturalWidth * scale;
+      const height = img.naturalHeight * scale;
+
+      const containerRect = canvasContainerRef.current.getBoundingClientRect();
+      const centerCanvas = screenToCanvas(
+        containerRect.left + containerRect.width / 2,
+        containerRect.top + containerRect.height / 2
+      );
+
+      const preferredX = centerCanvas.x - width / 2;
+      const preferredY = centerCanvas.y - height / 2;
+
+      // Find position using current state
+      const pos = findNonOverlappingPosition(width, height, canvasElements, preferredX, preferredY);
+
+      // Add locally with explicit position
+      const tempId = addElementAtViewportCenter(
+        thumbnailUrl,
+        'youtube-thumbnail',
+        img.naturalWidth,
+        img.naturalHeight,
+        'complete',
+        false,
+        undefined,
+        pos.x,
+        pos.y
+      );
+
       setYoutubeLink('');
+
+      // Add to backend
+      if (projectId) {
+        try {
+          const response = await addThumbnail(projectId, {
+            thumbnailUrl,
+            type: 'youtube-thumbnail',
+            x: pos.x,
+            y: pos.y,
+            width,
+            height,
+            naturalWidth: img.naturalWidth,
+            naturalHeight: img.naturalHeight,
+            youtubeVideoId: videoId
+          });
+
+          if (response.success && response.thumbnail) {
+            // Update local ID with real backend ID
+            setCanvasElements(prev => prev.map(el =>
+              el.id === tempId ? { ...el, id: response.thumbnail.id } : el
+            ));
+          }
+        } catch (error) {
+          console.error('Failed to save YouTube thumbnail:', error);
+        }
+      }
     };
     img.onerror = () => {
       const fallbackUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
       const fallbackImg = new window.Image();
-      fallbackImg.onload = () => {
-        addElementAtViewportCenter(fallbackUrl, 'youtube-thumbnail', fallbackImg.naturalWidth, fallbackImg.naturalHeight);
+      fallbackImg.onload = async () => {
+        if (!canvasContainerRef.current) return;
+
+        // Calculate position explicitly
+        const maxDisplayWidth = 600;
+        const scale = Math.min(1, maxDisplayWidth / fallbackImg.naturalWidth);
+        const width = fallbackImg.naturalWidth * scale;
+        const height = fallbackImg.naturalHeight * scale;
+
+        const containerRect = canvasContainerRef.current.getBoundingClientRect();
+        const centerCanvas = screenToCanvas(
+          containerRect.left + containerRect.width / 2,
+          containerRect.top + containerRect.height / 2
+        );
+
+        const preferredX = centerCanvas.x - width / 2;
+        const preferredY = centerCanvas.y - height / 2;
+
+        const pos = findNonOverlappingPosition(width, height, canvasElements, preferredX, preferredY);
+
+        // Add locally
+        const tempId = addElementAtViewportCenter(
+          fallbackUrl,
+          'youtube-thumbnail',
+          fallbackImg.naturalWidth,
+          fallbackImg.naturalHeight,
+          'complete',
+          false,
+          undefined,
+          pos.x,
+          pos.y
+        );
+
         setYoutubeLink('');
+
+        // Add to backend
+        if (projectId) {
+          try {
+            const response = await addThumbnail(projectId, {
+              thumbnailUrl: fallbackUrl,
+              type: 'youtube-thumbnail',
+              x: pos.x,
+              y: pos.y,
+              width,
+              height,
+              naturalWidth: fallbackImg.naturalWidth,
+              naturalHeight: fallbackImg.naturalHeight,
+              youtubeVideoId: videoId
+            });
+
+            if (response.success && response.thumbnail) {
+              setCanvasElements(prev => prev.map(el =>
+                el.id === tempId ? { ...el, id: response.thumbnail.id } : el
+              ));
+            }
+          } catch (error) {
+            console.error('Failed to save YouTube thumbnail:', error);
+          }
+        }
       };
       fallbackImg.src = fallbackUrl;
     };
@@ -591,9 +1003,16 @@ export default function ProjectCanvasPage() {
     const newElementIds: string[] = [];
 
     for (let i = 0; i < thumbnailCount; i++) {
-      const id = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
+      const id = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true, promptText);
       if (id) newElementIds.push(id);
     }
+
+    // Update placeholders with initial status
+    setCanvasElements(prev => prev.map(el =>
+      newElementIds.includes(el.id)
+        ? { ...el, statusText: 'Queued...', progress: 0 }
+        : el
+    ));
 
     // After a short delay to let state update, fit all new elements in view with animation
     setTimeout(() => {
@@ -604,6 +1023,9 @@ export default function ProjectCanvasPage() {
 
     // Get attached image URLs for reference
     const imageInputs: string[] = attachedImages.map(img => img.preview);
+
+    // Track success for prompt clearing
+    let hasError = false;
 
     // Generate thumbnails via API
     try {
@@ -631,44 +1053,73 @@ export default function ProjectCanvasPage() {
           request.imageInput = imageInputs.slice(0, modelLimit);
         }
 
-        // Call API
-        const response = await generateThumbnail(request);
+        // Start the generation job
+        const startResponse = await startGenerationJob(request);
 
-        if (response.success && response.image) {
+        if (!startResponse.success) {
+          throw new Error('Failed to start generation job');
+        }
+
+        console.log('Generation job started:', startResponse.jobId);
+
+        // Poll for job completion with progress updates
+        const result = await pollGenerationJob(
+          startResponse.jobId,
+          (status, progress) => {
+            // Update the placeholder element with current status and progress
+            setCanvasElements(prev => prev.map(el =>
+              el.id === elementId
+                ? { ...el, statusText: status, progress }
+                : el
+            ));
+          }
+        );
+
+        if (result.success && result.result.image) {
           // Update the element with the generated image
           setCanvasElements(prev => prev.map(el =>
             el.id === elementId
               ? {
                 ...el,
-                src: response.image,
+                id: result.result.thumbnail?.id || el.id, // Update ID to match backend
+                src: result.result.image,
                 status: 'complete' as const,
-                naturalWidth: response.thumbnail?.naturalWidth || el.naturalWidth,
-                naturalHeight: response.thumbnail?.naturalHeight || el.naturalHeight,
+                statusText: undefined,
+                progress: undefined,
+                naturalWidth: result.result.thumbnail?.naturalWidth || el.naturalWidth,
+                naturalHeight: result.result.thumbnail?.naturalHeight || el.naturalHeight,
+                prompt: result.result.thumbnail?.prompt || el.prompt || promptText,
               }
               : el
           ));
         } else {
-          // Mark as failed
-          setCanvasElements(prev => prev.map(el =>
-            el.id === elementId
-              ? { ...el, status: 'complete' as const }
-              : el
-          ));
-          setGenerationError('Failed to generate thumbnail');
+          // Remove failed placeholder element and clear from selection
+          hasError = true;
+          const errorMsg = !result.success ? result.error : 'Failed to generate thumbnail';
+          setCanvasElements(prev => prev.filter(el => el.id !== elementId));
+          setSelectedElementIds(prev => prev.filter(id => id !== elementId));
+          setToast({ message: errorMsg, type: 'error' });
         }
       }
     } catch (error) {
       console.error('Generation error:', error);
-      setGenerationError(error instanceof Error ? error.message : 'Generation failed');
+      hasError = true;
 
-      // Remove placeholder elements on error
+      const errorMessage = error instanceof Error ? error.message : 'Generation failed';
+      setToast({ message: errorMessage, type: 'error' });
+      // Remove placeholder elements on error and clear from selection
       setCanvasElements(prev => prev.filter(el => !newElementIds.includes(el.id)));
+      setSelectedElementIds(prev => prev.filter(id => !newElementIds.includes(id)));
+
     } finally {
       setIsGenerating(false);
-      setPromptText('');
-      setAttachedImages([]);
+      // Only clear input if there were no errors
+      if (!hasError) {
+        setPromptText('');
+        setAttachedImages([]);
+      }
     }
-  }, [promptText, promptModel, thumbnailCount, addElementAtViewportCenter, fitElementsInView, user, projectId, isPublic, attachedImages, isGenerating]);
+  }, [promptText, promptModel, thumbnailCount, addElementAtViewportCenter, fitElementsInView, user, projectId, isPublic, attachedImages, isGenerating, aspectRatio, resolution, size, megapixels]);
 
   const handleThumbnailCountChange = useCallback((count: number) => {
     setThumbnailCount(count);
@@ -681,60 +1132,128 @@ export default function ProjectCanvasPage() {
 
   // Image upload handler - registers with backend
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !projectId) return;
+    const files = e.target.files;
+    if (!files || files.length === 0 || !projectId) return;
 
-    // Convert file to base64
-    const toBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(f);
-    });
+    // Use a local copy of elements to track position for concurrent uploads
+    const runningElements = [...canvasElements];
 
-    try {
-      const base64 = await toBase64(file);
-      const img = new window.Image();
+    Array.from(files).forEach(async (file) => {
+      // Use URL.createObjectURL for instant optimistic display (0ms latency)
+      const objectUrl = URL.createObjectURL(file);
 
-      img.onload = async () => {
-        // Scale image to reasonable size (max 600px width)
-        const scale = Math.min(1, 600 / img.naturalWidth);
-        const width = img.naturalWidth * scale;
-        const height = img.naturalHeight * scale;
+      // Convert to base64 in background for the actual upload
+      const toBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      });
 
-        // Add to canvas locally first (optimistic UI)
-        const newId = addElementAtViewportCenter(base64, 'image', img.naturalWidth, img.naturalHeight);
+      // Start conversion immediately in background
+      const base64Promise = toBase64(file);
 
-        // Get the element's position
-        const element = canvasElements.find(el => el.id === newId) ||
-          { x: 0, y: 0, width, height };
+      try {
+        const img = new window.Image();
 
-        // Register with backend
-        try {
-          await uploadThumbnail(projectId, {
-            imageData: base64,
-            x: element.x,
-            y: element.y,
-            width: element.width,
-            height: element.height,
+        img.onload = async () => {
+          if (!canvasContainerRef.current) return;
+
+          // Scale image
+          const scale = Math.min(1, 600 / img.naturalWidth);
+          const width = img.naturalWidth * scale;
+          const height = img.naturalHeight * scale;
+
+          const containerRect = canvasContainerRef.current.getBoundingClientRect();
+          const centerCanvas = screenToCanvas(
+            containerRect.left + containerRect.width / 2,
+            containerRect.top + containerRect.height / 2
+          );
+
+          const preferredX = centerCanvas.x - width / 2;
+          const preferredY = centerCanvas.y - height / 2;
+
+          // Find non-overlapping position using RUNNING list to avoid stacking
+          const pos = findNonOverlappingPosition(width, height, runningElements, preferredX, preferredY);
+
+          // Reserve this spot for next images in this batch
+          runningElements.push({
+            id: 'temp-' + Math.random(),
+            type: 'uploaded',
+            src: objectUrl,
+            x: pos.x,
+            y: pos.y,
+            width,
+            height,
             naturalWidth: img.naturalWidth,
             naturalHeight: img.naturalHeight,
-            fileName: file.name,
-          });
-        } catch (err) {
-          console.error('Failed to upload image to backend:', err);
-          // Image stays on canvas (optimistic UI) - could add sync status indicator
-        }
-      };
-      img.src = base64;
-    } catch (err) {
-      console.error('Failed to process image:', err);
-    }
+            aspectRatio: img.naturalWidth / img.naturalHeight,
+          } as CanvasElement);
+
+          // Add to canvas INSTANTLY with objectUrl and EXPLICIT position
+          const newId = addElementAtViewportCenter(
+            objectUrl,
+            'uploaded',
+            img.naturalWidth,
+            img.naturalHeight,
+            'uploading',
+            false,
+            undefined,
+            pos.x,
+            pos.y
+          );
+
+          // Register with backend
+          try {
+            const base64 = await base64Promise; // Wait for base64 conversion
+
+            const response = await uploadThumbnail(projectId, {
+              imageData: base64,
+              x: pos.x,
+              y: pos.y,
+              width,
+              height,
+              naturalWidth: img.naturalWidth,
+              naturalHeight: img.naturalHeight,
+              fileName: file.name,
+            });
+
+            if (response.success && response.thumbnail) {
+              setCanvasElements(prev => prev.map(el =>
+                el.id === newId ? {
+                  ...el,
+                  id: response.thumbnail.id,
+                  src: response.thumbnail.thumbnailUrl || base64,
+                  status: 'complete',
+                  statusText: undefined
+                } : el
+              ));
+              // Clean up object URL to avoid memory leaks
+              URL.revokeObjectURL(objectUrl);
+            }
+          } catch (error) {
+            console.error('Failed to upload thumbnail:', error);
+            const errorMsg = error instanceof Error ? error.message : 'Upload failed';
+            setToast({ message: errorMsg, type: 'error' });
+            setCanvasElements(prev => prev.filter(el => el.id !== newId));
+            URL.revokeObjectURL(objectUrl);
+          }
+        };
+
+        img.src = objectUrl;
+
+      } catch (err) {
+        console.error('Failed to process image:', err);
+        URL.revokeObjectURL(objectUrl);
+      }
+    });
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [projectId, addElementAtViewportCenter, canvasElements]);
+  }, [projectId, addElementAtViewportCenter, canvasElements, findNonOverlappingPosition, screenToCanvas]);
+
+
 
   const triggerImageUpload = useCallback(() => {
     fileInputRef.current?.click();
@@ -963,27 +1482,31 @@ export default function ProjectCanvasPage() {
 
     // Persist position/size changes after drag or resize
     if (dragState.isDragging && dragState.elementIds.length > 0) {
-      // Get current positions of dragged elements
+      // Get current positions of dragged elements (exclude generating placeholders)
       const updates = canvasElements
-        .filter(el => dragState.elementIds.includes(el.id))
+        .filter(el => dragState.elementIds.includes(el.id) && el.status !== 'generating')
         .map(el => ({ id: el.id, x: el.x, y: el.y }));
 
-      // Persist to backend (fire and forget)
-      updateThumbnailPositions(projectId, updates).catch(err => {
-        console.error('Failed to persist drag positions:', err);
-      });
+      // Persist to backend (fire and forget) if there are any non-generating elements
+      if (updates.length > 0) {
+        updateThumbnailPositions(projectId, updates).catch(err => {
+          console.error('Failed to persist drag positions:', err);
+        });
+      }
     }
 
     if (resizeState.isResizing && resizeState.elementIds.length > 0) {
-      // Get current positions and sizes of resized elements
+      // Get current positions and sizes of resized elements (exclude generating placeholders)
       const updates = canvasElements
-        .filter(el => resizeState.elementIds.includes(el.id))
+        .filter(el => resizeState.elementIds.includes(el.id) && el.status !== 'generating')
         .map(el => ({ id: el.id, x: el.x, y: el.y, width: el.width, height: el.height }));
 
-      // Persist to backend (fire and forget)
-      updateThumbnailPositions(projectId, updates).catch(err => {
-        console.error('Failed to persist resize positions:', err);
-      });
+      // Persist to backend (fire and forget) if there are any non-generating elements
+      if (updates.length > 0) {
+        updateThumbnailPositions(projectId, updates).catch(err => {
+          console.error('Failed to persist resize positions:', err);
+        });
+      }
     }
 
     setIsPanning(false);
@@ -1186,17 +1709,19 @@ export default function ProjectCanvasPage() {
               : el
           );
 
-          // Persist nudged positions (debounced via timeout)
+          // Persist nudged positions (debounced via timeout, exclude generating placeholders)
           const updates = newElements
-            .filter(el => selectedElementIds.includes(el.id))
+            .filter(el => selectedElementIds.includes(el.id) && el.status !== 'generating')
             .map(el => ({ id: el.id, x: el.x, y: el.y }));
 
           // Use a small delay to batch rapid arrow key presses
-          setTimeout(() => {
-            updateThumbnailPositions(projectId, updates).catch(err => {
-              console.error('Failed to persist nudge positions:', err);
-            });
-          }, 300);
+          if (updates.length > 0) {
+            setTimeout(() => {
+              updateThumbnailPositions(projectId, updates).catch(err => {
+                console.error('Failed to persist nudge positions:', err);
+              });
+            }, 300);
+          }
 
           return newElements;
         });
@@ -1240,7 +1765,7 @@ export default function ProjectCanvasPage() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [selectedElementIds, canvasElements]);
+  }, [selectedElementIds, canvasElements, projectId]);
 
   // Prevent browser zoom with Ctrl+scroll AND handle canvas zoom directly
   // Must handle zoom here because stopImmediatePropagation blocks React's onWheel
@@ -1366,12 +1891,35 @@ export default function ProjectCanvasPage() {
 
     setIsGenerating(true);
     setGenerationError(null);
+    let hasError = false;
+
+    let newId: string = '';
 
     try {
-      // Create a NEW placeholder element
-      const defaultWidth = 1920;
-      const defaultHeight = 1080;
-      const newId = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
+      // Calculate dimensions based on selected options
+      const dims = getDimensionsFromAspectRatio(elAspectRatio, elResolution || elMegapixels || '2K');
+
+      let displayWidth = dims.width;
+      let displayHeight = dims.height;
+
+      // If modifying an existing element, preserve the visual scale/width
+      // This ensures the new variation doesn't look tiny or huge compared to the original
+      if (sourceElement) {
+        displayWidth = sourceElement.width;
+        // Adjust height to match the new aspect ratio while keeping width fixed
+        displayHeight = displayWidth * (dims.height / dims.width);
+      }
+
+      newId = addElementAtViewportCenter('', 'generated', displayWidth, displayHeight, 'generating', true, prompt);
+
+      // Update placeholder with initial status
+      if (newId) {
+        setCanvasElements(prev => prev.map(el =>
+          el.id === newId
+            ? { ...el, statusText: 'Queued...', progress: 0 }
+            : el
+        ));
+      }
 
       // Animate to show the new placeholder
       if (newId) {
@@ -1406,6 +1954,15 @@ export default function ProjectCanvasPage() {
         projectId: projectId,
         gen_model: model?.baseModel || model?.id || 'nano-banana-pro',
         aspectRatio: elAspectRatio,
+        // Edit mode parameters
+        type: 'edit',
+        enable_intelligence: false, // Skip enhancement for faster editing
+        refImages: sourceElement ? [{
+          type: sourceElement.type === 'youtube-thumbnail' ? 'youtube' : (sourceElement.type as any),
+          thumbnailId: sourceElement.id,
+          url: sourceElement.src
+        }] : undefined,
+
         // Model-specific options
         ...(model?.options?.resolutions && elResolution && { resolution: elResolution }),
         ...(model?.options?.sizes && elSize && { size: elSize }),
@@ -1418,45 +1975,75 @@ export default function ProjectCanvasPage() {
         request.imageInput = imageInputs.slice(0, modelLimit);
       }
 
-      // Call API
-      const response = await generateThumbnail(request);
+      // Start the generation job
+      const startResponse = await startGenerationJob(request);
 
-      if (response.success && response.image) {
+      if (!startResponse.success) {
+        throw new Error('Failed to start generation job');
+      }
+
+      console.log('Modify generation job started:', startResponse.jobId);
+
+      // Poll for job completion with progress updates
+      const result = await pollGenerationJob(
+        startResponse.jobId,
+        (status, progress) => {
+          // Update the placeholder element with current status and progress
+          setCanvasElements(prev => prev.map(el =>
+            el.id === newId
+              ? { ...el, statusText: status, progress }
+              : el
+          ));
+        }
+      );
+
+      if (result.success && result.result.image) {
         // Update the placeholder with the generated image
         setCanvasElements(prev => prev.map(el =>
           el.id === newId
             ? {
               ...el,
-              src: response.image!,
+              id: result.result.thumbnail?.id || el.id, // Update ID to match backend
+              src: result.result.image,
               status: 'complete' as const,
+              statusText: undefined,
+              progress: undefined,
+              prompt: result.result.thumbnail?.prompt || prompt,
             }
             : el
         ));
       } else {
-        // Mark as failed
-        setCanvasElements(prev => prev.map(el =>
-          el.id === newId
-            ? { ...el, status: 'complete' as const }
-            : el
-        ));
-        setGenerationError('Failed to generate thumbnail');
+        // Remove failed placeholder element and clear from selection
+        hasError = true;
+        const errorMsg = !result.success ? result.error : 'Failed to generate thumbnail';
+        setCanvasElements(prev => prev.filter(el => el.id !== newId));
+        setSelectedElementIds(prev => prev.filter(id => id !== newId));
+        setToast({ message: errorMsg, type: 'error' });
       }
     } catch (error) {
       console.error('Modify generation error:', error);
-      setGenerationError(error instanceof Error ? error.message : 'Generation failed');
+      hasError = true;
+      setToast({ message: error instanceof Error ? error.message : 'Generation failed', type: 'error' });
+      // Remove placeholder on error and clear from selection
+      setCanvasElements(prev => prev.filter(el => el.id !== newId));
+      setSelectedElementIds(prev => prev.filter(id => id !== newId));
     } finally {
       setIsGenerating(false);
-      // Clear the prompt and attached images after submission
-      setElementPrompts(prev => ({
-        ...prev,
-        [elementId]: '',
-      }));
-      setModifyAttachedImages(prev => ({
-        ...prev,
-        [elementId]: [],
-      }));
+
+      // Only clear if no errors
+      if (!hasError) {
+        // Clear the prompt and attached images after submission
+        setElementPrompts(prev => ({
+          ...prev,
+          [elementId]: '',
+        }));
+        setModifyAttachedImages(prev => ({
+          ...prev,
+          [elementId]: [],
+        }));
+      }
     }
-  }, [elementPrompts, elementModels, modifyAttachedImages, canvasElements, user, isGenerating, projectId, isPublic, addElementAtViewportCenter, fitElementsInView]);
+  }, [elementPrompts, elementModels, modifyAttachedImages, canvasElements, user, isGenerating, projectId, isPublic, addElementAtViewportCenter, fitElementsInView, elementAspectRatios, elementResolutions, elementSizes, elementMegapixels]);
 
   const handleModifyPromptKeyDown = useCallback((elementId: string, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -1472,114 +2059,87 @@ export default function ProjectCanvasPage() {
     }));
   }, []);
 
-  // Multi-select conversion handlers
-  const handleOpenConversionForm = useCallback(() => {
-    setShowConversionForm(true);
-    setConversionFormPosition(null); // Reset position when opening
-
-    // Adjust viewport to accommodate the form in view with animation
-    setTimeout(() => {
-      if (!canvasContainerRef.current) return;
-
-      const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
-      if (selectedElements.length === 0) return;
-
-      const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
-      const minX = Math.min(...selectedElements.map(el => el.x));
-      const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
-
-      const containerWidth = canvasContainerRef.current.clientWidth;
-      const containerHeight = canvasContainerRef.current.clientHeight;
-
-      // Estimate form height (approximately 400px at scale 1)
-      const formHeight = 400;
-      const formScale = Math.max(1, 1 / viewport.zoom);
-      const scaledFormHeight = formHeight * formScale;
-
-      // Calculate the total height needed (selected elements + gap + form)
-      const totalHeight = (maxY + scaledFormHeight + 100) * viewport.zoom;
-      const selectionWidth = (maxX - minX) * viewport.zoom;
-
-      // Calculate required zoom to fit everything
-      const heightZoom = containerHeight / (totalHeight / viewport.zoom);
-      const widthZoom = containerWidth / (selectionWidth / viewport.zoom + 200);
-      const targetZoom = Math.min(heightZoom, widthZoom, viewport.zoom * 0.9); // Max 90% of current zoom
-
-      // Clamp zoom
-      const newZoom = Math.max(0.1, Math.min(2, targetZoom));
-
-      // Calculate center position to frame the selection + form
-      const centerX = (minX + maxX) / 2;
-      const centerY = maxY / 2; // Center vertically on selection
-
-      const newX = containerWidth / 2 - centerX * newZoom;
-      const newY = containerHeight / 3 - centerY * newZoom; // Position higher to show form below
-
-      // Animate to the new viewport position
-      animateViewportTo(newX, newY, newZoom);
-    }, 50);
-  }, [canvasElements, selectedElementIds, viewport.zoom, animateViewportTo]);
-
-  const handleCloseConversionForm = useCallback(() => {
-    setShowConversionForm(false);
-    setConversionGenre('');
-    setConversionIncludeText(null);
-    setConversionText('');
-    setConversionFormPosition(null);
+  // Smart Merge panel handlers
+  const handleOpenSmartMerge = useCallback(() => {
+    setShowSmartMergePanel(true);
+    setSmartMergePanelPosition(null); // Reset position when opening
+    setSmartMergeModel('nano-banana-pro'); // Default to Pro
   }, []);
 
-  // Conversion form drag handlers
-  const handleConversionFormDragStart = useCallback((e: React.MouseEvent) => {
-    // Only allow left mouse button (button 0) for dragging
-    if (e.button !== 0) return;
+  const handleCloseSmartMerge = useCallback(() => {
+    setShowSmartMergePanel(false);
+    setSmartMergeConfig(createDefaultSmartMergeConfig('gaming'));
+    setShowAdvancedOptions(false);
+    setSmartMergePanelPosition(null);
+  }, []);
 
+  // Smart Merge config update helpers
+  const updateSmartMergeConfig = useCallback((updates: Partial<SmartMergeConfigType>) => {
+    setSmartMergeConfig(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const handleContentTypeChange = useCallback((contentTypeId: string) => {
+    // Only update content type and reset emotional tone to match new type
+    // Preserve user's text preferences (includeText, textContent, textStyle, textPlacement)
+    setSmartMergeConfig(prev => ({
+      ...prev,
+      contentType: contentTypeId,
+      // Reset emotional tone to null so it uses the new content type's default
+      emotionalTone: null,
+    }));
+  }, []);
+
+  // Smart Merge panel drag handlers - store initial offset from panel position
+  const [smartMergeDragOffset, setSmartMergeDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const handleSmartMergeDragStart = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
-    setIsConversionFormDragging(true);
-    setConversionFormDragStart({ x: e.clientX, y: e.clientY });
+
+    // Get current panel position to calculate offset
+    const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+    if (selectedElements.length === 0) return;
+
+    const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+    const minX = Math.min(...selectedElements.map(el => el.x));
+    const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+    const centerX = (minX + maxX) / 2;
+    const formScale = Math.max(1, 1 / viewport.zoom);
+
+    const currentPanelX = smartMergePanelPosition?.x ?? centerX;
+    const currentPanelY = smartMergePanelPosition?.y ?? (maxY + (24 * formScale));
+
+    // Store offset from mouse to panel center
+    setSmartMergeDragOffset({
+      x: e.clientX - currentPanelX * viewport.zoom - viewport.x,
+      y: e.clientY - currentPanelY * viewport.zoom - viewport.y
+    });
+
+    setIsSmartMergeDragging(true);
+  }, [canvasElements, selectedElementIds, viewport, smartMergePanelPosition]);
+
+  const handleSmartMergeDragEnd = useCallback(() => {
+    setIsSmartMergeDragging(false);
   }, []);
 
-  const handleConversionFormDragEnd = useCallback(() => {
-    setIsConversionFormDragging(false);
-  }, []);
-
-  // Handle drag move at document level to prevent losing drag when moving fast
+  // Handle drag move at document level
   useEffect(() => {
-    if (!isConversionFormDragging) return;
+    if (!isSmartMergeDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
 
-      const deltaX = (e.clientX - conversionFormDragStart.x) / viewport.zoom;
-      const deltaY = (e.clientY - conversionFormDragStart.y) / viewport.zoom;
+      // Convert client coords to canvas coords and apply offset
+      const newX = (e.clientX - smartMergeDragOffset.x - viewport.x) / viewport.zoom;
+      const newY = (e.clientY - smartMergeDragOffset.y - viewport.y) / viewport.zoom;
 
-      setConversionFormPosition(prev => {
-        if (!prev) {
-          // Initialize with current position
-          const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
-          const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
-          const minX = Math.min(...selectedElements.map(el => el.x));
-          const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
-          const centerX = (minX + maxX) / 2;
-          const formScale = Math.max(1, 1 / viewport.zoom);
-
-          return {
-            x: centerX + deltaX,
-            y: maxY + (24 * formScale) + deltaY
-          };
-        }
-        return {
-          x: prev.x + deltaX,
-          y: prev.y + deltaY
-        };
-      });
-
-      setConversionFormDragStart({ x: e.clientX, y: e.clientY });
+      setSmartMergePanelPosition({ x: newX, y: newY });
     };
 
     const handleMouseUp = (e: MouseEvent) => {
       e.preventDefault();
-      setIsConversionFormDragging(false);
+      setIsSmartMergeDragging(false);
     };
 
     const preventTextSelection = (e: Event) => {
@@ -1588,57 +2148,141 @@ export default function ProjectCanvasPage() {
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('selectstart', preventTextSelection); // Prevent text selection
+    document.addEventListener('selectstart', preventTextSelection);
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('selectstart', preventTextSelection);
     };
-  }, [isConversionFormDragging, conversionFormDragStart, viewport.zoom, canvasElements, selectedElementIds]);
+  }, [isSmartMergeDragging, smartMergeDragOffset, viewport]);
 
-  const handleConversionSubmit = useCallback(() => {
-    if (!conversionGenre.trim()) {
-      alert('Please enter a genre');
+  const handleSmartMergeSubmit = useCallback(async () => {
+    if (!smartMergeConfig.contentType || !projectId) {
       return;
     }
 
-    if (conversionIncludeText === null) {
-      alert('Please select whether to include text');
-      return;
+    setIsSmartMergeGenerating(true);
+    setGenerationError(null);
+
+    try {
+      // Get selected asset URLs
+      const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+      const assetUrls = selectedElements.map(el => el.src);
+
+      // Get resolution from model options
+      const targetModel = AVAILABLE_MODELS.find(m => m.id === promptModel?.id) || AVAILABLE_MODELS[0];
+      const dims = getDimensionsFromAspectRatio(aspectRatio || '16:9', resolution || (targetModel.options?.resolutions?.[0] || '2K'));
+      const defaultWidth = dims.width;
+      const defaultHeight = dims.height;
+
+      // Create placeholder element with initial status
+      setSelectedElementIds([]);
+      const newId = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
+
+      // Update placeholder with initial status text
+      setCanvasElements(prev => prev.map(el =>
+        el.id === newId
+          ? { ...el, statusText: 'Queued...', progress: 0 }
+          : el
+      ));
+
+      // Build Smart Merge request
+      const request: SmartMergeRequest = {
+        project_id: projectId,
+        config: {
+          content_type: smartMergeConfig.contentType,
+          custom_content_description: smartMergeConfig.customContentDescription || undefined,
+          focus_subject_index: smartMergeConfig.focusSubjectIndex,
+          include_text: smartMergeConfig.includeText,
+          video_title: smartMergeConfig.videoTitle || undefined,
+          text_content: smartMergeConfig.textContent || undefined,
+          text_placement: smartMergeConfig.textPlacement,
+          text_style: smartMergeConfig.textStyle,
+          emotional_tone: smartMergeConfig.emotionalTone || undefined,
+        },
+        reference_images: assetUrls,
+        aspect_ratio: aspectRatio || '16:9',
+        resolution: resolution || '2K',
+        model: smartMergeModel,
+        width: defaultWidth,
+        height: defaultHeight,
+      };
+
+      console.log('Smart Merge request:', request);
+
+      // Animate to show the placeholder
+      if (newId) {
+        setTimeout(() => fitElementsInView([newId]), 50);
+      }
+
+      // Start the Smart Merge job
+      const startResponse = await startSmartMergeJob(request);
+
+      if (!startResponse.success) {
+        throw new Error('Failed to start Smart Merge job');
+      }
+
+      console.log('Smart Merge job started:', startResponse.jobId);
+
+      // Poll for job completion with progress updates
+      const result = await pollSmartMergeJob(
+        startResponse.jobId,
+        (status, progress) => {
+          // Update the placeholder element with current status and progress
+          setCanvasElements(prev => prev.map(el =>
+            el.id === newId
+              ? { ...el, statusText: status, progress }
+              : el
+          ));
+        }
+      );
+
+      if (result.success && result.result.thumbnail) {
+        // Update placeholder with actual thumbnail
+        setCanvasElements(prev => prev.map(el => {
+          if (el.id === newId) {
+            return {
+              ...el,
+              id: result.result.thumbnail.id,
+              src: result.result.thumbnail.thumbnailUrl,
+              status: 'complete' as const,
+              statusText: undefined,
+              progress: undefined,
+              prompt: result.result.thumbnail.prompt || undefined,
+            };
+          }
+          return el;
+        }));
+
+        console.log('Smart Merge success:', {
+          intelligence: result.result.intelligence,
+          thumbnail: result.result.thumbnail,
+        });
+      } else if (!result.success) {
+        // Show error message with suggestion if available
+        let errorMessage = result.error;
+        if (result.suggestion) {
+          errorMessage += ` Suggestion: ${result.suggestion}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      handleCloseSmartMerge();
+    } catch (error) {
+      console.error('Smart Merge error:', error);
+      setToast({ message: error instanceof Error ? error.message : 'Failed to generate thumbnail', type: 'error' });
+      // Remove placeholder on error and clear from selection
+      setCanvasElements(prev => {
+        const generatingIds = prev.filter(el => el.status === 'generating').map(el => el.id);
+        // Clear these IDs from selection
+        setSelectedElementIds(ids => ids.filter(id => !generatingIds.includes(id)));
+        return prev.filter(el => el.status !== 'generating');
+      });
+    } finally {
+      setIsSmartMergeGenerating(false);
     }
-
-    if (conversionIncludeText === 'yes' && !conversionText.trim()) {
-      alert('Please enter text or select "Let AI decide"');
-      return;
-    }
-
-    console.log('Converting assets to thumbnails:', {
-      elementIds: selectedElementIds,
-      genre: conversionGenre,
-      includeText: conversionIncludeText,
-      text: conversionIncludeText === 'yes' ? conversionText : null,
-    });
-
-    // Create ONE generation placeholder for the converted thumbnail (16:9)
-    const defaultWidth = 1920;
-    const defaultHeight = 1080;
-
-    setSelectedElementIds([]);
-
-    // Only create one thumbnail regardless of how many assets are selected
-    const newId = addElementAtViewportCenter('', 'generated', defaultWidth, defaultHeight, 'generating', true);
-
-    // Animate to show the new placeholder
-    if (newId) {
-      setTimeout(() => {
-        fitElementsInView([newId]);
-      }, 50);
-    }
-
-    // TODO: Implement actual API call, then update element with status: 'complete' and src
-    handleCloseConversionForm();
-  }, [conversionGenre, conversionIncludeText, conversionText, selectedElementIds, handleCloseConversionForm, addElementAtViewportCenter, fitElementsInView]);
+  }, [smartMergeConfig, canvasElements, selectedElementIds, projectId, promptModel, aspectRatio, resolution, addElementAtViewportCenter, fitElementsInView, handleCloseSmartMerge]);
 
   // Compute cursor style
   const getCursorStyle = () => {
@@ -1671,8 +2315,9 @@ export default function ProjectCanvasPage() {
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
+        multiple
+        accept=".jpg,.jpeg,.png,.webp"
         type="file"
-        accept="image/*"
         onChange={handleImageUpload}
         style={{ display: 'none' }}
         aria-hidden="true"
@@ -1807,74 +2452,68 @@ export default function ProjectCanvasPage() {
                 className={styles.promptTextarea}
                 rows={1}
               />
-              <div className={styles.promptButtonsRow}>
-                <div className={styles.costDisplay} title="Cost in credits">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
-                    <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-                  </svg>
-                  <span>{sidebarCredits}</span>
-                </div>
-                <button
-                  className={styles.submitButton}
-                  onClick={handlePromptSubmit}
-                  disabled={!promptText.trim()}
-                  title="Generate Thumbnail"
-                >
-                  <Image src="/assets/project/icons/send-prompt.svg" alt="" width={20} height={20} />
-                </button>
-              </div>
-            </div>
 
-            {/* Model, Style Dropdowns and Add Image */}
-            <div className={styles.promptDropdownsRow}>
-              <button
-                className={styles.addButton}
-                title="Add reference image"
-                onClick={() => promptImageInputRef.current?.click()}
-              >
-                <Image src="/assets/project/icons/add-image.svg" alt="" width={24} height={24} />
-              </button>
-              <input
-                ref={promptImageInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (!files) return;
-                  const newImages = Array.from(files).map(file => ({
-                    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    file,
-                    preview: URL.createObjectURL(file)
-                  }));
-                  setAttachedImages(prev => [...prev, ...newImages]);
-                  if (promptImageInputRef.current) {
-                    promptImageInputRef.current.value = '';
-                  }
-                }}
-                style={{ display: 'none' }}
-                aria-label="Upload reference image"
-              />
-              <div className={styles.promptDropdownWrapper}>
-                <ModelDropdown
-                  selectedModel={promptModel}
-                  onSelectModel={setPromptModel}
-                  theme={theme}
-                  openUpward
-                  showLabel
-                  disabled={!!promptStyle}
-                />
-              </div>
-              <div className={styles.promptDropdownWrapper}>
-                <StyleDropdown
-                  selectedStyle={promptStyle}
-                  onSelectStyle={setPromptStyle}
-                  onCreateNew={handleCreateNewStyle}
-                  theme={theme}
-                  openUpward
-                  showLabel
-                />
+              <div className={styles.promptButtonsRow}>
+                {/* Left side actions: Add Image & Model Selector */}
+                <div className={styles.promptActionsLeft}>
+                  <button
+                    className={styles.addButton}
+                    title="Add reference image"
+                    onClick={() => promptImageInputRef.current?.click()}
+                  >
+                    <Image src="/assets/project/icons/add-image.svg" alt="" width={24} height={24} />
+                  </button>
+                  <input
+                    ref={promptImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (!files) return;
+                      const newImages = Array.from(files).map(file => ({
+                        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        file,
+                        preview: URL.createObjectURL(file)
+                      }));
+                      setAttachedImages(prev => [...prev, ...newImages]);
+                      if (promptImageInputRef.current) {
+                        promptImageInputRef.current.value = '';
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                    aria-label="Upload reference image"
+                  />
+                  <div className={styles.promptDropdownWrapper}>
+                    <ModelDropdown
+                      selectedModel={promptModel}
+                      onSelectModel={setPromptModel}
+                      theme={theme}
+                      openUpward
+                      showLabel
+                      className={styles.ghostTrigger}
+                    />
+                  </div>
+                </div>
+
+                {/* Right side actions: Cost & Submit */}
+                <div className={styles.promptActionsRight}>
+                  <div className={styles.costDisplay} title="Cost in credits">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                      <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                    </svg>
+                    <span>{sidebarCredits}</span>
+                  </div>
+                  <button
+                    className={styles.submitButton}
+                    onClick={handlePromptSubmit}
+                    disabled={!promptText.trim()}
+                    title="Generate Thumbnail"
+                  >
+                    <Image src="/assets/project/icons/send-prompt.svg" alt="" width={20} height={20} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1891,6 +2530,7 @@ export default function ProjectCanvasPage() {
                 onSizeChange={setSize}
                 onMegapixelsChange={setMegapixels}
                 theme={theme}
+                showMatchInput={attachedImages.length > 0}
               />
             )}
 
@@ -1899,9 +2539,20 @@ export default function ProjectCanvasPage() {
               <div className={styles.attachedImagesSection}>
                 <div className={styles.attachedImagesHeader}>
                   <span className={styles.attachedImagesLabel}>Reference Images</span>
-                  <span className={styles.attachedImagesHint} title="Reference images in prompts: 'Use the face from Image 1 with the style of Image 2'">
-                    💡 Tip
-                  </span>
+                  <div className={styles.attachedImagesHintWrapper}>
+                    <button
+                      className={styles.attachedImagesHint}
+                      onClick={() => setShowSidebarTooltip(!showSidebarTooltip)}
+                      onBlur={() => setTimeout(() => setShowSidebarTooltip(false), 200)}
+                    >
+                      💡 Tip
+                    </button>
+                    {showSidebarTooltip && (
+                      <div className={styles.sidebarTooltip}>
+                        Reference images in prompts: 'Use the face from Image 1 with the style of Image 2'
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className={styles.attachedImagesContainer}>
                   {attachedImages.map((img, index) => (
@@ -1968,20 +2619,117 @@ export default function ProjectCanvasPage() {
         onMouseLeave={handleCanvasMouseUp}
         onContextMenu={(e) => e.preventDefault()}
       >
-        {/* Credits Badge - Top Right */}
-        {userData && (
-          <div className={styles.creditsBadge}>
-            <Image
-              src="/assets/dashboard/icons/credits.svg"
-              alt=""
-              width={16}
-              height={16}
-              className={styles.creditsBadgeIcon}
-              aria-hidden="true"
-            />
-            <span className={styles.creditsBadgeText}>{calculateTotalCredits(userData).toLocaleString()}</span>
-          </div>
-        )}
+        {/* Top Right Controls (Credits + Export) */}
+        <div className={styles.topRightControls}>
+          {/* Credits Badge */}
+          {userData && (
+            <div className={styles.creditsBadge}>
+              <Image
+                src="/assets/dashboard/icons/credits.svg"
+                alt=""
+                width={16}
+                height={16}
+                className={styles.creditsBadgeIcon}
+                aria-hidden="true"
+              />
+              <span className={styles.creditsBadgeText}>{calculateTotalCredits(userData).toLocaleString()}</span>
+            </div>
+          )}
+
+          {/* Export button - visible when elements are selected */}
+          {selectedElementIds.length > 0 && (
+            <AnimatedBorder radius={10} borderWidth={1.5} gap={2} borderColor="#ff6f61" className={styles.exportButtonWrapper}>
+              <button
+                className={styles.exportButton}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+
+                  // Get selected elements
+                  const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+
+                  if (selectedElements.length === 0) {
+                    alert('No thumbnails selected');
+                    return;
+                  }
+
+                  console.log('Exporting', selectedElements.length, 'thumbnails');
+
+                  for (let i = 0; i < selectedElements.length; i++) {
+                    const element = selectedElements[i];
+
+                    // Name file with prompt if available
+                    let fileName = `thumbnail-${i + 1}`;
+                    if (element.prompt) {
+                      // Sanitize prompt to be safe for filenames
+                      const safePrompt = element.prompt
+                        .replace(/[^a-z0-9\s-]/gi, '') // Remove special chars
+                        .trim()
+                        .replace(/\s+/g, '-') // Replace spaces with hyphens
+                        .substring(0, 50); // Limit length
+
+                      if (safePrompt) {
+                        fileName = safePrompt;
+                      }
+                    }
+                    // Handle duplicates by appending index if generating multiple
+                    if (selectedElements.length > 1) {
+                      fileName += `-${i + 1}`;
+                    }
+                    const filename = `${fileName}.png`;
+
+                    console.log('Downloading:', element.src.substring(0, 100) + '...');
+
+                    try {
+                      // Fetch the image
+                      const response = await fetch(element.src);
+
+                      if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                      }
+
+                      const blob = await response.blob();
+                      console.log('Got blob:', blob.size, 'bytes, type:', blob.type);
+
+                      // Create download link
+                      const url = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = filename;
+                      link.click();
+
+                      // Cleanup
+                      window.URL.revokeObjectURL(url);
+
+                      console.log('Download triggered for:', filename);
+
+                      // Track download
+                      trackThumbnailDownload(projectId, element.id).catch(console.error);
+
+                      // Small delay between downloads
+                      if (i < selectedElements.length - 1) {
+                        await new Promise(r => setTimeout(r, 500));
+                      }
+                    } catch (err) {
+                      console.error('Download failed:', err);
+                      // Fallback: open in new tab
+                      window.open(element.src, '_blank');
+                    }
+                  }
+                }}
+                title="Export selected thumbnails"
+              >
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Export
+              </button>
+            </AnimatedBorder>
+          )}
+        </div>
 
         <div ref={canvasContainerRef} className={styles.canvasViewport}>
           {/* Infinite canvas workspace */}
@@ -1992,46 +2740,15 @@ export default function ProjectCanvasPage() {
             }}
           >
             {/* Canvas elements */}
-            {canvasElements.map(element => {
-              const isSelected = selectedElementIds.includes(element.id);
-              return (
-                <div
-                  key={element.id}
-                  className={`${styles.canvasElement} ${isSelected ? styles.canvasElementSelected : ''}`}
-                  style={{
-                    left: element.x,
-                    top: element.y,
-                    width: element.width,
-                    height: element.height,
-                  }}
-                  onMouseDown={(e) => handleElementMouseDown(e, element.id)}
-                >
-                  {element.status === 'generating' ? (
-                    <div className={styles.generatingPlaceholder}>
-                      <div className={styles.generatingSpinner}>
-                        <div className={styles.generatingSpinnerDot}></div>
-                        <div className={styles.generatingSpinnerDot}></div>
-                        <div className={styles.generatingSpinnerDot}></div>
-                        <div className={styles.generatingSpinnerDot}></div>
-                      </div>
-                      <span className={styles.generatingText}>Generating</span>
-                    </div>
-                  ) : (
-                    <img
-                      src={element.src}
-                      alt=""
-                      className={styles.elementImage}
-                      draggable={false}
-                    />
-                  )}
-
-                  {/* Selection outline (no handles on individual elements) */}
-                  {isSelected && (
-                    <div className={styles.selectionOverlay} />
-                  )}
-                </div>
-              );
-            })}
+            {canvasElements.map(element => (
+              <CanvasItem
+                key={element.id}
+                element={element}
+                isSelected={selectedElementIds.includes(element.id)}
+                onMouseDown={handleElementMouseDown}
+                theme={theme}
+              />
+            ))}
 
             {/* Unified group bounding box with resize handles */}
             {selectedElementIds.length > 0 && (() => {
@@ -2050,26 +2767,51 @@ export default function ProjectCanvasPage() {
 
               if (selectedElements.length === 1) {
                 // Single element - show its natural dimensions
-                displayWidth = selectedElements[0].naturalWidth;
-                displayHeight = selectedElements[0].naturalHeight;
+                displayWidth = selectedElements[0].naturalWidth || selectedElements[0].width || 1920;
+                displayHeight = selectedElements[0].naturalHeight || selectedElements[0].height || 1080;
               } else {
                 // Multiple elements - show first element's natural dimensions
-                displayWidth = selectedElements[0].naturalWidth;
-                displayHeight = selectedElements[0].naturalHeight;
+                displayWidth = selectedElements[0].naturalWidth || selectedElements[0].width || 1920;
+                displayHeight = selectedElements[0].naturalHeight || selectedElements[0].height || 1080;
               }
 
-              // Calculate aspect ratio from natural dimensions
-              const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
-              const divisor = gcd(displayWidth, displayHeight);
-              const ratioW = displayWidth / divisor;
-              const ratioH = displayHeight / divisor;
-              // Simplify to common ratios
-              let ratioDisplay = `${ratioW}:${ratioH}`;
-              const ratio = displayWidth / displayHeight;
-              if (Math.abs(ratio - 16 / 9) < 0.01) ratioDisplay = '16:9';
-              else if (Math.abs(ratio - 4 / 3) < 0.01) ratioDisplay = '4:3';
-              else if (Math.abs(ratio - 1) < 0.01) ratioDisplay = '1:1';
-              else if (Math.abs(ratio - 9 / 16) < 0.01) ratioDisplay = '9:16';
+              // Ensure we never show 0 dimensions
+              if (!displayWidth || displayWidth <= 0) displayWidth = 1920;
+              if (!displayHeight || displayHeight <= 0) displayHeight = 1080;
+
+              // Calculate fuzzy aspect ratio for display
+              const getApproxRatio = (w: number, h: number) => {
+                // Defensive: prevent NaN
+                if (!w || !h || w <= 0 || h <= 0) return '16:9';
+
+                const r = w / h;
+                const tolerance = 0.05;
+                const standardRatios = [
+                  { w: 16, h: 9, val: 16 / 9 },
+                  { w: 9, h: 16, val: 9 / 16 },
+                  { w: 4, h: 3, val: 4 / 3 },
+                  { w: 3, h: 4, val: 3 / 4 },
+                  { w: 1, h: 1, val: 1 },
+                  { w: 3, h: 2, val: 3 / 2 },
+                  { w: 2, h: 3, val: 2 / 3 },
+                  { w: 21, h: 9, val: 21 / 9 },
+                  { w: 5, h: 4, val: 5 / 4 },
+                  { w: 4, h: 5, val: 4 / 5 },
+                ];
+
+                for (const ratio of standardRatios) {
+                  if (Math.abs(r - ratio.val) < tolerance) {
+                    return `${ratio.w}:${ratio.h}`;
+                  }
+                }
+
+                // Fallback to simplified GCD if no standard match
+                const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+                const divisor = gcd(Math.round(w), Math.round(h));
+                return `${Math.round(w) / divisor}:${Math.round(h) / divisor}`;
+              };
+
+              const aspectRatioStr = getApproxRatio(displayWidth, displayHeight);
 
               return (
                 <>
@@ -2081,8 +2823,7 @@ export default function ProjectCanvasPage() {
                       top: minY - 28,
                     }}
                   >
-                    <span className={styles.dimensionsSize}>{displayWidth}×{displayHeight}</span>
-                    <span className={styles.dimensionsRatio}>{ratioDisplay}</span>
+                    <span className={styles.dimensionsRatio}>{aspectRatioStr}</span>
                   </div>
 
                   <div
@@ -2133,46 +2874,60 @@ export default function ProjectCanvasPage() {
               />
             ))}
 
-            {/* Multi-select: Convert form or Single-select: Individual prompts */}
+            {/* Multi-select: Smart Merge panel or Single-select: Individual prompts */}
             {selectedElementIds.length > 1 ? (
-              // Multiple elements selected - show conversion form
+              // Multiple elements selected - show Smart Merge
               (() => {
                 const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
+
+                // Guard: Skip rendering if no actual elements match (removed during generation)
+                if (selectedElements.length === 0) return null;
+                // If only one element remains, don't show multi-select UI
+                if (selectedElements.length === 1) return null;
+
                 const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
                 const minX = Math.min(...selectedElements.map(el => el.x));
                 const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
                 const centerX = (minX + maxX) / 2;
 
                 // Calculate inverse scale to maintain visibility when zoomed out
-                // Form uses full scaling, button uses dampened scaling
-                const formScale = Math.max(1, 1 / viewport.zoom);
-                const buttonScale = Math.max(1, Math.sqrt(1 / viewport.zoom));
+                // Scale inversely with zoom but cap at maximum
+                // At 36% zoom (0.36), scale would be 1/0.36 ≈ 2.78 - cap here
+                const MAX_BUTTON_SCALE = 1 / 0.36; // ~2.78 - maximum scale at 36% zoom
+                const MIN_SCALE = 1; // Don't shrink below normal size
 
-                return showConversionForm ? (
+                // Button: only zoom-based scaling with limits (not selection-size dependent)
+                const buttonScale = Math.min(Math.max(1 / viewport.zoom, MIN_SCALE), MAX_BUTTON_SCALE);
+
+                // Panel: more conservative scaling - smaller max to keep it usable
+                const PANEL_MAX_SCALE = 1.5; // Panel shouldn't grow as much
+                const formScale = Math.min(Math.max(1 / viewport.zoom, MIN_SCALE), PANEL_MAX_SCALE);
+
+                return showSmartMergePanel ? (
                   <div
                     className={styles.conversionFormPanel}
                     style={{
-                      left: conversionFormPosition?.x ?? centerX,
-                      top: conversionFormPosition?.y ?? (maxY + (24 * formScale)),
+                      left: smartMergePanelPosition?.x ?? centerX,
+                      top: smartMergePanelPosition?.y ?? (maxY + (24 * formScale)),
                       transform: `translateX(-50%) scale(${formScale})`,
                       transformOrigin: 'top center',
-                      cursor: isConversionFormDragging ? 'grabbing' : 'default',
+                      cursor: isSmartMergeDragging ? 'grabbing' : 'default',
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
                     onDoubleClick={(e) => e.stopPropagation()}
                   >
-
+                    {/* Header */}
                     <div
                       className={styles.formPanelHeader}
-                      onMouseDown={handleConversionFormDragStart}
+                      onMouseDown={handleSmartMergeDragStart}
                       onDragStart={(e) => e.preventDefault()}
-                      style={{ cursor: isConversionFormDragging ? 'grabbing' : 'grab' }}
+                      style={{ cursor: isSmartMergeDragging ? 'grabbing' : 'grab' }}
                     >
-                      <h3 className={styles.formPanelTitle}>Convert Assets to Thumbnail</h3>
+                      <h3 className={styles.formPanelTitle}>Smart Merge</h3>
                       <button
                         className={styles.formPanelClose}
-                        onClick={handleCloseConversionForm}
+                        onClick={handleCloseSmartMerge}
                         onMouseDown={(e) => e.stopPropagation()}
                       >
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2182,91 +2937,282 @@ export default function ProjectCanvasPage() {
                     </div>
 
                     <div className={styles.formPanelContent}>
-                      {/* Genre Input */}
+                      {/* Content Type Chips */}
                       <div className={styles.formField}>
-                        <label className={styles.formLabel}>Genre of thumbnail</label>
-                        <input
-                          type="text"
-                          value={conversionGenre}
-                          onChange={(e) => setConversionGenre(e.target.value)}
-                          placeholder="e.g., tech, cinematic, gaming, vlog"
-                          className={styles.formInput}
-                        />
+                        <label className={styles.formLabel}>Content Type</label>
+                        <div className={styles.contentTypeChipsContainer}>
+                          {CONTENT_TYPES.map((ct) => (
+                            <button
+                              key={ct.id}
+                              className={`${styles.contentTypeChip} ${smartMergeConfig.contentType === ct.id ? styles.contentTypeChipActive : ''}`}
+                              onClick={() => handleContentTypeChange(ct.id)}
+                              title={ct.description}
+                            >
+                              {ct.icon && <span className={styles.contentTypeChipIcon}>{ct.icon}</span>}
+                              <span>{ct.label}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
-                      {/* Text Option */}
+                      {/* Custom Content Description - show when Custom is selected */}
+                      {smartMergeConfig.contentType === 'custom' && (
+                        <div className={styles.formField}>
+                          <label className={styles.formLabel}>Describe Your Style</label>
+                          <input
+                            type="text"
+                            value={smartMergeConfig.customContentDescription}
+                            onChange={(e) => updateSmartMergeConfig({ customContentDescription: e.target.value })}
+                            placeholder="e.g., Minimalist tech review, aesthetic travel vlog..."
+                            className={styles.formInput}
+                          />
+                        </div>
+                      )}
+
+                      {/* Focus Subject */}
                       <div className={styles.formField}>
-                        <label className={styles.formLabel}>Include text?</label>
-                        <div className={styles.radioGroup}>
+                        <label className={styles.formLabel}>Focus Subject</label>
+                        <div className={styles.focusSubjectRow}>
+                          <div className={styles.focusSubjectThumbnails}>
+                            {selectedElements.map((el, idx) => (
+                              <button
+                                key={el.id}
+                                className={`${styles.focusSubjectThumb} ${smartMergeConfig.focusSubjectIndex === idx ? styles.focusSubjectThumbActive : ''}`}
+                                onClick={() => updateSmartMergeConfig({ focusSubjectIndex: idx })}
+                                title={`Set as primary focus`}
+                              >
+                                <img src={el.src} alt={`Asset ${idx + 1}`} className={styles.focusSubjectThumbImage} />
+                                <span className={styles.focusSubjectThumbIndex}>{idx + 1}</span>
+                                {smartMergeConfig.focusSubjectIndex === idx && (
+                                  <span className={styles.focusSubjectThumbBadge}>★</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                          <label className={styles.focusSubjectBalanced}>
+                            <input
+                              type="checkbox"
+                              className={styles.focusSubjectBalancedCheckbox}
+                              checked={smartMergeConfig.focusSubjectIndex === -1}
+                              onChange={(e) => updateSmartMergeConfig({ focusSubjectIndex: e.target.checked ? -1 : null })}
+                            />
+                            <span className={styles.focusSubjectBalancedLabel}>Balanced</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Text Options */}
+                      <div className={styles.formField}>
+                        <label className={styles.formLabel}>Text</label>
+                        <div className={styles.textOptionsToggle}>
                           <button
-                            className={`${styles.radioButton} ${conversionIncludeText === 'yes' ? styles.radioButtonActive : ''}`}
-                            onClick={() => setConversionIncludeText('yes')}
+                            className={`${styles.textOptionButton} ${smartMergeConfig.includeText === 'none' ? styles.textOptionButtonActive : ''}`}
+                            onClick={() => updateSmartMergeConfig({ includeText: 'none' })}
                           >
-                            Yes
+                            No Text
                           </button>
                           <button
-                            className={`${styles.radioButton} ${conversionIncludeText === 'no' ? styles.radioButtonActive : ''}`}
-                            onClick={() => setConversionIncludeText('no')}
+                            className={`${styles.textOptionButton} ${smartMergeConfig.includeText === 'ai' ? styles.textOptionButtonActive : ''}`}
+                            onClick={() => updateSmartMergeConfig({ includeText: 'ai' })}
                           >
-                            No
+                            AI Generated
+                          </button>
+                          <button
+                            className={`${styles.textOptionButton} ${smartMergeConfig.includeText === 'custom' ? styles.textOptionButtonActive : ''}`}
+                            onClick={() => updateSmartMergeConfig({ includeText: 'custom' })}
+                          >
+                            Custom
                           </button>
                         </div>
                       </div>
 
-                      {/* Text Input - only show if "yes" selected */}
-                      {conversionIncludeText === 'yes' && (
-                        <div className={styles.formField}>
-                          <label className={styles.formLabel}>Text content</label>
+                      {/* AI Text - Video Title Input for context */}
+                      {smartMergeConfig.includeText === 'ai' && (
+                        <div className={styles.customTextSection}>
+                          <label className={styles.textOptionGroupLabel}>Video Title (for AI context)</label>
                           <input
                             type="text"
-                            value={conversionText}
-                            onChange={(e) => setConversionText(e.target.value)}
-                            placeholder="Enter text or leave empty for AI to decide"
-                            className={styles.formInput}
+                            value={smartMergeConfig.videoTitle}
+                            onChange={(e) => updateSmartMergeConfig({ videoTitle: e.target.value })}
+                            placeholder="e.g., I Built the ULTIMATE Gaming Setup..."
+                            className={styles.customTextInput}
                           />
-                          <p className={styles.formHint}>Leave empty to let AI decide the text</p>
+                          <p className={styles.formHint}>
+                            AI will analyze your title and images to suggest impactful thumbnail text
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Custom Text Input Section */}
+                      {smartMergeConfig.includeText === 'custom' && (
+                        <div className={styles.customTextSection}>
+                          <input
+                            type="text"
+                            value={smartMergeConfig.textContent}
+                            onChange={(e) => updateSmartMergeConfig({ textContent: e.target.value })}
+                            placeholder="Enter your thumbnail text"
+                            className={styles.customTextInput}
+                            maxLength={50}
+                          />
+                          <span className={styles.customTextCharCount}>
+                            {smartMergeConfig.textContent.length}/50
+                          </span>
+                          <div className={styles.textPlacementStyleRow}>
+                            <div className={styles.textOptionGroup}>
+                              <span className={styles.textOptionGroupLabel}>Placement</span>
+                              <div className={styles.textOptionChips}>
+                                {TEXT_PLACEMENTS.map((tp) => (
+                                  <button
+                                    key={tp.id}
+                                    className={`${styles.textOptionChip} ${smartMergeConfig.textPlacement === tp.id ? styles.textOptionChipActive : ''}`}
+                                    onClick={() => updateSmartMergeConfig({ textPlacement: tp.id })}
+                                  >
+                                    {tp.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className={styles.textOptionGroup}>
+                              <span className={styles.textOptionGroupLabel}>Style</span>
+                              <div className={styles.textOptionChips}>
+                                {TEXT_STYLES.map((ts) => (
+                                  <button
+                                    key={ts.id}
+                                    className={`${styles.textOptionChip} ${smartMergeConfig.textStyle === ts.id ? styles.textOptionChipActive : ''}`}
+                                    onClick={() => updateSmartMergeConfig({ textStyle: ts.id })}
+                                  >
+                                    {ts.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Advanced Options Toggle */}
+                      <button
+                        className={styles.advancedOptionsToggle}
+                        onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                      >
+                        <svg
+                          className={`${styles.advancedOptionsToggleIcon} ${showAdvancedOptions ? styles.advancedOptionsToggleIconOpen : ''}`}
+                          width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Advanced Options
+                      </button>
+
+                      {/* Advanced Options Content */}
+                      {showAdvancedOptions && (
+                        <div className={styles.advancedOptionsContent}>
+                          <div className={styles.formField}>
+                            <label className={styles.formLabel}>Emotional Tone</label>
+                            <div className={styles.emotionalToneChips}>
+                              {EMOTIONAL_TONES.map((tone) => (
+                                <button
+                                  key={tone.id}
+                                  className={`${styles.emotionalToneChip} ${smartMergeConfig.emotionalTone === tone.id ? styles.emotionalToneChipActive : ''}`}
+                                  onClick={() => updateSmartMergeConfig({ emotionalTone: tone.id })}
+                                >
+                                  {tone.icon && <span className={styles.emotionalToneChipIcon}>{tone.icon}</span>}
+                                  <span>{tone.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Model Selection */}
+                          <div className={styles.formField}>
+                            <label className={styles.formLabel}>Model Quality</label>
+                            <div className={styles.textOptionsToggle}>
+                              <button
+                                className={`${styles.textOptionButton} ${smartMergeModel === 'nano-banana' ? styles.textOptionButtonActive : ''}`}
+                                onClick={() => setSmartMergeModel('nano-banana')}
+                                title="Standard quality (10 credits)"
+                              >
+                                Standard
+                                <div className={styles.inlineCreditsIcon}>
+                                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                                    <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                                  </svg>
+                                  10
+                                </div>
+                              </button>
+                              <button
+                                className={`${styles.textOptionButton} ${smartMergeModel === 'nano-banana-pro' ? styles.textOptionButtonActive : ''}`}
+                                onClick={() => setSmartMergeModel('nano-banana-pro')}
+                                title="Pro quality (19 credits)"
+                              >
+                                Pro
+                                <div className={styles.inlineCreditsIcon}>
+                                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                                    <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                                  </svg>
+                                  19
+                                </div>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       )}
 
                       {/* Submit Button */}
                       <button
                         className={styles.formSubmitButton}
-                        onClick={handleConversionSubmit}
-                        disabled={!conversionGenre.trim() || conversionIncludeText === null}
+                        onClick={handleSmartMergeSubmit}
+                        disabled={!smartMergeConfig.contentType || isSmartMergeGenerating}
                       >
-                        <span>Generate Thumbnails</span>
-                        <Image
-                          src="/assets/project/icons/send-prompt.svg"
-                          alt=""
-                          width={20}
-                          height={20}
-                          aria-hidden="true"
-                        />
+                        {isSmartMergeGenerating ? (
+                          <span>Generating...</span>
+                        ) : (
+                          <>
+                            <span>Generate Thumbnail</span>
+                            <div className={styles.smartMergeCredits}>
+                              <svg className={styles.smartMergeCreditsIcon} viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                                <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                              </svg>
+                              {smartMergeModel === 'nano-banana' ? 10 : 19}
+                            </div>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <AnimatedBorder
-                    radius={14}
-                    borderWidth={1.5}
-                    gap={2}
-                    borderColor="#ff6f61"
-                    className={styles.convertButtonWrapper}
+                  <div
                     style={{
+                      position: 'absolute',
                       left: centerX,
                       top: maxY + (24 * buttonScale),
                       transform: `translateX(-50%) scale(${buttonScale})`,
                       transformOrigin: 'top center',
+                      zIndex: 100,
+                      pointerEvents: 'none', // Allow clicks to pass through the wrapper
                     }}
                   >
-                    <button
-                      className={styles.convertButton}
-                      onClick={handleOpenConversionForm}
-                      onMouseDown={(e) => e.stopPropagation()}
-                    >
-                      Convert assets to thumbnail
-                    </button>
-                  </AnimatedBorder>
+                    <div style={{ pointerEvents: 'auto' }}>
+                      <AnimatedBorder
+                        radius={14}
+                        borderWidth={1.5}
+                        gap={2}
+                        borderColor="#ff6f61"
+                        className={styles.convertButtonWrapper}
+                      >
+                        <button
+                          className={styles.convertButton}
+                          onClick={handleOpenSmartMerge}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
+                          Smart Merge
+                        </button>
+                      </AnimatedBorder>
+                    </div>
+                  </div>
                 );
               })()
             ) : (
@@ -2276,7 +3222,8 @@ export default function ProjectCanvasPage() {
                 if (!element) return null;
 
                 const elementPrompt = elementPrompts[elementId] || '';
-                const elementModel = elementModels[elementId] || DEFAULT_MODEL;
+                // Default to Nano Banana (Simple) for editing/floating prompt as per user preference
+                const elementModel = elementModels[elementId] || AVAILABLE_MODELS.find(m => m.id === 'nano-banana') || DEFAULT_MODEL;
                 const elementAttachedImages = modifyAttachedImages[elementId] || [];
 
                 // Calculate credits for this element (only resolution matters for nano-banana-pro)
@@ -2285,8 +3232,12 @@ export default function ProjectCanvasPage() {
                   elementResolutions[elementId]
                 );
 
-                // Calculate dampened inverse scale to maintain visibility when zoomed out
-                const panelScale = Math.max(1, Math.sqrt(1 / viewport.zoom));
+                // Calculate scale to maintain visibility (inverse zoom) AND scale up for larger images
+                const scaleFromZoom = 1 / viewport.zoom;
+                // Scale up if image is large (reference width ~800px) so panel feels proportional
+                const scaleFromSize = element.width / 800;
+
+                const panelScale = Math.max(scaleFromZoom, scaleFromSize);
 
                 return (
                   <div
@@ -2384,7 +3335,7 @@ export default function ProjectCanvasPage() {
                       <div className={styles.modifyPromptOptionsRow}>
                         <ModelOptionsBar
                           model={elementModel}
-                          aspectRatio={elementAspectRatios[elementId] || elementModel.defaultAspectRatio || '16:9'}
+                          aspectRatio={elementAspectRatios[elementId] || 'match_input_image'}
                           resolution={elementResolutions[elementId]}
                           size={elementSizes[elementId]}
                           megapixels={elementMegapixels[elementId]}
@@ -2394,6 +3345,7 @@ export default function ProjectCanvasPage() {
                           onMegapixelsChange={(val) => setElementMegapixels(prev => ({ ...prev, [elementId]: val }))}
                           theme={theme}
                           compact
+                          showMatchInput={true}
                         />
                       </div>
                     )}
@@ -2497,26 +3449,35 @@ export default function ProjectCanvasPage() {
             </svg>
           </button>
         </div>
-        {/* Export button - visible when elements are selected */}
-        {selectedElementIds.length > 0 && (
-          <AnimatedBorder radius={10} borderWidth={1.5} gap={2} borderColor="#ff6f61" className={styles.exportButtonWrapper}>
-            <button
-              className={styles.exportButton}
-              onClick={() => console.log('Export thumbnails:', selectedElementIds)}
-              title="Export selected thumbnails"
-            >
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+
+
+      </main >
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`${styles.toast} ${toast.type === 'error' ? styles.toastError : styles.toastSuccess}`}>
+          <div className={styles.toastIcon}>
+            {toast.type === 'error' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="#FF4D4F" fillOpacity="0.2" stroke="#FF4D4F" strokeWidth="2" />
+                <path d="M12 8V12" stroke="#FF4D4F" strokeWidth="2" strokeLinecap="round" />
+                <path d="M12 16H12.01" stroke="#FF4D4F" strokeWidth="2" strokeLinecap="round" />
               </svg>
-              Export
-            </button>
-          </AnimatedBorder>
-        )}
-
-
-      </main>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" fill="#52C41A" fillOpacity="0.2" stroke="#52C41A" strokeWidth="2" />
+                <path d="M8 12L11 15L16 9" stroke="#52C41A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+          <span className={styles.toastMessage}>{toast.message}</span>
+          <button className={styles.toastClose} onClick={() => setToast(null)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

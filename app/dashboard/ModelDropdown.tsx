@@ -13,9 +13,10 @@ interface ModelDropdownProps {
   openUpward?: boolean;
   showLabel?: boolean;
   disabled?: boolean;
+  className?: string; // Allow custom classes for the trigger
 }
 
-export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'light', openUpward = false, showLabel = false, disabled = false }: ModelDropdownProps) {
+export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'light', openUpward = false, showLabel = false, disabled = false, className }: ModelDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showMoreModels, setShowMoreModels] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
@@ -113,7 +114,7 @@ export default function ModelDropdown({ selectedModel, onSelectModel, theme = 'l
     <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : ''}`} ref={dropdownRef}>
       <button
         ref={triggerRef}
-        className={`${styles.trigger} ${selectedModel ? styles.triggerSelected : ''} ${disabled ? styles.triggerDisabled : ''}`}
+        className={`${styles.trigger} ${selectedModel ? styles.triggerSelected : ''} ${disabled ? styles.triggerDisabled : ''} ${className || ''}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         aria-label="Select model"
         aria-expanded={isOpen}

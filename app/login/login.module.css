@@ -130,6 +130,11 @@
 }
 
 
+/* Logo Container */
+.logoContainer {
+  margin-bottom: 8px;
+}
+
 /* Heading */
 .heading {
   font-family: 'Lexend', sans-serif;

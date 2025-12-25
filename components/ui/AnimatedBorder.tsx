@@ -117,13 +117,17 @@ export default function AnimatedBorder({
 
         const rect = wrapper.getBoundingClientRect();
 
-        // Mouse position relative to the element
-        const relX = e.clientX - rect.left;
-        const relY = e.clientY - rect.top;
+        // Calculate current scale
+        const scaleX = rect.width / wrapper.offsetWidth;
+        const scaleY = rect.height / wrapper.offsetHeight;
 
-        // SVG dimensions (element size + gap on each side)
-        const w = rect.width + (gap * 2);
-        const h = rect.height + (gap * 2);
+        // Mouse position relative to the element (unscaled)
+        const relX = (e.clientX - rect.left) / scaleX;
+        const relY = (e.clientY - rect.top) / scaleY;
+
+        // SVG dimensions (element size + gap on each side) - Unscaled
+        const w = wrapper.offsetWidth + (gap * 2);
+        const h = wrapper.offsetHeight + (gap * 2);
 
         // Start point relative to SVG (offset by gap)
         const startX = relX + gap;
@@ -133,7 +137,7 @@ export default function AnimatedBorder({
         const cornerRadius = radius + gap;
 
         // Determine entry edge
-        const edge = getEntryEdge(relX, relY, rect.width, rect.height);
+        const edge = getEntryEdge(relX, relY, wrapper.offsetWidth, wrapper.offsetHeight);
 
         // Generate paths
         const { dcw, dccw } = generatePaths(startX, startY, w, h, cornerRadius, edge);

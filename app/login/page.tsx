@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import styles from './login.module.css';
 
 // Hooks
@@ -136,6 +137,16 @@ export default function LoginPage() {
         >
           {isDarkTheme ? '☀️ Light' : '🌙 Dark'}
         </button>
+
+        <div className={styles.logoContainer}>
+          <Image
+            src="/assets/logo.svg"
+            alt="Stumbnail"
+            width={64}
+            height={64}
+            priority
+          />
+        </div>
 
         <h1 className={styles.heading}>
           Welcome to <span className={styles.brandName}>Stumbnail</span>

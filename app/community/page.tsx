@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+// React
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 // Types
-import { Thumbnail } from '@/types';
+import { CommunityFeedThumbnail } from '@/lib/services/thumbnailService';
 
 // Hooks
 import { useAuth, useUserData, useTheme, useMobile } from '@/hooks';
+
+// Services
+import { getCommunityFeed, likeThumbnail } from '@/lib/services/thumbnailService';
 
 // Constants
 import { getNavItemsForRoute } from '@/lib/constants';
@@ -20,41 +24,6 @@ import { LoadingSpinner } from '@/components/ui';
 // Styles
 import styles from './community.module.css';
 import dashboardStyles from '@/app/dashboard/dashboard.module.css';
-
-// Mock data generator
-function generateMockThumbnails(): Thumbnail[] {
-    const prompts = [
-        'Epic gaming thumbnail with neon lights',
-        'Cooking show intro with fresh ingredients',
-        'Tech review thumbnail minimalist style',
-        'Fitness motivation energy burst',
-        'Travel vlog sunset mountain view',
-        'Product unboxing colorful background'
-    ];
-
-    const creators = [
-        { name: 'Alex Chen', avatar: '/assets/dashboard/template1.png' },
-        { name: 'Sarah Miller', avatar: '/assets/dashboard/template2.png' },
-        { name: 'Mike Johnson', avatar: '/assets/dashboard/template3.png' },
-        { name: 'Emma Davis', avatar: '/assets/dashboard/template4.png' }
-    ];
-
-    const models = ['DALL-E 3', 'Midjourney v6', 'Stable Diffusion XL', 'Flux Pro'];
-
-    return Array.from({ length: 100 }, (_, i) => ({
-        id: i + 1,
-        imageUrl: `/assets/dashboard/template${(i % 4) + 1}.png`,
-        prompt: i % 2 === 0 ? prompts[i % prompts.length] : undefined,
-        youtubeUrl: i % 2 === 1 ? 'https://youtube.com/watch?v=dQw4w9WgXcQ' : undefined,
-        creator: creators[i % creators.length],
-        name: creators[i % creators.length].name,
-        avatar: creators[i % creators.length].avatar,
-        model: models[i % models.length],
-        // Deterministic value based on index to prevent SSR/client hydration mismatch
-        likes: ((i * 37) % 1000) + 10,
-        isLiked: false
-    }));
-}
 
 const ITEMS_PER_PAGE = 24;
 
@@ -70,57 +39,75 @@ export default function CommunityPage() {
     // Navigation
     const navItems = useMemo(() => getNavItemsForRoute('community'), []);
 
-    // UI state
-    const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-    const [selectedThumbnail, setSelectedThumbnail] = useState<Thumbnail | null>(null);
-    const [thumbnails, setThumbnails] = useState<Thumbnail[]>(() => generateMockThumbnails());
-
-    // Infinite scroll state
-    const [itemsToShow, setItemsToShow] = useState(ITEMS_PER_PAGE);
-    const [isLoading, setIsLoading] = useState(false);
-
-    // Computed values
-    const visibleThumbnails = useMemo(() =>
-        thumbnails.slice(0, itemsToShow),
-        [thumbnails, itemsToShow]
-    );
-    const hasMore = itemsToShow < thumbnails.length;
-
-    // User's plan (mock)
+    // User's plan (mock for now, should come from userData)
     const [isPro] = useState(false);
 
-    // Intersection Observer for infinite scroll
+    // UI state
+    const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [selectedThumbnail, setSelectedThumbnail] = useState<CommunityFeedThumbnail | null>(null);
+    const [thumbnails, setThumbnails] = useState<CommunityFeedThumbnail[]>([]);
+    const [sortBy, setSortBy] = useState<'recent' | 'trending' | 'popular'>('recent');
+
+    // Infinite scroll state
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [initialLoad, setInitialLoad] = useState(true);
+
+    const observerTarget = useRef(null);
+
+    // Initial fetch (re-fetch when sort changes)
     useEffect(() => {
-        const loadMore = () => {
-            if (isLoading || !hasMore) return;
-
-            setIsLoading(true);
-            setTimeout(() => {
-                setItemsToShow(prev => prev + ITEMS_PER_PAGE);
-                setIsLoading(false);
-            }, 500);
+        const fetchInitial = async () => {
+            setInitialLoad(true);
+            try {
+                const response = await getCommunityFeed(ITEMS_PER_PAGE, undefined, sortBy);
+                setThumbnails(response.thumbnails);
+                setNextCursor(response.nextCursor);
+                setHasMore(response.hasMore);
+            } catch (error) {
+                console.error('Error fetching community feed:', error);
+            } finally {
+                setInitialLoad(false);
+            }
         };
+        fetchInitial();
+    }, [sortBy]);
 
+    // Load more handler
+    const loadMore = useCallback(async () => {
+        if (loadingMore || !hasMore || !nextCursor) return;
+
+        setLoadingMore(true);
+        try {
+            const response = await getCommunityFeed(ITEMS_PER_PAGE, nextCursor, sortBy);
+            setThumbnails(prev => [...prev, ...response.thumbnails]);
+            setNextCursor(response.nextCursor);
+            setHasMore(response.hasMore);
+        } catch (error) {
+            console.error('Error loading more thumbnails:', error);
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [loadingMore, hasMore, nextCursor, sortBy]);
+
+    // Intersection Observer
+    useEffect(() => {
         const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMore && !isLoading) {
+            entries => {
+                if (entries[0].isIntersecting && hasMore) {
                     loadMore();
                 }
             },
             { threshold: 0.1 }
         );
 
-        const sentinel = document.getElementById('scroll-sentinel');
-        if (sentinel) {
-            observer.observe(sentinel);
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
         }
 
-        return () => {
-            if (sentinel) {
-                observer.unobserve(sentinel);
-            }
-        };
-    }, [hasMore, isLoading]);
+        return () => observer.disconnect();
+    }, [hasMore, loadMore]);
 
     // Handlers
     const handleSignOut = useCallback(async () => {
@@ -136,10 +123,26 @@ export default function CommunityPage() {
         setTheme(newTheme);
     }, [setTheme]);
 
-    const handleLike = useCallback((thumbnailId: number) => {
+    const handleLike = useCallback(async (thumbnailId: string, projectId: string) => {
+        // Optimistic update
         setThumbnails(prev => prev.map(t =>
-            t.id === thumbnailId ? { ...t, isLiked: !t.isLiked, likes: t.isLiked ? t.likes - 1 : t.likes + 1 } : t
+            t.id === thumbnailId ? { ...t, isLiked: !t.isLiked, likesCount: t.isLiked ? t.likesCount - 1 : t.likesCount + 1 } : t
         ));
+
+        try {
+            // Call backend API to persist like
+            const response = await likeThumbnail(projectId, thumbnailId);
+            // Update with actual server values
+            setThumbnails(prev => prev.map(t =>
+                t.id === thumbnailId ? { ...t, isLiked: response.isLiked, likesCount: response.likesCount } : t
+            ));
+        } catch (error) {
+            console.error('Error liking thumbnail:', error);
+            // Revert optimistic update on error
+            setThumbnails(prev => prev.map(t =>
+                t.id === thumbnailId ? { ...t, isLiked: !t.isLiked, likesCount: t.isLiked ? t.likesCount + 1 : t.likesCount - 1 } : t
+            ));
+        }
     }, []);
 
     // Loading state
@@ -214,21 +217,43 @@ export default function CommunityPage() {
 
                 <div className={dashboardStyles.content}>
                     <div className={styles.pageHeader}>
-                        <h2 className={dashboardStyles.sectionTitle}>
-                            Discover <span className={dashboardStyles.titleAccent}>Thumbnails</span>
-                        </h2>
-                        <p className={styles.pageSubtext}>
-                            Explore thumbnails created by the community
-                        </p>
+                        <div>
+                            <h2 className={dashboardStyles.sectionTitle}>
+                                Discover <span className={dashboardStyles.titleAccent}>Thumbnails</span>
+                            </h2>
+                            <p className={styles.pageSubtext}>
+                                Explore thumbnails created by the community
+                            </p>
+                        </div>
+                        <div className={styles.sortButtons}>
+                            <button
+                                className={`${styles.sortButton} ${sortBy === 'recent' ? styles.sortButtonActive : ''}`}
+                                onClick={() => setSortBy('recent')}
+                            >
+                                Recent
+                            </button>
+                            <button
+                                className={`${styles.sortButton} ${sortBy === 'trending' ? styles.sortButtonActive : ''}`}
+                                onClick={() => setSortBy('trending')}
+                            >
+                                Trending
+                            </button>
+                            <button
+                                className={`${styles.sortButton} ${sortBy === 'popular' ? styles.sortButtonActive : ''}`}
+                                onClick={() => setSortBy('popular')}
+                            >
+                                Popular
+                            </button>
+                        </div>
                     </div>
 
                     {/* Thumbnails Grid */}
                     <div className={styles.thumbnailsGrid}>
-                        {visibleThumbnails.map((thumbnail) => (
+                        {thumbnails.map((thumbnail) => (
                             <div key={thumbnail.id} className={styles.thumbnailCard} onClick={() => setSelectedThumbnail(thumbnail)}>
                                 <div className={styles.thumbnailImage}>
                                     <Image
-                                        src={thumbnail.imageUrl}
+                                        src={thumbnail.thumbnailUrl}
                                         alt="Community thumbnail"
                                         fill
                                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -238,13 +263,13 @@ export default function CommunityPage() {
                                         className={styles.likeButton}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleLike(thumbnail.id);
+                                            handleLike(thumbnail.id, thumbnail.projectId);
                                         }}
                                     >
                                         <svg width="20" height="20" viewBox="0 0 20 20" fill={thumbnail.isLiked ? 'currentColor' : 'none'}>
                                             <path d="M10 17.5L8.75 16.375C4.5 12.5 1.66667 10 1.66667 6.875C1.66667 4.375 3.54167 2.5 6.04167 2.5C7.45833 2.5 8.82917 3.14583 10 4.16667C11.1708 3.14583 12.5417 2.5 13.9583 2.5C16.4583 2.5 18.3333 4.375 18.3333 6.875C18.3333 10 15.5 12.5 11.25 16.375L10 17.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
                                         </svg>
-                                        <span>{thumbnail.likes}</span>
+                                        <span>{thumbnail.likesCount}</span>
                                     </button>
                                 </div>
                             </div>
@@ -252,16 +277,20 @@ export default function CommunityPage() {
                     </div>
 
                     {/* Infinite Scroll Sentinel & Loading Indicator */}
-                    {hasMore && (
-                        <div id="scroll-sentinel" className={styles.scrollSentinel}>
-                            {isLoading && (
-                                <div className={styles.loadingIndicator}>
-                                    <div className={styles.spinner} />
-                                    <p>Loading more...</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    <div ref={observerTarget} className={styles.scrollSentinel}>
+                        {(loadingMore || initialLoad) && (
+                            <div className={styles.loadingIndicator}>
+                                <div className={styles.spinner} />
+                                <p>Loading more...</p>
+                            </div>
+                        )}
+                        {!hasMore && !initialLoad && thumbnails.length > 0 && (
+                            <p className={styles.endMessage}>No more thumbnails to load</p>
+                        )}
+                        {!hasMore && !initialLoad && thumbnails.length === 0 && (
+                            <p className={styles.emptyMessage}>No community thumbnails found</p>
+                        )}
+                    </div>
                 </div>
             </main>
 
@@ -278,7 +307,7 @@ export default function CommunityPage() {
                         <div className={styles.modalContent}>
                             <div className={styles.modalImage}>
                                 <Image
-                                    src={selectedThumbnail.imageUrl}
+                                    src={selectedThumbnail.thumbnailUrl}
                                     alt="Thumbnail"
                                     fill
                                     style={{ objectFit: 'contain' }}
@@ -287,14 +316,22 @@ export default function CommunityPage() {
 
                             <div className={styles.modalInfo}>
                                 <div className={styles.creatorInfo}>
-                                    <Image
-                                        src={selectedThumbnail.creator.avatar}
-                                        alt={selectedThumbnail.creator.name}
-                                        width={40}
-                                        height={40}
-                                        className={styles.creatorAvatar}
-                                    />
-                                    <span className={styles.creatorName}>{selectedThumbnail.creator.name}</span>
+                                    <div className={styles.creatorAvatarParams}>
+                                        {selectedThumbnail.ownerAvatar ? (
+                                            <Image
+                                                src={selectedThumbnail.ownerAvatar}
+                                                alt={selectedThumbnail.ownerName || 'User'}
+                                                width={40}
+                                                height={40}
+                                                className={styles.creatorAvatar}
+                                            />
+                                        ) : (
+                                            <div className={`${styles.creatorAvatar} ${styles.defaultAvatar}`}>
+                                                {(selectedThumbnail.ownerName?.[0] || 'U').toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className={styles.creatorName}>{selectedThumbnail.ownerName || 'Unknown User'}</span>
                                 </div>
 
                                 {selectedThumbnail.prompt && (
@@ -304,19 +341,12 @@ export default function CommunityPage() {
                                     </div>
                                 )}
 
-                                {selectedThumbnail.youtubeUrl && (
+                                {selectedThumbnail.model && (
                                     <div className={styles.detailSection}>
-                                        <h3 className={styles.detailLabel}>YouTube URL</h3>
-                                        <a href={selectedThumbnail.youtubeUrl} target="_blank" rel="noopener noreferrer" className={styles.youtubeLink}>
-                                            {selectedThumbnail.youtubeUrl}
-                                        </a>
+                                        <h3 className={styles.detailLabel}>Model</h3>
+                                        <p className={styles.detailText}>{selectedThumbnail.model}</p>
                                     </div>
                                 )}
-
-                                <div className={styles.detailSection}>
-                                    <h3 className={styles.detailLabel}>Model</h3>
-                                    <p className={styles.detailText}>{selectedThumbnail.model}</p>
-                                </div>
 
                                 {!isPro && (
                                     <button className={styles.upgradeButton}>

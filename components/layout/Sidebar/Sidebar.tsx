@@ -62,12 +62,14 @@ export default function Sidebar({
         <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
             {/* Logo */}
             <div className={styles.logo}>
-                <div className={styles.logoIcon}>
-                    <span className={styles.logoText}>Logo</span>
-                </div>
-                <h1 className={styles.logoTitle}>
-                    <span className={styles.logoAccent}>Stumb</span>nail
-                </h1>
+                <Image
+                    src="/assets/logo.svg"
+                    alt="Stumbnail"
+                    width={32}
+                    height={32}
+                    priority
+                />
+                <span className={styles.logoTitle}>Stumbnail</span>
             </div>
 
             {/* User Profile */}
@@ -198,7 +200,7 @@ export default function Sidebar({
                         fill="none"
                         className={`${styles.creditsArrow} ${showCreditBreakdown ? styles.creditsArrowExpanded : ''}`}
                     >
-                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </div>
 

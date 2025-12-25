@@ -19,7 +19,7 @@ export interface Project {
     thumbnailsCount: number;
     createdAt: string;
     updatedAt: string;
-    isFavorite: boolean; // Client-side state (not from API)
+    isFavorite: boolean; // Persisted in Firestore
 }
 
 // Legacy project type for backwards compatibility during migration

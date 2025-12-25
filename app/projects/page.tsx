@@ -484,6 +484,7 @@ export default function ProjectsPage() {
                                         isEditing={editingProjectId === project.id}
                                         editingName={editingProjectName}
                                         isPriority={index < 4}
+                                        theme={theme}
                                         onMenuClick={() => handleProjectMenuClick(project.id)}
                                         onEdit={() => handleEditProject(project.id)}
                                         onEditNameChange={handleEditNameChange}

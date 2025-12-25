@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================
+    // USERS COLLECTION
+    // =====================
+    match /users/{userId} {
+      // Allow user to read their own user document (including credits)
+      allow get: if request.auth != null && request.auth.uid == userId;
+      // Disallow front-end writes entirely
+      allow update, delete, create: if false;
+
+      // Subcollection: billingHistory (read-only for that user)
+      match /billingHistory/{historyId} {
+        allow get, list: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
+      // Subcollection: transactions (read-only for that user)
+      match /transactions/{transactionId} {
+        allow get, list: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+    }
+
+    // =====================
+    // PROJECTS COLLECTION (NEW)
+    // =====================
+    match /projects/{projectId} {
+      // Read: Only owner can read their projects
+      allow read: if request.auth != null && 
+                    resource.data.ownerId == request.auth.uid;
+      
+      // Write: Only backend (admin SDK bypasses rules)
+      allow create, delete: if false;
+      
+      // Update viewport AND favorites (for canvas pan/zoom + sidebar toggle)
+      allow update: if request.auth != null && 
+                      resource.data.ownerId == request.auth.uid &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewport', 'isFavorite', 'updatedAt']);
+      
+      // Thumbnails subcollection
+      match /thumbnails/{thumbnailId} {
+        // Read: Public if parent project is public, OR if you're the owner
+        allow read: if get(/databases/$(database)/documents/projects/$(projectId)).data.privacy == 'public' ||
+                      (request.auth != null && 
+                       get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid);
+        
+        // Update: Only position fields (x, y, width, height) - owner only
+        allow update: if request.auth != null && 
+                        get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['x', 'y', 'width', 'height', 'updatedAt']);
+        
+        // Create/Delete: Only backend
+        allow create, delete: if false;
+      }
+    }
+
+    // =====================
+    // COLLECTION GROUP: THUMBNAILS (for community feed)
+    // =====================
+    // This rule applies to collectionGroup queries on 'thumbnails'
+    match /{path=**}/thumbnails/{thumbnailId} {
+      // Allow read if the thumbnail is marked as public
+      allow read: if resource.data.isPublic == true;
+    }
+
+    // =====================
+    // THUMBNAILS COLLECTION (Legacy - global)
+    // =====================
+    match /thumbnails/{thumbnailId} {
+      // Allow public read if flagged OR if owned by user
+      allow read: if resource.data.publicFlag == true ||
+                    (request.auth != null && request.auth.uid == resource.data.userId);
+      // Allow creation by logged-in users
+      allow create: if request.auth != null;
+      // Allow update/delete only by the owner
+      allow update, delete: if request.auth != null &&
+                            request.auth.uid == resource.data.userId;
+    }
+
+    // Thumbnails list access
+    match /thumbnails {
+      allow list: if true; // For community feed - consider pagination limits
+    }
+
+    // =====================
+    // CONFIG COLLECTION (read-only public)
+    // =====================
+    match /config/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

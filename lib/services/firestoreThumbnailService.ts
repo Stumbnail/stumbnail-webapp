@@ -17,6 +17,16 @@ import type { Timestamp } from 'firebase/firestore';
 // ═══════════════════════════════════════════════════════
 
 /**
+ * Community thumbnail type
+ */
+export interface CommunityThumbnail extends Thumbnail {
+  ownerName?: string;
+  ownerAvatar?: string;
+  projectName?: string;
+  isLiked: boolean; // Computed for current user
+}
+
+/**
  * Reference image for generation
  */
 export interface RefImage {
@@ -55,6 +65,9 @@ export interface FirestoreThumbnail {
   isPublic?: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  // Denormalized fields for community feed
+  ownerName?: string;
+  ownerAvatar?: string;
 }
 
 /**
@@ -139,7 +152,10 @@ function transformFirestoreThumbnail(doc: FirestoreThumbnail): Thumbnail {
     isPublic: doc.isPublic,
     createdAt: doc.createdAt.toDate().toISOString(),
     updatedAt: doc.updatedAt.toDate().toISOString(),
-  };
+    // Map denormalized fields
+    ownerName: doc.ownerName,
+    ownerAvatar: doc.ownerAvatar,
+  } as CommunityThumbnail; // Cast to CommunityThumbnail to allow optional fields
 }
 
 // ═══════════════════════════════════════════════════════
@@ -161,7 +177,7 @@ export async function subscribeToProjectThumbnails(
   if (!projectId) {
     console.error('subscribeToProjectThumbnails: projectId is required');
     callback([]);
-    return () => {};
+    return () => { };
   }
 
   try {
@@ -191,7 +207,7 @@ export async function subscribeToProjectThumbnails(
   } catch (error) {
     console.error('Error setting up thumbnails subscription:', error);
     callback([]);
-    return () => {};
+    return () => { };
   }
 }
 
@@ -212,7 +228,7 @@ export async function subscribeToThumbnail(
   if (!projectId || !thumbnailId) {
     console.error('subscribeToThumbnail: projectId and thumbnailId are required');
     callback(null);
-    return () => {};
+    return () => { };
   }
 
   try {
@@ -242,7 +258,7 @@ export async function subscribeToThumbnail(
   } catch (error) {
     console.error('Error setting up thumbnail subscription:', error);
     callback(null);
-    return () => {};
+    return () => { };
   }
 }
 
@@ -332,4 +348,75 @@ export async function batchUpdateThumbnailPositions(
     console.error('Error batch updating thumbnail positions:', error);
     throw error;
   }
+}
+
+// ═══════════════════════════════════════════════════════
+// COMMUNITY FEATURES
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Fetch public thumbnails for community feed
+ * Uses collectionGroup query on 'thumbnails' where isPublic == true
+ */
+export async function getCommunityThumbnails(
+  limitCount: number = 24,
+  lastSnapshot?: any
+): Promise<{ thumbnails: CommunityThumbnail[]; lastSnapshot: any }> {
+  try {
+    const { collectionGroup, query, where, orderBy, limit, getDocs, startAfter } = await import('firebase/firestore');
+    const db = await getFirestore();
+
+    let q = query(
+      collectionGroup(db, 'thumbnails'),
+      where('isPublic', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    );
+
+    if (lastSnapshot) {
+      q = query(
+        collectionGroup(db, 'thumbnails'),
+        where('isPublic', '==', true),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastSnapshot),
+        limit(limitCount)
+      );
+    }
+
+    const snapshot = await getDocs(q);
+
+    const thumbnails = snapshot.docs.map(doc => {
+      const data = doc.data() as FirestoreThumbnail;
+      // We don't have access to current user ID here, so isLiked defaults to false
+      // In a real app, you'd check if user ID is in likedBy array
+      return {
+        ...transformFirestoreThumbnail({ ...data, id: doc.id }),
+        isLiked: false
+      } as CommunityThumbnail;
+    });
+
+    return {
+      thumbnails,
+      lastSnapshot: snapshot.docs[snapshot.docs.length - 1]
+    };
+
+  } catch (error) {
+    console.error('Error fetching community thumbnails:', error);
+    return { thumbnails: [], lastSnapshot: null };
+  }
+}
+
+/**
+ * Toggle like on a thumbnail
+ * SECURITY: Backend or Security Rules must validate this
+ */
+export async function toggleThumbnailLike(
+  projectId: string, // We need projectId to construct the path
+  thumbnailId: string,
+  userId: string
+): Promise<void> {
+  // This is best handled by a backend Callable Function to ensure atomicity 
+  // and data integrity (incrementing count AND adding to array safely).
+  // For now, communicating to user that backend is preferred.
+  throw new Error("Liking should be handled via backend API to ensure security.");
 }

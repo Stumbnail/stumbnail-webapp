@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -8,9 +8,6 @@ import dynamic from 'next/dynamic';
 // Types
 import {
   Project,
-  Style,
-  Model,
-  AttachedImage,
   EditProjectModalState,
   ProjectActionModalState
 } from '@/types';
@@ -23,7 +20,6 @@ import { useProjectsContext } from '@/contexts';
 import {
   getNavItemsForRoute,
   TEMPLATES_PER_PAGE,
-  DEFAULT_MODEL,
   MAX_PROJECTS_DISPLAY,
   MAX_PROJECTS_DISPLAY_MOBILE
 } from '@/lib/constants';
@@ -33,16 +29,6 @@ import { Sidebar, Header } from '@/components/layout';
 import { ProjectsGrid } from '@/components/projects';
 import { LoadingSpinner } from '@/components/ui';
 
-// Lazy load non-critical components to reduce TBT
-const StyleDropdown = dynamic(
-  () => import('./StyleDropdown'),
-  { ssr: false, loading: () => <div style={{ height: 48 }} /> }
-);
-const ModelDropdown = dynamic(
-  () => import('./ModelDropdown'),
-  { ssr: false, loading: () => <div style={{ height: 48 }} /> }
-);
-
 // Lazy load modals (only loaded when user opens them)
 const ProjectNameModal = dynamic(
   () => import('@/components/modals/ProjectNameModal'),
@@ -50,10 +36,6 @@ const ProjectNameModal = dynamic(
 );
 const ProjectActionModal = dynamic(
   () => import('@/components/modals/ProjectActionModal'),
-  { ssr: false }
-);
-const CreateStyleModal = dynamic(
-  () => import('@/components/modals/CreateStyleModal'),
   { ssr: false }
 );
 
@@ -84,10 +66,7 @@ export default function DashboardPage() {
   const navItems = useMemo(() => getNavItemsForRoute('dashboard'), []);
 
   // UI state
-  const [promptText, setPromptText] = useState('');
-  const [youtubeLink, setYoutubeLink] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCreateStyleModalOpen, setIsCreateStyleModalOpen] = useState(false);
   const [editProjectModal, setEditProjectModal] = useState<EditProjectModalState>({
     isOpen: false,
     projectId: null,
@@ -100,14 +79,9 @@ export default function DashboardPage() {
     projectId: null,
     projectName: ''
   });
-  const [selectedStyle, setSelectedStyle] = useState<Style | null>(null);
-  const [selectedModel, setSelectedModel] = useState<Model>(DEFAULT_MODEL);
   const [viewingAllTemplates, setViewingAllTemplates] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [promptInfoOpen, setPromptInfoOpen] = useState(false);
-  const [urlInfoOpen, setUrlInfoOpen] = useState(false);
-  const [creationContainerFocused, setCreationContainerFocused] = useState(false);
   const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null);
 
   // Search state
@@ -116,19 +90,6 @@ export default function DashboardPage() {
   // Edit project state
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
-
-  // Image attachment state
-  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
-
-  // YouTube link validation state
-  const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
-
-  // Refs
-  const promptInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
-  const promptInfoRef = useRef<HTMLDivElement>(null);
-  const urlInfoRef = useRef<HTMLDivElement>(null);
 
   // Memoized values
   const totalPages = Math.ceil(templates.length / TEMPLATES_PER_PAGE);
@@ -156,15 +117,9 @@ export default function DashboardPage() {
 
   const hasMoreProjects = filteredProjects.length > maxProjectsToShow;
 
-  // Click outside handling for menus and tooltips
+  // Click outside handling for project menu
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (promptInfoRef.current && !promptInfoRef.current.contains(event.target as Node)) {
-        setPromptInfoOpen(false);
-      }
-      if (urlInfoRef.current && !urlInfoRef.current.contains(event.target as Node)) {
-        setUrlInfoOpen(false);
-      }
       // Close project menu when clicking outside
       if (projectMenuOpen !== null) {
         const menus = document.querySelectorAll('[data-project-menu]');
@@ -180,80 +135,16 @@ export default function DashboardPage() {
       }
     }
 
-    if (promptInfoOpen || urlInfoOpen || projectMenuOpen !== null) {
+    if (projectMenuOpen !== null) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [projectMenuOpen, promptInfoOpen, urlInfoOpen]);
-
-  // Cleanup image previews on unmount
-  useEffect(() => {
-    return () => {
-      attachedImages.forEach(img => URL.revokeObjectURL(img.preview));
-    };
-  }, []);
+  }, [projectMenuOpen]);
 
   // Handlers
-  const handlePromptSubmit = useCallback(() => {
-    if (!promptText.trim()) return;
-    console.log('Generating with prompt:', promptText);
-  }, [promptText]);
-
-  const handlePromptKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handlePromptSubmit();
-    }
-  }, [handlePromptSubmit]);
-
-  const validateYoutubeLink = (url: string): boolean => {
-    if (!url.trim()) {
-      setYoutubeLinkError('Please enter a YouTube link');
-      return false;
-    }
-
-    const youtubePatterns = [
-      /^(https?:\/\/)?(www\.)?youtube\.com\/watch\?v=[\w-]+/,
-      /^(https?:\/\/)?(www\.)?youtube\.com\/embed\/[\w-]+/,
-      /^(https?:\/\/)?(www\.)?youtube\.com\/v\/[\w-]+/,
-      /^(https?:\/\/)?youtu\.be\/[\w-]+/,
-      /^(https?:\/\/)?(www\.)?youtube\.com\/shorts\/[\w-]+/,
-    ];
-
-    const isValid = youtubePatterns.some(pattern => pattern.test(url.trim()));
-
-    if (!isValid) {
-      setYoutubeLinkError('Please enter a valid YouTube link');
-      return false;
-    }
-
-    setYoutubeLinkError(null);
-    return true;
-  };
-
-  const handleYoutubeLinkChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setYoutubeLink(e.target.value);
-    if (youtubeLinkError) {
-      setYoutubeLinkError(null);
-    }
-  }, [youtubeLinkError]);
-
-  const handleYoutubeLinkSubmit = useCallback(() => {
-    if (validateYoutubeLink(youtubeLink)) {
-      console.log('Generating from YouTube:', youtubeLink);
-    }
-  }, [youtubeLink]);
-
-  const handleYoutubeLinkKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleYoutubeLinkSubmit();
-    }
-  }, [handleYoutubeLinkSubmit]);
-
   const handleCreateProject = useCallback(async (name: string, isPublic: boolean) => {
     const newProject = await createNewProject(name, isPublic);
     if (newProject) {
@@ -261,25 +152,6 @@ export default function DashboardPage() {
       router.push(`/project/${newProject.id}`);
     }
   }, [createNewProject, router]);
-
-  const handleSelectStyle = useCallback((style: Style | null) => {
-    setSelectedStyle(style);
-    console.log('Selected style:', style);
-  }, []);
-
-  const handleCreateNewStyle = useCallback(() => {
-    setIsCreateStyleModalOpen(true);
-  }, []);
-
-  const handleCreateStyleConfirm = useCallback((name: string, images: File[]) => {
-    console.log('Creating style:', name, 'with', images.length, 'images');
-    setIsCreateStyleModalOpen(false);
-  }, []);
-
-  const handleSelectModel = useCallback((model: Model) => {
-    setSelectedModel(model);
-    console.log('Selected model:', model);
-  }, []);
 
   const handleSeeAllClick = useCallback(() => {
     setViewingAllTemplates(prev => !prev);
@@ -395,37 +267,6 @@ export default function DashboardPage() {
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-  }, []);
-
-  const handleImageAttach = useCallback(() => {
-    imageInputRef.current?.click();
-  }, []);
-
-  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newImages = Array.from(files).map(file => ({
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-      file,
-      preview: URL.createObjectURL(file)
-    }));
-
-    setAttachedImages(prev => [...prev, ...newImages]);
-
-    if (imageInputRef.current) {
-      imageInputRef.current.value = '';
-    }
-  }, []);
-
-  const handleRemoveImage = useCallback((imageId: string) => {
-    setAttachedImages(prev => {
-      const imageToRemove = prev.find(img => img.id === imageId);
-      if (imageToRemove) {
-        URL.revokeObjectURL(imageToRemove.preview);
-      }
-      return prev.filter(img => img.id !== imageId);
-    });
   }, []);
 
   // Show loading state
@@ -551,236 +392,6 @@ export default function DashboardPage() {
             />
           </section>
 
-          {/* Quick Create Section */}
-          <section className={styles.createSection}>
-            <div className={styles.quickCreateHeader}>
-              <h2 className={styles.sectionTitle}>
-                Create
-              </h2>
-            </div>
-
-            <div
-              className={`${styles.creationContainer} ${creationContainerFocused ? styles.creationContainerFocused : ''}`}
-              onFocus={() => setCreationContainerFocused(true)}
-              onBlur={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget)) {
-                  setCreationContainerFocused(false);
-                }
-              }}
-            >
-              <div className={styles.creationContainerInner}>
-                <div className={styles.createRow}>
-                  <div className={styles.createPromptWrapper}>
-                    <div className={styles.sectionTitleWithInfo}>
-                      <h2 className={styles.sectionTitle}>
-                        Prompt
-                      </h2>
-                      <div className={styles.infoButtonWrapper} ref={promptInfoRef}>
-                        <button
-                          className={styles.infoButton}
-                          onClick={() => setPromptInfoOpen(prev => !prev)}
-                          aria-label="Information about prompt creation"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                          </svg>
-                        </button>
-                        {promptInfoOpen && (
-                          <div className={styles.infoTooltip}>
-                            <p>Enter a prompt to generate your original thumbnail. If you want your face in there, just attach it, or describe your thumbnail.</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className={styles.createPrompt} onClick={() => promptInputRef.current?.focus()}>
-                      <input
-                        ref={promptInputRef}
-                        type="text"
-                        value={promptText}
-                        onChange={(e) => setPromptText(e.target.value)}
-                        onKeyDown={handlePromptKeyDown}
-                        placeholder="Describe your thumbnail"
-                        className={styles.promptInput}
-                        aria-label="Describe your thumbnail to generate"
-                      />
-
-                      <div className={styles.promptOptions}>
-                        <StyleDropdown
-                          selectedStyle={selectedStyle}
-                          onSelectStyle={handleSelectStyle}
-                          onCreateNew={handleCreateNewStyle}
-                          theme={theme}
-                        />
-
-                        <ModelDropdown
-                          selectedModel={selectedModel}
-                          onSelectModel={handleSelectModel}
-                          theme={theme}
-                        />
-
-                        <button
-                          className={styles.addButton}
-                          aria-label="Attach image references for AI generation"
-                          onClick={handleImageAttach}
-                          type="button"
-                        >
-                          <Image
-                            src="/assets/dashboard/icons/add-image.svg"
-                            alt=""
-                            width={20}
-                            height={20}
-                            aria-hidden="true"
-                          />
-                        </button>
-                        <input
-                          ref={imageInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImageChange}
-                          className={styles.hiddenInput}
-                          aria-label="Upload image"
-                        />
-                      </div>
-
-                      <button
-                        className={styles.generateButton}
-                        onClick={handlePromptSubmit}
-                        aria-label="Generate thumbnail from description"
-                        type="button"
-                        disabled={!promptText.trim()}
-                      >
-                        <Image
-                          src="/assets/dashboard/icons/send.svg"
-                          alt=""
-                          width={20}
-                          height={20}
-                          aria-hidden="true"
-                        />
-                      </button>
-                    </div>
-
-                    {/* Attached Images Preview */}
-                    {attachedImages.length > 0 && (
-                      <div className={styles.attachedImagesSection}>
-                        <div className={styles.attachedImagesHeader}>
-                          <span className={styles.attachedImagesLabel}>Reference Images</span>
-                          <span
-                            className={styles.attachedImagesHint}
-                            title="Reference images in prompts: 'Use the face from Image 1 with the style of Image 2'"
-                          >
-                            💡 Tip
-                          </span>
-                        </div>
-                        <div className={styles.attachedImagesContainer}>
-                          {attachedImages.map((img, index) => (
-                            <div key={img.id} className={styles.attachedImageWrapper}>
-                              <div className={styles.attachedImageIndex}>{index + 1}</div>
-                              <Image
-                                src={img.preview}
-                                alt={`Image ${index + 1}: ${img.file.name}`}
-                                width={60}
-                                height={60}
-                                className={styles.attachedImagePreview}
-                              />
-                              <button
-                                className={styles.removeImageButton}
-                                onClick={() => handleRemoveImage(img.id)}
-                                aria-label={`Remove ${img.file.name}`}
-                              >
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                              </button>
-                              <span className={styles.attachedImageName}>{img.file.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={styles.orDividerWrapper}>
-                    <div className={styles.verticalDivider} />
-                  </div>
-
-                  <div className={styles.youtubeInputWrapper}>
-                    <div className={styles.sectionTitleWithInfo}>
-                      <h2 className={styles.sectionTitle}>
-                        YouTube Link
-                      </h2>
-                      <div className={styles.infoButtonWrapper} ref={urlInfoRef}>
-                        <button
-                          className={styles.infoButton}
-                          onClick={() => setUrlInfoOpen(prev => !prev)}
-                          aria-label="Information about YouTube link"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-                            <path d="M8 11V8M8 5H8.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                          </svg>
-                        </button>
-                        {urlInfoOpen && (
-                          <div className={styles.infoTooltip}>
-                            <p>If you find a thumbnail on YouTube and really like it, just paste the link of the video and make the thumbnail yours by editing it directly.</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div
-                      className={`${styles.youtubeInput} ${youtubeLinkError ? styles.youtubeInputError : ''}`}
-                      onClick={() => youtubeLinkInputRef.current?.focus()}
-                    >
-                      <div className={styles.youtubeIconWrapper}>
-                        <Image
-                          src="/assets/dashboard/icons/attachment-02-stroke-rounded 1.svg"
-                          alt=""
-                          width={18}
-                          height={18}
-                          className={styles.youtubeIcon}
-                          aria-hidden="true"
-                        />
-                      </div>
-                      <input
-                        ref={youtubeLinkInputRef}
-                        type="url"
-                        value={youtubeLink}
-                        onChange={handleYoutubeLinkChange}
-                        onKeyDown={handleYoutubeLinkKeyDown}
-                        placeholder="Paste a YouTube link"
-                        className={styles.linkInput}
-                        aria-label="Paste YouTube video URL to generate thumbnail"
-                        aria-invalid={!!youtubeLinkError}
-                        aria-describedby={youtubeLinkError ? "youtube-error" : undefined}
-                      />
-                      <button
-                        className={styles.generateButton}
-                        onClick={handleYoutubeLinkSubmit}
-                        aria-label="Generate thumbnail from YouTube video"
-                        type="button"
-                        disabled={!youtubeLink.trim()}
-                      >
-                        <Image
-                          src="/assets/dashboard/icons/send.svg"
-                          alt=""
-                          width={20}
-                          height={20}
-                          aria-hidden="true"
-                        />
-                      </button>
-                    </div>
-                    {youtubeLinkError && (
-                      <p id="youtube-error" className={styles.inputError}>{youtubeLinkError}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Decorative Blur */}
-          {!isMobile && <div className={styles.blurBottom} />}
 
           {/* Templates Section */}
           <section className={`${styles.templatesSection} ${viewingAllTemplates ? styles.viewingAll : ''}`}>
@@ -893,13 +504,6 @@ export default function DashboardPage() {
         onConfirm={handleProjectActionConfirm}
         type={projectActionModal.type}
         projectName={projectActionModal.projectName}
-        theme={theme}
-      />
-
-      <CreateStyleModal
-        isOpen={isCreateStyleModalOpen}
-        onClose={() => setIsCreateStyleModalOpen(false)}
-        onCreateStyle={handleCreateStyleConfirm}
         theme={theme}
       />
 

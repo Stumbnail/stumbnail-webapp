@@ -35,6 +35,7 @@ export interface FirestoreProject {
   previewImage: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  isFavorite?: boolean;
 }
 
 /**
@@ -55,6 +56,7 @@ export interface Project {
   previewImage: string | null;
   createdAt: string;
   updatedAt: string;
+  isFavorite: boolean;
 }
 
 /**
@@ -83,8 +85,9 @@ function transformFirestoreProject(doc: FirestoreProject): Project {
     viewport: doc.viewport,
     thumbnailsCount: doc.thumbnailsCount,
     previewImage: doc.previewImage,
-    createdAt: doc.createdAt.toDate().toISOString(),
-    updatedAt: doc.updatedAt.toDate().toISOString(),
+    createdAt: doc.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
+    updatedAt: doc.updatedAt?.toDate()?.toISOString() || new Date().toISOString(),
+    isFavorite: doc.isFavorite || false,
   };
 }
 
@@ -107,7 +110,7 @@ export async function subscribeToUserProjects(
   if (!userId) {
     console.error('subscribeToUserProjects: userId is required');
     callback([]);
-    return () => {};
+    return () => { };
   }
 
   try {
@@ -141,7 +144,7 @@ export async function subscribeToUserProjects(
   } catch (error) {
     console.error('Error setting up projects subscription:', error);
     callback([]);
-    return () => {};
+    return () => { };
   }
 }
 
@@ -160,7 +163,7 @@ export async function subscribeToProject(
   if (!projectId) {
     console.error('subscribeToProject: projectId is required');
     callback(null);
-    return () => {};
+    return () => { };
   }
 
   try {
@@ -190,7 +193,7 @@ export async function subscribeToProject(
   } catch (error) {
     console.error('Error setting up project subscription:', error);
     callback(null);
-    return () => {};
+    return () => { };
   }
 }
 
@@ -237,6 +240,37 @@ export async function updateProjectViewport(
     await updateDoc(projectRef, updates);
   } catch (error) {
     console.error('Error updating project viewport:', error);
+    throw error;
+  }
+}
+
+/**
+ * Toggle project favorite status
+ * SECURITY: Firestore rules enforce that only owner can update
+ * 
+ * @param projectId - Project document ID
+ * @param isFavorite - New favorite status
+ */
+export async function toggleProjectFavorite(
+  projectId: string,
+  isFavorite: boolean
+): Promise<void> {
+  if (!projectId) {
+    throw new Error('toggleProjectFavorite: projectId is required');
+  }
+
+  try {
+    const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+    const db = await getFirestore();
+
+    const projectRef = doc(db, 'projects', projectId);
+
+    await updateDoc(projectRef, {
+      isFavorite,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error toggling project favorite:', error);
     throw error;
   }
 }

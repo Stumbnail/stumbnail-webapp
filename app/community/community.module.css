@@ -11,7 +11,12 @@
 
 /* Page Header */
 .pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
     margin-bottom: 32px;
+    flex-wrap: wrap;
 }
 
 .pageSubtext {
@@ -20,6 +25,41 @@
     font-weight: 400;
     color: #797979;
     margin: 6px 0 0 0;
+}
+
+/* Sort Filter Buttons */
+.sortButtons {
+    display: flex;
+    gap: 8px;
+}
+
+.sortButton {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid #e8e8e8;
+    background-color: transparent;
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #797979;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sortButton:hover {
+    border-color: #ff6f61;
+    color: #ff6f61;
+}
+
+.sortButtonActive {
+    background-color: #ff6f61;
+    border-color: #ff6f61;
+    color: #ffffff;
+}
+
+.sortButtonActive:hover {
+    background-color: #e85a4d;
+    border-color: #e85a4d;
 }
 
 /* Thumbnails Grid */
@@ -347,6 +387,22 @@
 
 :global(.darkTheme) .pageSubtext {
     color: #a3a3a3;
+}
+
+:global(.darkTheme) .sortButton {
+    border-color: #3d3d3d;
+    color: #a3a3a3;
+}
+
+:global(.darkTheme) .sortButton:hover {
+    border-color: #ff6f61;
+    color: #ff6f61;
+}
+
+:global(.darkTheme) .sortButtonActive {
+    background-color: #ff6f61;
+    border-color: #ff6f61;
+    color: #ffffff;
 }
 
 :global(.darkTheme) .loadingIndicator p {
