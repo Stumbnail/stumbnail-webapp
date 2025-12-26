@@ -23,6 +23,8 @@ interface SidebarProps {
     onThemeToggle: (newTheme: Theme) => void;
     onSignOut: () => void;
     onCloseSidebar: () => void;
+    onUpgradeClick?: () => void;
+    onProfileClick?: () => void;
 }
 
 export default function Sidebar({
@@ -37,6 +39,8 @@ export default function Sidebar({
     onThemeToggle,
     onSignOut,
     onCloseSidebar,
+    onUpgradeClick,
+    onProfileClick,
 }: SidebarProps) {
     const router = useRouter();
     const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -131,6 +135,14 @@ export default function Sidebar({
                                 </button>
                             </div>
                         </div>
+                        <div className={styles.profileMenuDivider} />
+                        <button className={styles.profileMenuItem} onClick={() => { onProfileClick?.(); onProfileMenuClose(); }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
+                                <path d="M5 20c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                            <span>Profile</span>
+                        </button>
                         <div className={styles.profileMenuDivider} />
                         <button className={styles.profileMenuItem} onClick={onSignOut}>
                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -248,7 +260,11 @@ export default function Sidebar({
                     duration={0.3}
                     className={styles.upgradeButtonWrapper}
                 >
-                    <button className={styles.upgradeButton} aria-label="Upgrade to premium plan">
+                    <button
+                        className={styles.upgradeButton}
+                        aria-label="Upgrade to premium plan"
+                        onClick={onUpgradeClick}
+                    >
                         <Image
                             src="/assets/dashboard/icons/crown-stroke-rounded 1-sidebar.svg"
                             alt=""

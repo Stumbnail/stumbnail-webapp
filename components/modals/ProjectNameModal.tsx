@@ -13,6 +13,8 @@ interface ProjectNameModalProps {
   initialName?: string;
   initialIsPublic?: boolean;
   theme?: 'light' | 'dark';
+  isPaidUser?: boolean;
+  onUpgradeClick?: () => void;
 }
 
 export default function ProjectNameModal({
@@ -22,7 +24,9 @@ export default function ProjectNameModal({
   editMode = false,
   initialName = 'untitled',
   initialIsPublic = true,
-  theme = 'light'
+  theme = 'light',
+  isPaidUser = true,
+  onUpgradeClick
 }: ProjectNameModalProps) {
   const [projectName, setProjectName] = useState(initialName);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
@@ -68,7 +72,7 @@ export default function ProjectNameModal({
           aria-label="Close modal"
         >
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M24 8L8 24M8 8L24 24" stroke="#D5D5D5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M24 8L8 24M8 8L24 24" stroke="#D5D5D5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
 
@@ -110,7 +114,14 @@ export default function ProjectNameModal({
           <p className={styles.toggleLabel}>Make this project public</p>
           <button
             className={`${styles.toggle} ${isPublic ? styles.toggleActive : ''}`}
-            onClick={() => setIsPublic(!isPublic)}
+            onClick={() => {
+              // If user is trying to make private (turning off public) and is not paid
+              if (isPublic && !isPaidUser) {
+                onUpgradeClick?.();
+                return;
+              }
+              setIsPublic(!isPublic);
+            }}
             role="switch"
             aria-checked={isPublic}
             aria-label="Make this project public"

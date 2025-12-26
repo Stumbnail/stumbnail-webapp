@@ -28,7 +28,7 @@ import {
 // Services
 import { addThumbnail, getProjectThumbnails, deleteThumbnail, updateThumbnail, updateThumbnailPositions, uploadThumbnail, trackThumbnailDownload, startGenerationJob, pollGenerationJob, startSmartMergeJob, pollSmartMergeJob, GenerateThumbnailRequest, ApiThumbnail, SmartMergeRequest } from '@/lib/services/thumbnailService';
 import { getProject } from '@/lib/services/projectService';
-import { calculateTotalCredits } from '@/lib/services/userService';
+import { calculateTotalCredits, getUserPlan } from '@/lib/services/userService';
 
 // Lazy load dropdowns
 const ModelDropdown = dynamic(
@@ -40,7 +40,7 @@ const ModelDropdown = dynamic(
 import styles from './projectCanvas.module.css';
 
 // UI Components
-import { LoadingSpinner, AnimatedBorder } from '@/components/ui';
+import { LoadingSpinner, AnimatedBorder, PricingModal } from '@/components/ui';
 import { ModelOptionsBar } from '@/components/generation';
 
 // Types
@@ -310,6 +310,7 @@ export default function ProjectCanvasPage() {
   const [youtubeLink, setYoutubeLink] = useState('');
   const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
   const [showUrlPopup, setShowUrlPopup] = useState(false);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
 
   // Prompt mode state
   const [promptText, setPromptText] = useState('');
@@ -542,8 +543,13 @@ export default function ProjectCanvasPage() {
   }, [router]);
 
   const handleTogglePublic = useCallback(() => {
+    // If trying to make private (isPublic is true, going to false) and user is not paid
+    if (isPublic && getUserPlan(userData).type === 'free') {
+      setPricingModalOpen(true);
+      return;
+    }
     setIsPublic(prev => !prev);
-  }, []);
+  }, [isPublic, userData]);
 
   const handleModeSelect = useCallback((mode: CreationMode) => {
     setSelectedMode(mode);
@@ -1106,7 +1112,14 @@ export default function ProjectCanvasPage() {
       hasError = true;
 
       const errorMessage = error instanceof Error ? error.message : 'Generation failed';
-      setToast({ message: errorMessage, type: 'error' });
+
+      // Check for insufficient credits error and show pricing modal
+      if (errorMessage.toLowerCase().includes('insufficient credits')) {
+        setPricingModalOpen(true);
+      } else {
+        setToast({ message: errorMessage, type: 'error' });
+      }
+
       // Remove placeholder elements on error and clear from selection
       setCanvasElements(prev => prev.filter(el => !newElementIds.includes(el.id)));
       setSelectedElementIds(prev => prev.filter(id => !newElementIds.includes(id)));
@@ -2023,7 +2036,16 @@ export default function ProjectCanvasPage() {
     } catch (error) {
       console.error('Modify generation error:', error);
       hasError = true;
-      setToast({ message: error instanceof Error ? error.message : 'Generation failed', type: 'error' });
+
+      const errorMessage = error instanceof Error ? error.message : 'Generation failed';
+
+      // Check for insufficient credits error and show pricing modal
+      if (errorMessage.toLowerCase().includes('insufficient credits')) {
+        setPricingModalOpen(true);
+      } else {
+        setToast({ message: errorMessage, type: 'error' });
+      }
+
       // Remove placeholder on error and clear from selection
       setCanvasElements(prev => prev.filter(el => el.id !== newId));
       setSelectedElementIds(prev => prev.filter(id => id !== newId));
@@ -2271,7 +2293,16 @@ export default function ProjectCanvasPage() {
       handleCloseSmartMerge();
     } catch (error) {
       console.error('Smart Merge error:', error);
-      setToast({ message: error instanceof Error ? error.message : 'Failed to generate thumbnail', type: 'error' });
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate thumbnail';
+
+      // Check for insufficient credits error and show pricing modal
+      if (errorMessage.toLowerCase().includes('insufficient credits')) {
+        setPricingModalOpen(true);
+      } else {
+        setToast({ message: errorMessage, type: 'error' });
+      }
+
       // Remove placeholder on error and clear from selection
       setCanvasElements(prev => {
         const generatingIds = prev.filter(el => el.status === 'generating').map(el => el.id);
@@ -2813,18 +2844,27 @@ export default function ProjectCanvasPage() {
 
               const aspectRatioStr = getApproxRatio(displayWidth, displayHeight);
 
+              // Calculate zoom-aware scale for dimensions display (same approach as button)
+              const MAX_DIMS_SCALE = 1 / 0.36; // ~2.78 max at 36% zoom
+              const MIN_DIMS_SCALE = 1;
+              const dimsScale = Math.min(Math.max(1 / viewport.zoom, MIN_DIMS_SCALE), MAX_DIMS_SCALE);
+
               return (
                 <>
-                  {/* Dimensions display above top-left */}
-                  <div
-                    className={styles.elementDimensionsDisplay}
-                    style={{
-                      left: minX,
-                      top: minY - 28,
-                    }}
-                  >
-                    <span className={styles.dimensionsRatio}>{aspectRatioStr}</span>
-                  </div>
+                  {/* Dimensions display above top-left - only for single element */}
+                  {selectedElements.length === 1 && (
+                    <div
+                      className={styles.elementDimensionsDisplay}
+                      style={{
+                        left: minX,
+                        top: minY - 28,
+                        transform: `scale(${dimsScale})`,
+                        transformOrigin: 'bottom left',
+                      }}
+                    >
+                      <span className={styles.dimensionsRatio}>{aspectRatioStr}</span>
+                    </div>
+                  )}
 
                   <div
                     className={styles.groupBoundingBox}
@@ -3478,6 +3518,14 @@ export default function ProjectCanvasPage() {
           </button>
         </div>
       )}
+
+      {/* Pricing Modal */}
+      <PricingModal
+        open={pricingModalOpen}
+        onClose={() => setPricingModalOpen(false)}
+        theme={theme}
+        userEmail={user?.email || undefined}
+      />
     </div>
   );
 }

@@ -15,9 +15,12 @@ import { useProjectsContext } from '@/contexts';
 // Constants
 import { getNavItemsForRoute, PROJECTS_PER_PAGE } from '@/lib/constants';
 
+// Services
+import { getUserPlan } from '@/lib/services/userService';
+
 // Components
 import { Sidebar } from '@/components/layout';
-import { LoadingSpinner, AnimatedBorder } from '@/components/ui';
+import { LoadingSpinner, AnimatedBorder, PricingModal } from '@/components/ui';
 import { ProjectCard } from '@/components/projects';
 
 // Lazy load modals to reduce TBT
@@ -27,6 +30,10 @@ const ProjectNameModal = dynamic(
 );
 const ProjectActionModal = dynamic(
     () => import('@/components/modals/ProjectActionModal'),
+    { ssr: false }
+);
+const ProfileModal = dynamic(
+    () => import('@/components/modals/ProfileModal'),
     { ssr: false }
 );
 
@@ -73,6 +80,8 @@ export default function ProjectsPage() {
     });
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null);
+    const [pricingModalOpen, setPricingModalOpen] = useState(false);
+    const [profileModalOpen, setProfileModalOpen] = useState(false);
     const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
     const [editingProjectName, setEditingProjectName] = useState('');
 
@@ -303,6 +312,8 @@ export default function ProjectsPage() {
                 onThemeToggle={handleThemeToggle}
                 onSignOut={handleSignOut}
                 onCloseSidebar={closeSidebar}
+                onUpgradeClick={() => setPricingModalOpen(true)}
+                onProfileClick={() => setProfileModalOpen(true)}
             />
 
             {/* Main Content */}
@@ -519,6 +530,8 @@ export default function ProjectsPage() {
                 onClose={() => setIsModalOpen(false)}
                 onCreateProject={handleCreateProject}
                 theme={theme}
+                isPaidUser={getUserPlan(userData).type !== 'free'}
+                onUpgradeClick={() => setPricingModalOpen(true)}
             />
 
             <ProjectNameModal
@@ -529,6 +542,8 @@ export default function ProjectsPage() {
                 initialName={editProjectModal.projectName}
                 initialIsPublic={editProjectModal.isPublic}
                 theme={theme}
+                isPaidUser={getUserPlan(userData).type !== 'free'}
+                onUpgradeClick={() => setPricingModalOpen(true)}
             />
 
             <ProjectActionModal
@@ -538,6 +553,23 @@ export default function ProjectsPage() {
                 type={projectActionModal.type}
                 projectName={projectActionModal.projectName}
                 theme={theme}
+            />
+
+            {/* Pricing Modal */}
+            <PricingModal
+                open={pricingModalOpen}
+                onClose={() => setPricingModalOpen(false)}
+                theme={theme}
+                userEmail={user?.email || undefined}
+            />
+
+            <ProfileModal
+                open={profileModalOpen}
+                onClose={() => setProfileModalOpen(false)}
+                user={user}
+                userData={userData}
+                theme={theme}
+                onUpgradeClick={() => setPricingModalOpen(true)}
             />
 
             {/* Mobile Floating Action Button */}

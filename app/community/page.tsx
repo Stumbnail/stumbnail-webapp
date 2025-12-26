@@ -19,7 +19,7 @@ import { getNavItemsForRoute } from '@/lib/constants';
 
 // Components
 import { Sidebar } from '@/components/layout';
-import { LoadingSpinner } from '@/components/ui';
+import { LoadingSpinner, PricingModal } from '@/components/ui';
 
 // Styles
 import styles from './community.module.css';
@@ -44,6 +44,7 @@ export default function CommunityPage() {
 
     // UI state
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [pricingModalOpen, setPricingModalOpen] = useState(false);
     const [selectedThumbnail, setSelectedThumbnail] = useState<CommunityFeedThumbnail | null>(null);
     const [thumbnails, setThumbnails] = useState<CommunityFeedThumbnail[]>([]);
     const [sortBy, setSortBy] = useState<'recent' | 'trending' | 'popular'>('recent');
@@ -184,6 +185,7 @@ export default function CommunityPage() {
                 onThemeToggle={handleThemeToggle}
                 onSignOut={handleSignOut}
                 onCloseSidebar={closeSidebar}
+                onUpgradeClick={() => setPricingModalOpen(true)}
             />
 
             {/* Main Content */}
@@ -361,6 +363,14 @@ export default function CommunityPage() {
                     </div>
                 </div>
             )}
+
+            {/* Pricing Modal */}
+            <PricingModal
+                open={pricingModalOpen}
+                onClose={() => setPricingModalOpen(false)}
+                theme={theme}
+                userEmail={user?.email || undefined}
+            />
         </div>
     );
 }
