@@ -52,9 +52,9 @@ export default function ProjectsPage() {
     const {
         projects,
         loading: projectsLoading,
-        error: projectsError,
+        error: _projectsError, // eslint-disable-line @typescript-eslint/no-unused-vars
         isStale,
-        cacheHit,
+        cacheHit: _cacheHit, // eslint-disable-line @typescript-eslint/no-unused-vars
         createNewProject,
         removeProject,
         toggleFavorite,

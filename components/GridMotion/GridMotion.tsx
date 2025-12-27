@@ -30,7 +30,8 @@ const GridMotion = ({ items = [], gradientColor = 'black' }: GridMotionProps) =>
 
   // Shuffle on client mount only
   useEffect(() => {
-    const itemsToShuffle = items.length > 0 ? [...items] : defaultItems;
+    const localDefaultItems = Array.from({ length: totalItems }, (_, index) => `Item ${index + 1}`);
+    const itemsToShuffle = items.length > 0 ? [...items] : localDefaultItems;
     const result = [];
 
     // Create multiple shuffled copies to fill 28 items with better distribution
@@ -49,7 +50,7 @@ const GridMotion = ({ items = [], gradientColor = 'black' }: GridMotionProps) =>
     }
 
     setCombinedItems(result.slice(0, totalItems));
-  }, []); // Empty deps - only run once on mount
+  }, [items, totalItems]); // Include items in deps - will only re-shuffle if items prop changes
 
   // Lazy load GSAP and start animation
   useEffect(() => {

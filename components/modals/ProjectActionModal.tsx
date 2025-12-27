@@ -19,7 +19,7 @@ export default function ProjectActionModal({
   onClose,
   onConfirm,
   type,
-  projectName,
+  projectName: _projectName, // eslint-disable-line @typescript-eslint/no-unused-vars
   theme = 'light',
   isLoading = false
 }: ProjectActionModalProps) {

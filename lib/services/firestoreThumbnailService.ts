@@ -10,7 +10,7 @@
  */
 
 import { getFirestore } from '@/lib/firebase';
-import type { Timestamp } from 'firebase/firestore';
+import type { Timestamp, DocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 // ═══════════════════════════════════════════════════════
 // TYPES
@@ -360,8 +360,8 @@ export async function batchUpdateThumbnailPositions(
  */
 export async function getCommunityThumbnails(
   limitCount: number = 24,
-  lastSnapshot?: any
-): Promise<{ thumbnails: CommunityThumbnail[]; lastSnapshot: any }> {
+  lastSnapshot?: DocumentSnapshot<DocumentData>
+): Promise<{ thumbnails: CommunityThumbnail[]; lastSnapshot: DocumentSnapshot<DocumentData> | null }> {
   try {
     const { collectionGroup, query, where, orderBy, limit, getDocs, startAfter } = await import('firebase/firestore');
     const db = await getFirestore();
@@ -411,9 +411,9 @@ export async function getCommunityThumbnails(
  * SECURITY: Backend or Security Rules must validate this
  */
 export async function toggleThumbnailLike(
-  projectId: string, // We need projectId to construct the path
-  thumbnailId: string,
-  userId: string
+  _projectId: string, // We need projectId to construct the path
+  _thumbnailId: string,
+  _userId: string
 ): Promise<void> {
   // This is best handled by a backend Callable Function to ensure atomicity 
   // and data integrity (incrementing count AND adding to array safely).

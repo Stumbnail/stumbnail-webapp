@@ -7,7 +7,6 @@ import dynamic from 'next/dynamic';
 
 // Types
 import {
-  Project,
   EditProjectModalState,
   ProjectActionModalState
 } from '@/types';
@@ -57,12 +56,12 @@ export default function DashboardPage() {
   const { userData } = useUserData(user);
   const { theme, setTheme } = useTheme({ userId: user?.uid });
   const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
-  const { templates, loading: templatesLoading } = useTemplates();
+  const { templates, loading: _templatesLoading } = useTemplates(); // eslint-disable-line @typescript-eslint/no-unused-vars
   const {
     projects,
-    loading: projectsLoading,
+    loading: _projectsLoading, // eslint-disable-line @typescript-eslint/no-unused-vars
     isStale,
-    cacheHit,
+    cacheHit: _cacheHit, // eslint-disable-line @typescript-eslint/no-unused-vars
     createNewProject,
     removeProject,
     toggleFavorite,
