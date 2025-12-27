@@ -100,6 +100,24 @@ interface ResizeState {
   elementStarts: { id: string; x: number; y: number; width: number; height: number }[];
 }
 
+// Category chips for optional generation hints
+const CATEGORY_OPTIONS = [
+  { id: 'gaming', label: 'Gaming' },
+  { id: 'tech', label: 'Tech' },
+  { id: 'vlog', label: 'Vlog' },
+  { id: 'reaction', label: 'Reaction' },
+  { id: 'comedy', label: 'Comedy' },
+  { id: 'educational', label: 'Educational' },
+];
+
+// Tone chips for optional generation hints
+const TONE_OPTIONS = [
+  { id: 'intense', label: 'Intense' },
+  { id: 'calm', label: 'Calm' },
+  { id: 'professional', label: 'Pro' },
+  { id: 'fun', label: 'Fun' },
+];
+
 // Helper component for individual canvas elements to handle loading state independently
 const CanvasItem = ({
   element,
@@ -317,6 +335,12 @@ export default function ProjectCanvasPage() {
   const [promptModel, setPromptModel] = useState<Model | null>(DEFAULT_MODEL);
   const [thumbnailCount, setThumbnailCount] = useState(1);
   const [attachedImages, setAttachedImages] = useState<{ id: string; file: File; preview: string }[]>([]);
+
+  // Optional generation hints (for intelligence layer)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTone, setSelectedTone] = useState<string | null>(null);
+  const [customCategory, setCustomCategory] = useState('');
+  const [customTone, setCustomTone] = useState('');
 
   // Modify prompt state - stores prompts per element ID
   const [elementPrompts, setElementPrompts] = useState<Record<string, string>>({});
@@ -1051,6 +1075,13 @@ export default function ProjectCanvasPage() {
           ...(promptModel?.options?.resolutions && resolution && { resolution }),
           ...(promptModel?.options?.sizes && size && { size }),
           ...(promptModel?.options?.megapixels && megapixels && { resolution: megapixels }), // Flux uses resolution field for MP
+          // Optional hints for intelligence layer
+          ...(selectedCategory && {
+            category: selectedCategory === 'custom' ? customCategory.trim() : selectedCategory
+          }),
+          ...(selectedTone && {
+            tone: selectedTone === 'custom' ? customTone.trim() : selectedTone
+          }),
         };
 
         // Add reference images if available (respect model limit)
@@ -2680,6 +2711,120 @@ export default function ProjectCanvasPage() {
                 </div>
               </div>
             )}
+
+            {/* Optional Category & Tone Hints */}
+            <div className={styles.optionalHintsSection}>
+              <span className={styles.optionalHintsLabel}>Category (optional)</span>
+              <div
+                className={styles.chipsContainer}
+                onMouseDown={(e) => {
+                  const container = e.currentTarget;
+                  const startX = e.pageX - container.offsetLeft;
+                  const scrollLeft = container.scrollLeft;
+                  const onMouseMove = (e: MouseEvent) => {
+                    const x = e.pageX - container.offsetLeft;
+                    container.scrollLeft = scrollLeft - (x - startX);
+                  };
+                  const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                  };
+                  document.addEventListener('mousemove', onMouseMove);
+                  document.addEventListener('mouseup', onMouseUp);
+                }}
+              >
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <button
+                    key={cat.id}
+                    className={`${styles.hintChip} ${selectedCategory === cat.id ? styles.hintChipActive : ''}`}
+                    onClick={() => {
+                      setSelectedCategory(prev => prev === cat.id ? null : cat.id);
+                      if (selectedCategory !== cat.id) setCustomCategory('');
+                    }}
+                    type="button"
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+                <button
+                  className={`${styles.hintChip} ${selectedCategory === 'custom' ? styles.hintChipActive : ''}`}
+                  onClick={() => setSelectedCategory(prev => prev === 'custom' ? null : 'custom')}
+                  type="button"
+                >
+                  Custom
+                </button>
+              </div>
+              {selectedCategory === 'custom' && (
+                <div className={styles.customHintInputWrapper}>
+                  <input
+                    type="text"
+                    className={`${styles.customHintInput} ${customCategory.trim() ? styles.customHintInputFilled : ''}`}
+                    placeholder="e.g. Fitness, Music, ASMR..."
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
+                    maxLength={50}
+                  />
+                  {customCategory.trim() && (
+                    <span className={styles.customHintCheck}>✓</span>
+                  )}
+                </div>
+              )}
+              <span className={styles.optionalHintsLabel}>Tone (optional)</span>
+              <div
+                className={styles.chipsContainer}
+                onMouseDown={(e) => {
+                  const container = e.currentTarget;
+                  const startX = e.pageX - container.offsetLeft;
+                  const scrollLeft = container.scrollLeft;
+                  const onMouseMove = (e: MouseEvent) => {
+                    const x = e.pageX - container.offsetLeft;
+                    container.scrollLeft = scrollLeft - (x - startX);
+                  };
+                  const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                  };
+                  document.addEventListener('mousemove', onMouseMove);
+                  document.addEventListener('mouseup', onMouseUp);
+                }}
+              >
+                {TONE_OPTIONS.map((tone) => (
+                  <button
+                    key={tone.id}
+                    className={`${styles.hintChip} ${selectedTone === tone.id ? styles.hintChipActive : ''}`}
+                    onClick={() => {
+                      setSelectedTone(prev => prev === tone.id ? null : tone.id);
+                      if (selectedTone !== tone.id) setCustomTone('');
+                    }}
+                    type="button"
+                  >
+                    {tone.label}
+                  </button>
+                ))}
+                <button
+                  className={`${styles.hintChip} ${selectedTone === 'custom' ? styles.hintChipActive : ''}`}
+                  onClick={() => setSelectedTone(prev => prev === 'custom' ? null : 'custom')}
+                  type="button"
+                >
+                  Custom
+                </button>
+              </div>
+              {selectedTone === 'custom' && (
+                <div className={styles.customHintInputWrapper}>
+                  <input
+                    type="text"
+                    className={`${styles.customHintInput} ${customTone.trim() ? styles.customHintInputFilled : ''}`}
+                    placeholder="e.g. Mysterious, Exciting, Cozy..."
+                    value={customTone}
+                    onChange={(e) => setCustomTone(e.target.value.slice(0, 50))}
+                    maxLength={50}
+                  />
+                  {customTone.trim() && (
+                    <span className={styles.customHintCheck}>✓</span>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Thumbnail Count Selector */}
             <div className={styles.thumbnailCountSection}>

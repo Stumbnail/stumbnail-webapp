@@ -60,13 +60,35 @@
   width: 340px;
   height: 100vh;
   background-color: #f8f8f8;
-  padding: 20px;
+  padding: 20px 4px;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   z-index: 10;
-  overflow-y: auto;
+  overflow-y: overlay;
+  overflow-x: hidden;
   border-right: 1px solid #e5e5e5;
+  /* Thin scrollbar for Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+/* Thin scrollbar for webkit browsers */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .sidebarHeader {
@@ -353,7 +375,7 @@
   border: 1px solid #d5d5d5;
   border-radius: 24px;
   padding: 0;
-  width: 310px;
+  width: 100%;
   height: 240px;
   display: flex;
   flex-direction: column;
@@ -480,7 +502,7 @@
   border: 1px solid #e5e5e5;
   border-radius: 24px;
   padding: 0;
-  width: 310px;
+  width: 100%;
   height: 279px;
   display: flex;
   flex-direction: column;
@@ -791,6 +813,114 @@
 .countButtonActive:hover {
   background-color: #e85a4d;
   border-color: #e85a4d;
+}
+
+/* Optional Hints Section (Category & Tone Chips) */
+.optionalHintsSection {
+  width: 100%;
+  padding: 12px 0;
+}
+
+.optionalHintsLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.optionalHintsLabel+.chipsContainer {
+  margin-bottom: 12px;
+}
+
+.chipsContainer {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  cursor: grab;
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chipsContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.hintChip {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 16px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  color: #555;
+}
+
+.hintChip:hover {
+  border-color: #ff6f61;
+  color: #ff6f61;
+}
+
+.hintChipActive {
+  background: #ff6f61;
+  border-color: #ff6f61;
+  color: white;
+}
+
+.hintChipActive:hover {
+  background: #e85a4d;
+  border-color: #e85a4d;
+}
+
+.customHintInputWrapper {
+  position: relative;
+  margin-top: 8px;
+}
+
+.customHintInput {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  background: #f5f5f5;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  color: #333;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.customHintInput:focus {
+  border-color: #ff6f61;
+}
+
+.customHintInputFilled {
+  border-color: #4CAF50;
+}
+
+.customHintInputFilled:focus {
+  border-color: #4CAF50;
+}
+
+.customHintInput::placeholder {
+  color: #999;
+}
+
+.customHintCheck {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #4CAF50;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 /* Image Mode Hint */
@@ -1945,6 +2075,46 @@
 
 .darkTheme .thumbnailCountValue {
   color: #ffffff;
+}
+
+/* Dark theme - Optional Hints */
+.darkTheme .optionalHintsLabel {
+  color: #999;
+}
+
+.darkTheme .chipsContainer::-webkit-scrollbar-thumb {
+  background: #444;
+}
+
+.darkTheme .hintChip {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.darkTheme .hintChip:hover {
+  border-color: #ff6f61;
+  color: #ff6f61;
+}
+
+.darkTheme .hintChipActive {
+  background: #ff6f61;
+  border-color: #ff6f61;
+  color: white;
+}
+
+.darkTheme .customHintInput {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.darkTheme .customHintInput::placeholder {
+  color: #666;
+}
+
+.darkTheme .customHintInputFilled {
+  border-color: #4CAF50;
 }
 
 /* Dark theme - Attached Images */

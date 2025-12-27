@@ -263,6 +263,9 @@ export interface GenerateThumbnailRequest {
     safetyTolerance?: number;
     safetyFilterLevel?: string;
     seed?: number;
+    // Optional hints for intelligence layer
+    category?: string;  // gaming, tech, vlog, etc.
+    tone?: string;      // intense, calm, professional, fun
 }
 
 export interface UploadThumbnailRequest {
