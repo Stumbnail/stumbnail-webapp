@@ -49,7 +49,7 @@ type ToolMode = 'select' | 'hand';
 
 interface CanvasElement {
   id: string;
-  type: 'image' | 'youtube-thumbnail' | 'generated' | 'uploaded';
+  type: 'image' | 'youtube-thumbnail' | 'generated' | 'uploaded' | 'smart-merge' | 'edit';
   src: string;
   x: number;
   y: number;
@@ -975,9 +975,9 @@ export default function ProjectCanvasPage() {
     // Only Nano Banana Pro - resolution affects credits
     if (model.id === 'nano-banana-pro' || model.baseModel === 'nano-banana-pro') {
       const r = res || model.defaultResolution || '2K';
-      if (r === '4K') return 38;
-      // 1K and 2K both cost 19 credits
-      return 19;
+      if (r === '4K') return 75;
+      // 1K and 2K both cost 37 credits
+      return 37;
     }
 
     // All other models have fixed credits
@@ -1147,6 +1147,47 @@ export default function ProjectCanvasPage() {
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !projectId) return;
+
+    // File upload restrictions
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+    const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total per batch
+    const MAX_FILES = 20; // Max files per batch
+
+    // Validate number of files
+    if (files.length > MAX_FILES) {
+      setToast({ message: `Maximum ${MAX_FILES} files allowed per upload`, type: 'error' });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Validate file sizes
+    let totalSize = 0;
+    const oversizedFiles: string[] = [];
+
+    for (const file of Array.from(files)) {
+      totalSize += file.size;
+      if (file.size > MAX_FILE_SIZE) {
+        oversizedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      }
+    }
+
+    if (oversizedFiles.length > 0) {
+      setToast({
+        message: `File(s) too large (max 10MB each): ${oversizedFiles.slice(0, 2).join(', ')}${oversizedFiles.length > 2 ? '...' : ''}`,
+        type: 'error'
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (totalSize > MAX_TOTAL_SIZE) {
+      setToast({
+        message: `Total upload size too large (${(totalSize / 1024 / 1024).toFixed(1)}MB, max 50MB)`,
+        type: 'error'
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     // Use a local copy of elements to track position for concurrent uploads
     const runningElements = [...canvasElements];
@@ -2363,6 +2404,16 @@ export default function ProjectCanvasPage() {
         onChange={(e) => {
           const files = e.target.files;
           if (!files || !activeModifyElementId) return;
+
+          // File size validation (max 10MB per file)
+          const MAX_REF_FILE_SIZE = 10 * 1024 * 1024;
+          const oversizedFiles = Array.from(files).filter(f => f.size > MAX_REF_FILE_SIZE);
+          if (oversizedFiles.length > 0) {
+            setToast({ message: 'Reference images must be under 10MB each', type: 'error' });
+            if (modifyImageInputRef.current) modifyImageInputRef.current.value = '';
+            return;
+          }
+
           const newImages = Array.from(files).map(file => ({
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             file,
@@ -2502,6 +2553,16 @@ export default function ProjectCanvasPage() {
                     onChange={(e) => {
                       const files = e.target.files;
                       if (!files) return;
+
+                      // File size validation (max 10MB per file)
+                      const MAX_REF_FILE_SIZE = 10 * 1024 * 1024;
+                      const oversizedFiles = Array.from(files).filter(f => f.size > MAX_REF_FILE_SIZE);
+                      if (oversizedFiles.length > 0) {
+                        setToast({ message: 'Reference images must be under 10MB each', type: 'error' });
+                        if (promptImageInputRef.current) promptImageInputRef.current.value = '';
+                        return;
+                      }
+
                       const newImages = Array.from(files).map(file => ({
                         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         file,
@@ -2637,6 +2698,20 @@ export default function ProjectCanvasPage() {
             </div>
           </div>
         )}
+
+        {/* Sidebar Bottom Stats */}
+        <div className={styles.sidebarBottomStats}>
+          <span className={styles.sidebarStatItem}>
+            {canvasElements.filter(el =>
+              (el.type === 'generated' || el.type === 'smart-merge' || el.type === 'edit') &&
+              el.status === 'complete'
+            ).length} generated
+          </span>
+          <span className={styles.sidebarStatDot}>•</span>
+          <span className={styles.sidebarStatItem}>
+            {canvasElements.filter(el => el.type === 'image' || el.type === 'youtube-thumbnail').length} uploaded
+          </span>
+        </div>
       </aside>
 
       {/* Main Canvas Area */}
@@ -3216,7 +3291,7 @@ export default function ProjectCanvasPage() {
                                 <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
                                 <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
                               </svg>
-                              {smartMergeModel === 'nano-banana' ? 10 : 19}
+                              {smartMergeModel === 'nano-banana' ? 10 : 37}
                             </div>
                           </>
                         )}

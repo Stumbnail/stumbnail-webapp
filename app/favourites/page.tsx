@@ -189,9 +189,20 @@ export default function FavouritesPage() {
         setProjectMenuOpen(null);
     }, [projects]);
 
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const handleProjectActionConfirm = useCallback(async () => {
         if (projectActionModal.projectId === null) return;
-        await removeProject(projectActionModal.projectId);
+        setIsDeleting(true);
+        try {
+            const success = await removeProject(projectActionModal.projectId);
+            if (!success) {
+                alert('Failed to delete project. Please check if the backend server is running correctly.');
+                return;
+            }
+        } finally {
+            setIsDeleting(false);
+        }
         setProjectActionModal({
             isOpen: false,
             type: 'delete',
@@ -349,6 +360,7 @@ export default function FavouritesPage() {
                 type="delete"
                 projectName={projectActionModal.projectName}
                 theme={theme}
+                isLoading={isDeleting}
             />
 
             {/* Pricing Modal */}

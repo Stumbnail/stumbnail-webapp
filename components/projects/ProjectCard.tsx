@@ -186,6 +186,16 @@ export default function ProjectCard({
                     </div>
                     <div className={styles.projectMeta}>
                         <span className={styles.projectDate}>{formatRelativeTime(project.createdAt)}</span>
+                        {project.thumbnailsCount > 0 && (
+                            <span className={styles.projectStats}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                                    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                                    <path d="M3 16L8 11L11 14L16 9L21 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                {project.thumbnailsCount}
+                            </span>
+                        )}
                         <span className={styles.projectVisibility}>
                             {project.privacy === 'public' ? (
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

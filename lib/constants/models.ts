@@ -7,10 +7,10 @@ export const EXTENDED_ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5',
 // Default model for thumbnail generation
 export const DEFAULT_MODEL: Model = {
     id: 'nano-banana-pro',
-    name: 'Nano Banana',
+    name: 'Nano Banana Pro',
     description: '2K and 4K resolution output with text placement',
     featureTag: 'Text Placement',
-    credits: 19,  // Base credits (2K), 4K is 38
+    credits: 37,  // Base credits (1K/2K), 4K is 75
     logo: '/assets/dashboard/icons/nano-banana-model.webp',
     maxImages: 14,
     hasResolutionOptions: true,

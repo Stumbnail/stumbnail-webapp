@@ -122,7 +122,7 @@ export async function subscribeToUserProjects(
     const q = query(
       projectsRef,
       where('ownerId', '==', userId),
-      orderBy('updatedAt', 'desc')
+      orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(

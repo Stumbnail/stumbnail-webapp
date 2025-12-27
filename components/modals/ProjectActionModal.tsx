@@ -11,6 +11,7 @@ interface ProjectActionModalProps {
   type: 'delete' | 'duplicate';
   projectName: string;
   theme?: 'light' | 'dark';
+  isLoading?: boolean;
 }
 
 export default function ProjectActionModal({
@@ -19,7 +20,8 @@ export default function ProjectActionModal({
   onConfirm,
   type,
   projectName,
-  theme = 'light'
+  theme = 'light',
+  isLoading = false
 }: ProjectActionModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -77,6 +79,16 @@ export default function ProjectActionModal({
   };
 
   const getConfirmText = () => {
+    if (isLoading) {
+      return (
+        <span className={styles.loadingText}>
+          <svg className={styles.spinner} width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31.4 31.4" strokeLinecap="round" opacity="0.5" />
+          </svg>
+          {type === 'delete' ? 'Deleting...' : 'Duplicating...'}
+        </span>
+      );
+    }
     switch (type) {
       case 'delete':
         return 'Yes';
@@ -94,7 +106,7 @@ export default function ProjectActionModal({
           aria-label="Close modal"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
 
@@ -112,8 +124,9 @@ export default function ProjectActionModal({
           </AnimatedBorder>
           <AnimatedBorder radius={14} borderWidth={1.5} gap={2} borderColor="#ff6f61" fullWidth>
             <button
-              className={styles.confirmButton}
+              className={`${styles.confirmButton} ${isLoading ? styles.loading : ''}`}
               onClick={onConfirm}
+              disabled={isLoading}
             >
               {getConfirmText()}
             </button>

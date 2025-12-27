@@ -470,6 +470,7 @@
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1062,6 +1063,24 @@
 .projectVisibility svg {
   width: 14px;
   height: 14px;
+  flex-shrink: 0;
+}
+
+/* Project Stats (thumbnail count) */
+.projectStats {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: #a3a3a3;
+  line-height: 1.2;
+}
+
+.projectStats svg {
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
 }
 

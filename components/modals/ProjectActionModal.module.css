@@ -162,9 +162,35 @@
 }
 
 .confirmButton:disabled {
-  opacity: 0.5;
+  opacity: 0.8;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.confirmButton.loading {
+  opacity: 1;
+}
+
+/* Loading State */
+.loadingText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive Design */

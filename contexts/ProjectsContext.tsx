@@ -55,8 +55,30 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
     // Subscribe to Firestore projects (real-time with caching)
     const { projects: firestoreProjects, loading, error, isStale, cacheHit } = useProjectsFirestore(user);
 
-    // Use Firestore projects directly (now includes isFavorite)
-    const projects = firestoreProjects;
+    // Track optimistically deleted projects (for instant UI removal)
+    const [deletedProjectIds, setDeletedProjectIds] = React.useState<Set<string>>(new Set());
+
+    // Filter out optimistically deleted projects for instant UI feedback
+    const projects = useMemo(() =>
+        firestoreProjects.filter(p => !deletedProjectIds.has(p.id)),
+        [firestoreProjects, deletedProjectIds]
+    );
+
+    // Clean up deletedProjectIds when Firestore syncs (project actually removed)
+    React.useEffect(() => {
+        if (deletedProjectIds.size === 0) return;
+
+        const firestoreIds = new Set(firestoreProjects.map(p => p.id));
+        const idsToClean = [...deletedProjectIds].filter(id => !firestoreIds.has(id));
+
+        if (idsToClean.length > 0) {
+            setDeletedProjectIds(prev => {
+                const next = new Set(prev);
+                idsToClean.forEach(id => next.delete(id));
+                return next;
+            });
+        }
+    }, [firestoreProjects, deletedProjectIds]);
 
     const createNewProject = useCallback(async (
         name: string,
@@ -87,12 +109,20 @@ export function ProjectsProvider({ children }: ProjectsProviderProps) {
     }, []);
 
     const removeProject = useCallback(async (projectId: string): Promise<boolean> => {
+        // Optimistically remove from UI immediately
+        setDeletedProjectIds(prev => new Set(prev).add(projectId));
+
         try {
             // API call deletes the project from Firestore
-            // Real-time listener will automatically remove it from the UI
             await deleteProject(projectId);
             return true;
         } catch (err) {
+            // Rollback: restore the project in UI if deletion failed
+            setDeletedProjectIds(prev => {
+                const next = new Set(prev);
+                next.delete(projectId);
+                return next;
+            });
             const message = err instanceof Error ? err.message : 'Failed to delete project';
             console.error('Error deleting project:', err);
             return false;

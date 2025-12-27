@@ -244,13 +244,24 @@ export default function ProjectsPage() {
         setProjectMenuOpen(null);
     }, [projects]);
 
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const handleProjectActionConfirm = useCallback(async () => {
         if (projectActionModal.projectId === null) return;
 
         const projectId = projectActionModal.projectId;
 
         if (projectActionModal.type === 'delete') {
-            await removeProject(projectId);
+            setIsDeleting(true);
+            try {
+                const success = await removeProject(projectId);
+                if (!success) {
+                    alert('Failed to delete project. Please check if the backend server is running correctly.');
+                    return;
+                }
+            } finally {
+                setIsDeleting(false);
+            }
         }
 
         setProjectActionModal({
@@ -553,6 +564,7 @@ export default function ProjectsPage() {
                 type={projectActionModal.type}
                 projectName={projectActionModal.projectName}
                 theme={theme}
+                isLoading={isDeleting}
             />
 
             {/* Pricing Modal */}
