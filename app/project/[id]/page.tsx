@@ -386,6 +386,9 @@ export default function ProjectCanvasPage() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string, type: 'error' | 'success' } | null>(null);
 
+  // Mobile sidebar state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(true);
+
   // Interaction State
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -1022,6 +1025,8 @@ export default function ProjectCanvasPage() {
 
     setIsGenerating(true);
     setGenerationError(null);
+    // Collapse sidebar on mobile when generation starts
+    setIsMobileSidebarOpen(false);
 
     // Create placeholder elements for each thumbnail being generated
     // Default thumbnail size: 1920x1080 (16:9 aspect ratio)
@@ -2463,8 +2468,25 @@ export default function ProjectCanvasPage() {
         aria-hidden="true"
       />
 
+      {/* Mobile Sidebar Toggle Button */}
+      <button
+        className={styles.mobileSidebarToggle}
+        onClick={() => setIsMobileSidebarOpen(prev => !prev)}
+        aria-label={isMobileSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+      >
+        {isMobileSidebarOpen ? (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+
       {/* Left Sidebar */}
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${isMobileSidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <button
             className={styles.backButton}

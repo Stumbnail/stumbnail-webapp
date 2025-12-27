@@ -9,6 +9,16 @@
   overflow: hidden;
 }
 
+/* Main Canvas Area */
+.canvas {
+  display: block !important;
+  flex: 1;
+  position: relative;
+  height: 100vh;
+  background-color: #fafafa;
+  overflow: hidden;
+}
+
 /* Loading State */
 .loadingContainer {
   display: flex;
@@ -3221,5 +3231,132 @@
   to {
     transform: translate(-50%, 0);
     opacity: 1;
+  }
+}
+
+/* Mobile Sidebar Toggle Button - Hidden on desktop */
+.mobileSidebarToggle {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  color: #333;
+}
+
+.mobileSidebarToggle:hover {
+  background: #f5f5f5;
+}
+
+.darkTheme .mobileSidebarToggle {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.darkTheme .mobileSidebarToggle:hover {
+  background: #333;
+}
+
+/* Mobile/Tablet Responsive Styles */
+@media (max-width: 1024px) {
+  .mobileSidebarToggle {
+    display: flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 99;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    width: 320px;
+    padding: 20px 12px;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar.sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .sidebarHeader {
+    padding-top: 50px;
+  }
+
+  /* Canvas takes full width on mobile when sidebar is collapsed */
+  .canvas {
+    flex: 1;
+    width: 100%;
+  }
+
+  /* Move tool palette below the sidebar toggle button */
+  .toolPalette {
+    top: 70px;
+  }
+}
+
+/* Phone specific tweaks */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100%;
+    padding: 16px 8px;
+  }
+
+  .mobileSidebarToggle {
+    top: 12px;
+    left: 12px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .sidebarHeader {
+    padding-top: 45px;
+  }
+
+  .projectTitle {
+    font-size: 18px;
+  }
+
+  .createOptions {
+    gap: 8px;
+  }
+
+  .createOption {
+    padding: 12px 8px;
+  }
+
+  .promptInputContainer,
+  .youtubeInputContainer {
+    height: 220px;
+  }
+
+  .optionalHintsSection {
+    padding: 8px 0;
+  }
+
+  .hintChip {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+
+  .thumbnailCountButtons {
+    gap: 6px;
+  }
+
+  .countButton {
+    width: 40px;
+    height: 40px;
   }
 }
