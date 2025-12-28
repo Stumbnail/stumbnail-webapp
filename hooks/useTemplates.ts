@@ -9,7 +9,7 @@ import { getTemplates, ApiTemplate } from '@/lib/services/templateService';
  */
 function transformTemplate(apiTemplate: ApiTemplate): Template {
     return {
-        id: typeof apiTemplate.id === 'string' ? parseInt(apiTemplate.id, 10) || 0 : apiTemplate.id as unknown as number,
+        id: apiTemplate.id,
         title: apiTemplate.title,
         description: apiTemplate.description || 'Generate instantly with AI',
         image: apiTemplate.imageURL,

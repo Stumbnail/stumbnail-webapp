@@ -1178,8 +1178,15 @@ export default function ProjectCanvasPage() {
       }
     }, 50);
 
-    // Get attached image URLs for reference
-    const imageInputs: string[] = attachedImages.map(img => img.preview);
+    // Convert attached images to base64 for backend (blob URLs are browser-local and can't be accessed by the server)
+    const imageInputs: string[] = await Promise.all(
+      attachedImages.map(img => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(img.file);
+      }))
+    );
 
     // Track success for prompt clearing
     let hasError = false;

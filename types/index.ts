@@ -34,12 +34,12 @@ export interface LegacyProject {
 
 // Template types
 export interface Template {
-    id: number;
+    id: string;
     title: string;
     description: string;
     image: string;
     prompt?: string;
-    type?: 'prompt' | 'youtube_thumbnail';
+    type?: 'prompt' | 'prompt_based' | 'youtube_thumbnail';
     category?: string;
     tone?: string;
 }

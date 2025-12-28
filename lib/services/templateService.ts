@@ -16,7 +16,7 @@ export interface ApiTemplate {
     description?: string;
     category?: string;
     tone?: string;
-    type?: 'prompt' | 'youtube_thumbnail';
+    type?: 'prompt' | 'prompt_based' | 'youtube_thumbnail';
     createdAt?: string;
 }
 
