@@ -38,6 +38,10 @@ export interface Template {
     title: string;
     description: string;
     image: string;
+    prompt?: string;
+    type?: 'prompt' | 'youtube_thumbnail';
+    category?: string;
+    tone?: string;
 }
 
 // Style types

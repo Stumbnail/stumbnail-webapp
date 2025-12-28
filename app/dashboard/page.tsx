@@ -8,7 +8,8 @@ import dynamic from 'next/dynamic';
 // Types
 import {
   EditProjectModalState,
-  ProjectActionModalState
+  ProjectActionModalState,
+  Template
 } from '@/types';
 
 // Hooks
@@ -166,9 +167,23 @@ export default function DashboardPage() {
     setCurrentPage(1);
   }, []);
 
-  const handleTemplateClick = useCallback((templateId: number) => {
-    console.log('Selected template:', templateId);
-  }, []);
+  const handleTemplateClick = useCallback(async (template: Template) => {
+    // Create a new untitled project
+    const newProject = await createNewProject('untitled', true);
+    if (!newProject) return;
+
+    // Store template data for project page to consume
+    sessionStorage.setItem(`template_${newProject.id}`, JSON.stringify({
+      type: template.type || 'prompt',
+      prompt: template.prompt || '',
+      imageURL: template.image,
+      category: template.category || null,
+      tone: template.tone || null,
+    }));
+
+    // Navigate to the new project
+    router.push(`/project/${newProject.id}`);
+  }, [createNewProject, router]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -435,13 +450,12 @@ export default function DashboardPage() {
                 <article
                   key={template.id}
                   className={styles.templateCard}
-                  onClick={() => handleTemplateClick(template.id)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      handleTemplateClick(template.id);
+                      handleTemplateClick(template);
                     }
                   }}
                   aria-label={`Use ${template.title} template`}
@@ -461,6 +475,18 @@ export default function DashboardPage() {
                     ) : (
                       <div className={styles.templatePlaceholder} />
                     )}
+                    {/* Hover overlay with action button */}
+                    <div className={styles.templateOverlay}>
+                      <button
+                        className={styles.templateActionButton}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTemplateClick(template);
+                        }}
+                      >
+                        Create from this
+                      </button>
+                    </div>
                   </div>
                   <h3 className={styles.templateTitle}>{template.title}</h3>
                   <p className={styles.templateDescription}>{template.description}</p>

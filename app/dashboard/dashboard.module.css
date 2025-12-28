@@ -1343,7 +1343,51 @@
 }
 
 .templateImage:hover img {
-  filter: brightness(0.95);
+  filter: brightness(0.85);
+}
+
+/* Template hover overlay */
+.templateOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 12px;
+}
+
+.templateCard:hover .templateOverlay {
+  opacity: 1;
+}
+
+.templateActionButton {
+  background: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #141414;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.templateActionButton:hover {
+  background: #ff6f61;
+  color: #ffffff;
+  transform: scale(1.02);
+}
+
+.templateActionButton:active {
+  transform: scale(0.98);
 }
 
 .templatePlaceholder {

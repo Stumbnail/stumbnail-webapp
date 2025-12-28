@@ -13,6 +13,10 @@ function transformTemplate(apiTemplate: ApiTemplate): Template {
         title: apiTemplate.title,
         description: apiTemplate.description || 'Generate instantly with AI',
         image: apiTemplate.imageURL,
+        prompt: apiTemplate.prompt,
+        type: apiTemplate.type,
+        category: apiTemplate.category,
+        tone: apiTemplate.tone,
     };
 }
 

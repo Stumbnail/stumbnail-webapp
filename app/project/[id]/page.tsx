@@ -267,6 +267,7 @@ export default function ProjectCanvasPage() {
   const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
   const promptImageInputRef = useRef<HTMLInputElement>(null);
   const hasPerformedInitialFit = useRef(false);
+  const pendingTemplateRef = useRef<{ type: string; prompt?: string; imageURL?: string; category?: string; tone?: string } | null>(null);
 
   // Resolution Constants
   const RESOLUTION_MAP: Record<string, number> = {
@@ -564,6 +565,43 @@ export default function ProjectCanvasPage() {
     }
   }, [isLoadingProject, canvasElements]);
 
+  // Handle template data from sessionStorage (when creating from a template)
+  // Prompt-based templates are handled immediately; YouTube templates stored in ref for later
+  useEffect(() => {
+    if (isLoadingProject || !projectId) return;
+
+    const templateKey = `template_${projectId}`;
+    const templateData = sessionStorage.getItem(templateKey);
+
+    if (!templateData) return;
+
+    // Clean up sessionStorage immediately
+    sessionStorage.removeItem(templateKey);
+
+    try {
+      const template = JSON.parse(templateData);
+      console.log('[Template] Loading template data:', template);
+
+      if (template.type === 'youtube_thumbnail' && template.imageURL) {
+        // Store for later processing once addElementAtViewportCenter is available
+        pendingTemplateRef.current = template;
+      } else {
+        // Prompt-based template: Preload prompt and options immediately
+        if (template.prompt) {
+          setPromptText(template.prompt);
+        }
+        if (template.category) {
+          setSelectedCategory(template.category);
+        }
+        if (template.tone) {
+          setSelectedTone(template.tone);
+        }
+      }
+    } catch (error) {
+      console.error('[Template] Failed to parse template data:', error);
+    }
+  }, [isLoadingProject, projectId]);
+
   // Handlers
   const handleBack = useCallback(() => {
     router.push('/dashboard');
@@ -854,6 +892,90 @@ export default function ProjectCanvasPage() {
 
     return newElementId;
   }, [screenToCanvas, findNonOverlappingPosition, viewport, animateViewportTo]);
+
+  // Process pending YouTube thumbnail template (after addElementAtViewportCenter is defined)
+  useEffect(() => {
+    const template = pendingTemplateRef.current;
+    if (!template || !template.imageURL || isLoadingProject) return;
+
+    // Clear the ref immediately to prevent re-processing
+    pendingTemplateRef.current = null;
+
+    console.log('[Template] Processing pending YouTube template:', template);
+
+    const extractVideoIdFromUrl = (url: string): string | null => {
+      // Try to extract from YouTube image URL
+      const ytImgMatch = url.match(/img\.youtube\.com\/vi\/([^/]+)/);
+      if (ytImgMatch) return ytImgMatch[1];
+
+      // Try standard YouTube URL patterns
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/
+      ];
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+      }
+      return null;
+    };
+
+    const videoId = extractVideoIdFromUrl(template.imageURL);
+    const thumbnailUrl = videoId
+      ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+      : template.imageURL;
+
+    // Load the YouTube thumbnail onto canvas
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = async () => {
+      if (!canvasContainerRef.current) return;
+
+      const newElementId = addElementAtViewportCenter(
+        thumbnailUrl,
+        'youtube-thumbnail',
+        img.naturalWidth,
+        img.naturalHeight,
+        'complete',
+        false
+      );
+
+      // Select the new element to show the edit panel
+      setSelectedElementIds([newElementId]);
+
+      // Persist to backend
+      if (projectId) {
+        try {
+          const maxDisplayWidth = 600;
+          const scale = Math.min(1, maxDisplayWidth / img.naturalWidth);
+
+          const response = await addThumbnail(projectId, {
+            thumbnailUrl,
+            type: 'youtube-thumbnail',
+            x: 0, // Position is calculated in addElementAtViewportCenter
+            y: 0,
+            width: img.naturalWidth * scale,
+            height: img.naturalHeight * scale,
+            naturalWidth: img.naturalWidth,
+            naturalHeight: img.naturalHeight,
+            youtubeVideoId: videoId || undefined
+          });
+
+          if (response.success && response.thumbnail) {
+            setCanvasElements(prev => prev.map(el =>
+              el.id === newElementId ? { ...el, id: response.thumbnail.id } : el
+            ));
+            setSelectedElementIds([response.thumbnail.id]);
+          }
+        } catch (error) {
+          console.error('Failed to save template thumbnail:', error);
+        }
+      }
+    };
+    img.onerror = () => {
+      console.error('Failed to load YouTube thumbnail from template');
+    };
+    img.src = thumbnailUrl;
+  }, [isLoadingProject, projectId, addElementAtViewportCenter]);
 
   const handleYoutubeLinkSubmit = useCallback(() => {
     if (!validateYoutubeLink(youtubeLink)) return;

@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import { ProjectsProvider } from '@/contexts';
+import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
 
 interface ProvidersProps {
     children: ReactNode;
@@ -10,7 +11,7 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
     return (
         <ProjectsProvider>
-            {children}
+            <AnalyticsProvider>{children}</AnalyticsProvider>
         </ProjectsProvider>
     );
 }

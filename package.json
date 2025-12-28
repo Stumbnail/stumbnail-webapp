@@ -19,6 +19,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.6.1",
     "firebase": "^10.14.1",
     "gsap": "^3.13.0",
     "lucide-react": "^0.555.0",

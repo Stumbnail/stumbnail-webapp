@@ -3,6 +3,7 @@
 
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import type { Analytics } from 'firebase/analytics';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -12,6 +13,7 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // Cached references to avoid re-importing
@@ -109,4 +111,53 @@ export async function getFirestore(): Promise<Firestore> {
   }
 
   return firestoreInitPromise;
+}
+
+// Cached reference for Analytics
+let analyticsInstance: Analytics | null = null;
+let analyticsInitPromise: Promise<Analytics | null> | null = null;
+
+/**
+ * Lazily initialize Firebase Analytics
+ * Only initializes in browser environment and if analytics is supported
+ */
+export async function getFirebaseAnalytics(): Promise<Analytics | null> {
+  if (typeof window === 'undefined') return null;
+  if (analyticsInstance) return analyticsInstance;
+
+  if (!analyticsInitPromise) {
+    analyticsInitPromise = (async () => {
+      try {
+        const { initializeApp, getApps, getApp } = await import('firebase/app');
+        const { getAnalytics, isSupported } = await import('firebase/analytics');
+
+        const supported = await isSupported();
+        if (!supported) return null;
+
+        const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+        analyticsInstance = getAnalytics(app);
+        return analyticsInstance;
+      } catch (error) {
+        console.warn('Firebase Analytics initialization failed:', error);
+        return null;
+      }
+    })();
+  }
+
+  return analyticsInitPromise;
+}
+
+/**
+ * Log a custom analytics event
+ */
+export async function logAnalyticsEvent(eventName: string, eventParams?: Record<string, unknown>): Promise<void> {
+  try {
+    const analytics = await getFirebaseAnalytics();
+    if (analytics) {
+      const { logEvent } = await import('firebase/analytics');
+      logEvent(analytics, eventName, eventParams);
+    }
+  } catch (error) {
+    console.warn('Failed to log analytics event:', error);
+  }
 }
