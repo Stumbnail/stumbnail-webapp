@@ -312,7 +312,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 12px;
+  padding: 14px 12px 14px 32px;
   border: none;
   background: transparent;
   font-family: var(--font-space-grotesk), sans-serif;
@@ -320,10 +320,11 @@
   font-weight: 400;
   color: #8d8d8d;
   cursor: pointer;
-  border-radius: 12px;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  border-radius: 0 12px 12px 0;
+  transition: background-color 0.15s ease, color 0.15s ease, filter 0.15s ease;
   text-align: left;
   position: relative;
+  margin-left: -20px;
   margin-right: 32px;
 }
 
@@ -334,30 +335,21 @@
   /* Gray filter for inactive nav items to ensure visibility */
   filter: brightness(0) saturate(100%) invert(55%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%);
   opacity: 1;
-  transition: opacity 0.15s ease;
+  transition: filter 0.15s ease;
 }
 
 .navItem:hover {
   background-color: rgba(255, 111, 97, 0.1);
   color: #ff6f61;
-  border-radius: 0 12px 12px 0;
-  margin-left: -20px;
-  padding-left: 32px;
-  margin-right: 32px;
 }
 
 .navItem:hover img {
   /* Darker coral filter for better visibility on hover - closer to #e85a4d */
   filter: brightness(0) saturate(100%) invert(45%) sepia(70%) saturate(1500%) hue-rotate(329deg) brightness(95%) contrast(105%);
-  opacity: 1;
 }
 
 .navItem:active {
   background-color: rgba(255, 111, 97, 0.15);
-  border-radius: 0 12px 12px 0;
-  margin-left: -20px;
-  padding-left: 32px;
-  margin-right: 32px;
 }
 
 .navItem:focus-visible {
@@ -368,10 +360,6 @@
 .navItemActive {
   background-color: #ff6f61;
   color: #ffffff;
-  border-radius: 0 12px 12px 0;
-  margin-left: -20px;
-  padding-left: 32px;
-  margin-right: 32px;
 }
 
 .navItemActive:hover {
@@ -388,7 +376,6 @@
 .navItemActive:active img {
   /* Keep icon white on active state (including hover/active) */
   filter: brightness(0) saturate(100%) invert(100%);
-  opacity: 1;
 }
 
 .navItemActive:focus-visible {
@@ -2790,27 +2777,15 @@
 .darkTheme .navItem:hover {
   background-color: rgba(255, 111, 97, 0.15);
   color: #ff6f61;
-  border-radius: 0 12px 12px 0;
-  margin-left: -20px;
-  padding-left: 32px;
-  margin-right: 32px;
 }
 
 .darkTheme .navItem:active {
   background-color: rgba(255, 111, 97, 0.2);
-  border-radius: 0 12px 12px 0;
-  margin-left: -20px;
-  padding-left: 32px;
-  margin-right: 32px;
 }
 
 .darkTheme .navItemActive {
   background-color: #ff6f61;
   color: #ffffff;
-  border-radius: 0 12px 12px 0;
-  margin-left: -20px;
-  padding-left: 32px;
-  margin-right: 32px;
 }
 
 .darkTheme .navItemActive:hover {
