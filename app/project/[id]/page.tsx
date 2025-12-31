@@ -42,6 +42,7 @@ import styles from './projectCanvas.module.css';
 // UI Components
 import { LoadingSpinner, AnimatedBorder, PricingModal } from '@/components/ui';
 import { ModelOptionsBar } from '@/components/generation';
+import { HighlightedPromptEditor } from '@/components/prompt';
 
 // Types
 type CreationMode = 'url' | 'prompt';
@@ -330,6 +331,7 @@ export default function ProjectCanvasPage() {
   const [youtubeLinkError, setYoutubeLinkError] = useState<string | null>(null);
   const [showUrlPopup, setShowUrlPopup] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
 
   // Prompt mode state
   const [promptText, setPromptText] = useState('');
@@ -590,11 +592,27 @@ export default function ProjectCanvasPage() {
         if (template.prompt) {
           setPromptText(template.prompt);
         }
+        // Handle category - check if it matches a preset or should be custom
         if (template.category) {
-          setSelectedCategory(template.category);
+          const categoryLower = template.category.toLowerCase();
+          const matchesPreset = CATEGORY_OPTIONS.some(opt => opt.id === categoryLower);
+          if (matchesPreset) {
+            setSelectedCategory(categoryLower);
+          } else {
+            setSelectedCategory('custom');
+            setCustomCategory(template.category);
+          }
         }
+        // Handle tone - check if it matches a preset or should be custom
         if (template.tone) {
-          setSelectedTone(template.tone);
+          const toneLower = template.tone.toLowerCase();
+          const matchesPreset = TONE_OPTIONS.some(opt => opt.id === toneLower);
+          if (matchesPreset) {
+            setSelectedTone(toneLower);
+          } else {
+            setSelectedTone('custom');
+            setCustomTone(template.tone);
+          }
         }
       }
     } catch (error) {
@@ -2709,11 +2727,25 @@ export default function ProjectCanvasPage() {
           <div className={styles.promptInputSection}>
             {/* Prompt Container */}
             <div className={styles.promptInputContainer}>
-              <textarea
+              {/* Expand Button */}
+              <button
+                className={styles.expandPromptButton}
+                onClick={() => setIsPromptModalOpen(true)}
+                title="Expand prompt editor"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 3H21V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M9 21H3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M21 3L14 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M3 21L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <HighlightedPromptEditor
                 value={promptText}
                 onChange={handlePromptChange}
                 placeholder="Describe your thumbnail"
                 className={styles.promptTextarea}
+                theme={theme}
                 rows={1}
               />
 
@@ -2865,7 +2897,7 @@ export default function ProjectCanvasPage() {
 
             {/* Optional Category & Tone Hints */}
             <div className={styles.optionalHintsSection}>
-              <span className={styles.optionalHintsLabel}>Category (optional)</span>
+              <span className={styles.optionalHintsLabel}>Category</span>
               <div
                 className={styles.chipsContainer}
                 onMouseDown={(e) => {
@@ -2920,7 +2952,7 @@ export default function ProjectCanvasPage() {
                   )}
                 </div>
               )}
-              <span className={styles.optionalHintsLabel}>Tone (optional)</span>
+              <span className={styles.optionalHintsLabel}>Tone</span>
               <div
                 className={styles.chipsContainer}
                 onMouseDown={(e) => {
@@ -3887,6 +3919,96 @@ export default function ProjectCanvasPage() {
               <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
+        </div>
+      )}
+
+      {/* Expandable Prompt Modal */}
+      {isPromptModalOpen && (
+        <div
+          className={styles.promptModalOverlay}
+          onClick={() => setIsPromptModalOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsPromptModalOpen(false);
+            }
+          }}
+        >
+          <div className={styles.promptModalContent} onClick={(e) => e.stopPropagation()}>
+            {/* Collapse Button */}
+            <button
+              className={styles.collapsePromptButton}
+              onClick={() => setIsPromptModalOpen(false)}
+              title="Collapse"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 14H10V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M20 10H14V4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M14 10L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M3 21L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {/* Full-screen Textarea with Highlighting */}
+            <HighlightedPromptEditor
+              value={promptText}
+              onChange={handlePromptChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setIsPromptModalOpen(false);
+                }
+              }}
+              placeholder="Describe your thumbnail in detail..."
+              className={styles.promptModalTextarea}
+              theme={theme}
+              autoFocus
+            />
+
+            {/* Footer with actions */}
+            <div className={styles.promptModalFooter}>
+              {/* Left side: Add Image & Model */}
+              <div className={styles.promptActionsLeft}>
+                <button
+                  className={styles.addButton}
+                  title="Add reference image"
+                  onClick={() => promptImageInputRef.current?.click()}
+                >
+                  <Image src="/assets/project/icons/add-image.svg" alt="" width={24} height={24} />
+                </button>
+                <div className={styles.promptDropdownWrapper}>
+                  <ModelDropdown
+                    selectedModel={promptModel}
+                    onSelectModel={setPromptModel}
+                    theme={theme}
+                    openUpward
+                    showLabel
+                    className={styles.ghostTrigger}
+                  />
+                </div>
+              </div>
+
+              {/* Right side: Credits & Submit */}
+              <div className={styles.promptActionsRight}>
+                <div className={styles.costDisplay} title="Cost in credits">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                    <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                  <span>{sidebarCredits}</span>
+                </div>
+                <button
+                  className={styles.submitButton}
+                  onClick={() => {
+                    handlePromptSubmit();
+                    setIsPromptModalOpen(false);
+                  }}
+                  disabled={!promptText.trim()}
+                  title="Generate Thumbnail"
+                >
+                  <Image src="/assets/project/icons/send-prompt.svg" alt="" width={20} height={20} />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
