@@ -38,10 +38,11 @@
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     color: #141414;
     z-index: 1;
-    /* Hide scrollbar but maintain scroll sync */
+    /* Hide scrollbar - must match textarea for identical text wrapping */
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
@@ -68,52 +69,40 @@
     color: transparent;
     caret-color: #141414;
     z-index: 2;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Hide scrollbar - must match overlay for identical text wrapping */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.textarea::-webkit-scrollbar {
+    display: none;
 }
 
 .textareaDark {
     caret-color: #f5f5f5;
 }
 
-/* Text selection styling for textarea - prevents glitches when selecting highlighted variables */
+/* Text selection styling for textarea - more opaque to properly cover overlay text */
 .textarea::selection {
-    background-color: rgba(255, 111, 97, 0.3);
-    color: transparent;
+    background-color: rgba(255, 111, 97, 0.85);
+    color: #ffffff;
 }
 
 .textarea::-moz-selection {
-    background-color: rgba(255, 111, 97, 0.3);
-    color: transparent;
+    background-color: rgba(255, 111, 97, 0.85);
+    color: #ffffff;
 }
 
 .textareaDark::selection {
-    background-color: rgba(255, 111, 97, 0.4);
-    color: transparent;
+    background-color: rgba(255, 111, 97, 0.85);
+    color: #ffffff;
 }
 
 .textareaDark::-moz-selection {
-    background-color: rgba(255, 111, 97, 0.4);
-    color: transparent;
-}
-
-/* Text selection styling for overlay text behind textarea */
-.overlay::selection,
-.overlay *::selection {
-    background-color: rgba(255, 111, 97, 0.3);
-}
-
-.overlay::-moz-selection,
-.overlay *::-moz-selection {
-    background-color: rgba(255, 111, 97, 0.3);
-}
-
-.overlayDark::selection,
-.overlayDark *::selection {
-    background-color: rgba(255, 111, 97, 0.4);
-}
-
-.overlayDark::-moz-selection,
-.overlayDark *::-moz-selection {
-    background-color: rgba(255, 111, 97, 0.4);
+    background-color: rgba(255, 111, 97, 0.85);
+    color: #ffffff;
 }
 
 /* Placeholder styling */

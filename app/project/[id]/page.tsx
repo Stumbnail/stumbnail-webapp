@@ -2019,6 +2019,12 @@ export default function ProjectCanvasPage() {
 
     // The wheel event handler - prevent browser zoom AND handle canvas zoom
     const handleWheelZoom = (e: WheelEvent) => {
+      // Skip wheel handling if event is inside a modal or any overlay
+      const target = e.target as HTMLElement;
+      if (target.closest('[class*="Modal"]') || target.closest('[class*="Overlay"]') || target.tagName === 'TEXTAREA') {
+        return; // Allow native scroll behavior in modals and textareas
+      }
+
       const isInCanvas = checkIsInCanvas(e);
 
       // Only act if mouse is over canvas

@@ -641,6 +641,7 @@
   flex: 1;
   min-height: 200px;
   padding: 0;
+  overflow-y: auto;
   /* Padding handled by editor component */
 }
 
