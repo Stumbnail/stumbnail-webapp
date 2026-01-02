@@ -9,6 +9,9 @@ import styles from './login.module.css';
 // Hooks
 import { useAuth } from '@/hooks';
 
+// Analytics
+import { trackLoginSuccess, trackSessionStart } from '@/lib/analytics';
+
 // UI Components
 import { LoadingSpinner } from '@/components/ui';
 
@@ -73,7 +76,15 @@ export default function LoginPage() {
     try {
       // Dynamically import Firebase only when user clicks sign in
       const { signInWithGoogle } = await import('@/lib/firebase');
-      await signInWithGoogle();
+      const signedInUser = await signInWithGoogle();
+
+      // Track successful login - check if user is new by metadata
+      const isNewUser = signedInUser.metadata.creationTime === signedInUser.metadata.lastSignInTime;
+      trackLoginSuccess(isNewUser);
+
+      // Track session start
+      trackSessionStart(isNewUser, 'free', document.referrer || 'direct');
+
       router.push('/dashboard');
     } catch (err) {
       const firebaseError = err as FirebaseError;

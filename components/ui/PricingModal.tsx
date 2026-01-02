@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Theme } from '@/types';
 import { redirectToCheckout, PlanType } from '@/lib/services/subscriptionService';
 import styles from './PricingModal.module.css';
+import { trackPricingModalOpen, trackPricingModalPlanClick } from '@/lib/analytics';
 
 // Icons
 function SparklesIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -129,19 +130,38 @@ interface PricingModalProps {
     onClose: () => void;
     theme: Theme;
     userEmail?: string;
+    source?: 'sidebar' | 'credits' | 'generate' | 'exhausted';
+    currentPlan?: 'free' | 'creator' | 'automation';
 }
 
-export default function PricingModal({ open, onClose, theme, userEmail }: PricingModalProps) {
+export default function PricingModal({
+    open,
+    onClose,
+    theme,
+    userEmail,
+    source = 'sidebar',
+    currentPlan = 'free'
+}: PricingModalProps) {
     const isDark = theme === 'dark';
     const [loadingPlan, setLoadingPlan] = useState<PlanType | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [selectedPlan, setSelectedPlan] = useState<'creator' | 'automation'>('creator');
+
+    // Track modal open
+    useEffect(() => {
+        if (open) {
+            trackPricingModalOpen(source, currentPlan);
+        }
+    }, [open, source, currentPlan]);
 
     const handleGetPlan = async (plan: PlanType) => {
         if (!userEmail) {
             setError('Please sign in to purchase a subscription');
             return;
         }
+
+        // Track plan click
+        trackPricingModalPlanClick(plan, currentPlan);
 
         setLoadingPlan(plan);
         setError(null);

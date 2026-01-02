@@ -30,6 +30,21 @@ import { addThumbnail, getProjectThumbnails, deleteThumbnail, updateThumbnail, u
 import { getProject, deleteProject } from '@/lib/services/projectService';
 import { calculateTotalCredits, getUserPlan } from '@/lib/services/userService';
 
+// Analytics
+import {
+  trackGenerationStart,
+  trackGenerationSuccess,
+  trackGenerationFailure,
+  trackAssetUpload,
+  trackCanvasExport,
+  trackCreditsExhausted,
+  trackPromptEditorOpen,
+  trackCategorySelect,
+  trackBatchCountChange,
+  trackVisibilityToggle,
+  trackErrorDisplayed
+} from '@/lib/analytics';
+
 // Lazy load dropdowns
 const ModelDropdown = dynamic(
   () => import('@/app/dashboard/ModelDropdown'),
@@ -691,7 +706,9 @@ export default function ProjectCanvasPage() {
       setPricingModalOpen(true);
       return;
     }
-    setIsPublic(prev => !prev);
+    const newVisibility = !isPublic;
+    setIsPublic(newVisibility);
+    trackVisibilityToggle(newVisibility ? 'public' : 'private', 'free');
   }, [isPublic, userData]);
 
   const handleModeSelect = useCallback((mode: CreationMode) => {
@@ -1228,6 +1245,16 @@ export default function ProjectCanvasPage() {
     // Collapse sidebar on mobile when generation starts
     setIsMobileSidebarOpen(false);
 
+    // Track generation start
+    const startTime = Date.now();
+    trackGenerationStart(
+      'prompt',
+      promptModel?.id || 'nano-banana-pro',
+      isPromptModalOpen ? 'expanded' : 'sidebar',
+      thumbnailCount,
+      'free' // TODO: Get actual user plan
+    );
+
     // Create placeholder elements for each thumbnail being generated
     // Default thumbnail size: 1920x1080 (16:9 aspect ratio)
     const defaultWidth = 1920;
@@ -1325,6 +1352,10 @@ export default function ProjectCanvasPage() {
         );
 
         if (result.success && result.result.image) {
+          // Track successful generation
+          const durationMs = Date.now() - startTime;
+          trackGenerationSuccess('prompt', promptModel?.id || 'nano-banana-pro', durationMs, 'free');
+
           // Update the element with the generated image
           setCanvasElements(prev => prev.map(el =>
             el.id === elementId
@@ -1345,6 +1376,7 @@ export default function ProjectCanvasPage() {
           // Remove failed placeholder element and clear from selection
           hasError = true;
           const errorMsg = !result.success ? result.error : 'Failed to generate thumbnail';
+          trackGenerationFailure('prompt', errorMsg, 'free');
           setCanvasElements(prev => prev.filter(el => el.id !== elementId));
           setSelectedElementIds(prev => prev.filter(id => id !== elementId));
           setToast({ message: errorMsg, type: 'error' });
@@ -1358,8 +1390,10 @@ export default function ProjectCanvasPage() {
 
       // Check for insufficient credits error and show pricing modal
       if (errorMessage.toLowerCase().includes('insufficient credits')) {
+        trackCreditsExhausted('free', 'generation');
         setPricingModalOpen(true);
       } else {
+        trackGenerationFailure('prompt', errorMessage, 'free');
         setToast({ message: errorMessage, type: 'error' });
       }
 
@@ -1379,6 +1413,7 @@ export default function ProjectCanvasPage() {
 
   const handleThumbnailCountChange = useCallback((count: number) => {
     setThumbnailCount(count);
+    trackBatchCountChange(count, 'free');
   }, []);
 
   const handleCreateNewStyle = useCallback(() => {
@@ -1390,6 +1425,9 @@ export default function ProjectCanvasPage() {
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0 || !projectId) return;
+
+    // Track asset upload
+    trackAssetUpload('image');
 
     // File upload restrictions
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
@@ -2796,7 +2834,10 @@ export default function ProjectCanvasPage() {
               {/* Expand Button */}
               <button
                 className={styles.expandPromptButton}
-                onClick={() => setIsPromptModalOpen(true)}
+                onClick={() => {
+                  setIsPromptModalOpen(true);
+                  trackPromptEditorOpen('expanded');
+                }}
                 title="Expand prompt editor"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -3204,8 +3245,9 @@ export default function ProjectCanvasPage() {
 
                       console.log('Download triggered for:', filename);
 
-                      // Track download
+                      // Track download and export
                       trackThumbnailDownload(projectId, element.id).catch(console.error);
+                      trackCanvasExport('png', 'original', 'free');
 
                       // Small delay between downloads
                       if (i < selectedElements.length - 1) {

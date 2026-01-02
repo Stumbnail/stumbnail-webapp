@@ -27,6 +27,9 @@ import {
 // Services
 import { getUserPlan } from '@/lib/services/userService';
 
+// Analytics
+import { trackProjectCreate } from '@/lib/analytics';
+
 // Components - Critical path components load normally
 import { Sidebar, Header } from '@/components/layout';
 import { ProjectsGrid } from '@/components/projects';
@@ -157,6 +160,8 @@ export default function DashboardPage() {
   const handleCreateProject = useCallback(async (name: string, isPublic: boolean) => {
     const newProject = await createNewProject(name, isPublic);
     if (newProject) {
+      // Track empty project creation
+      trackProjectCreate('empty', null, 'free');
       setIsModalOpen(false);
       router.push(`/project/${newProject.id}`);
     }
@@ -171,6 +176,9 @@ export default function DashboardPage() {
     // Create a new untitled project
     const newProject = await createNewProject('untitled', true);
     if (!newProject) return;
+
+    // Track template-based project creation
+    trackProjectCreate('template', template.title, 'free');
 
     // Store template data for project page to consume
     sessionStorage.setItem(`template_${newProject.id}`, JSON.stringify({
@@ -494,8 +502,8 @@ export default function DashboardPage() {
                     {/* Template Type Badge */}
                     <span
                       className={`${styles.templateTypeBadge} ${template.type === 'youtube_thumbnail'
-                          ? styles.templateTypeBadgeYouTube
-                          : styles.templateTypeBadgePrompt
+                        ? styles.templateTypeBadgeYouTube
+                        : styles.templateTypeBadgePrompt
                         }`}
                     >
                       {template.type === 'youtube_thumbnail' ? (
