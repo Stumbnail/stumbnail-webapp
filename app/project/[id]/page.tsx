@@ -27,7 +27,7 @@ import {
 
 // Services
 import { addThumbnail, getProjectThumbnails, deleteThumbnail, updateThumbnail, updateThumbnailPositions, uploadThumbnail, trackThumbnailDownload, startGenerationJob, pollGenerationJob, startSmartMergeJob, pollSmartMergeJob, GenerateThumbnailRequest, ApiThumbnail, SmartMergeRequest } from '@/lib/services/thumbnailService';
-import { getProject } from '@/lib/services/projectService';
+import { getProject, deleteProject } from '@/lib/services/projectService';
 import { calculateTotalCredits, getUserPlan } from '@/lib/services/userService';
 
 // Lazy load dropdowns
@@ -427,6 +427,52 @@ export default function ProjectCanvasPage() {
   const [snapLines, setSnapLines] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] });
   const SNAP_THRESHOLD = 8;
 
+  // Track if project started empty (for auto-cleanup)
+  const wasProjectInitiallyEmpty = useRef<boolean | null>(null);
+  const canvasElementsRef = useRef<CanvasElement[]>([]);
+
+  // Keep ref in sync with state for cleanup
+  useEffect(() => {
+    canvasElementsRef.current = canvasElements;
+  }, [canvasElements]);
+
+  // Auto-delete empty abandoned projects on page leave
+  useEffect(() => {
+    const cleanupEmptyProject = async () => {
+      // Only cleanup if project was initially empty and still has no content
+      if (wasProjectInitiallyEmpty.current === true &&
+        canvasElementsRef.current.length === 0 &&
+        projectId) {
+        try {
+          console.log('[Project Cleanup] Deleting empty abandoned project:', projectId);
+          await deleteProject(projectId);
+        } catch (error) {
+          console.error('[Project Cleanup] Failed to delete empty project:', error);
+        }
+      }
+    };
+
+    // Handle browser close/navigation
+    const handleBeforeUnload = () => {
+      // Use sendBeacon for reliable cleanup on page unload
+      if (wasProjectInitiallyEmpty.current === true &&
+        canvasElementsRef.current.length === 0 &&
+        projectId) {
+        // Note: We can't make async calls in beforeunload, 
+        // so we rely on the cleanup happening in the useEffect return
+        console.log('[Project Cleanup] Page unloading with empty project');
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup function runs when component unmounts (including navigation)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      cleanupEmptyProject();
+    };
+  }, [projectId]);
+
   // Fetch project data and thumbnails on mount
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -495,6 +541,10 @@ export default function ProjectCanvasPage() {
             });
           setCanvasElements(elements);
 
+          // Track if project started empty (for cleanup on abandon)
+          if (wasProjectInitiallyEmpty.current === null) {
+            wasProjectInitiallyEmpty.current = elements.length === 0;
+          }
 
           // Note: Initial viewport fitting is now handled by a dedicated useEffect
           // that waits for the canvas DOM to be ready.
@@ -502,6 +552,16 @@ export default function ProjectCanvasPage() {
         } else if (projectResponse.project?.viewport) {
           // No thumbnails, restore saved viewport
           setViewport(projectResponse.project.viewport);
+
+          // Project has no thumbnails - mark as initially empty
+          if (wasProjectInitiallyEmpty.current === null) {
+            wasProjectInitiallyEmpty.current = true;
+          }
+        } else {
+          // No thumbnails and no saved viewport - mark as initially empty
+          if (wasProjectInitiallyEmpty.current === null) {
+            wasProjectInitiallyEmpty.current = true;
+          }
         }
       } catch (error) {
         console.error('Error fetching project data:', error);

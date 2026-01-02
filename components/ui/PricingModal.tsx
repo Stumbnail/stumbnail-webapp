@@ -6,6 +6,14 @@ import { redirectToCheckout, PlanType } from '@/lib/services/subscriptionService
 import styles from './PricingModal.module.css';
 
 // Icons
+function SparklesIcon({ className = "w-4 h-4" }: { className?: string }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+        </svg>
+    );
+}
+
 function MergeIcon({ className = "w-4 h-4" }: { className?: string }) {
     return (
         <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -70,6 +78,16 @@ function LockIcon({ className = "w-4 h-4" }: { className?: string }) {
     );
 }
 
+function GlobeIcon({ className = "w-4 h-4" }: { className?: string }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+            <path d="M2 12h20" />
+        </svg>
+    );
+}
+
 function CrownIcon({ className = "w-4 h-4" }: { className?: string }) {
     return (
         <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -88,13 +106,22 @@ function LoadingSpinner() {
     );
 }
 
-const features = [
-    { icon: MergeIcon, text: "Smart Merge — combine assets intelligently" },
+const paidFeatures = [
+    { icon: MergeIcon, text: "Smart Merge: combine assets with AI" },
     { icon: WandIcon, text: "Prompt-based generation" },
     { icon: YouTubeIcon, text: "Clone any YouTube thumbnail" },
     { icon: ImageIcon, text: "Upload custom assets" },
-    { icon: LayersIcon, text: "Access to multiple AI models" },
+    { icon: LayersIcon, text: "Access to all AI models" },
     { icon: LockIcon, text: "Keep thumbnails private" },
+];
+
+const freeFeatures = [
+    { icon: MergeIcon, text: "Smart Merge: combine assets with AI" },
+    { icon: WandIcon, text: "Prompt-based generation" },
+    { icon: YouTubeIcon, text: "Clone any YouTube thumbnail" },
+    { icon: ImageIcon, text: "Upload custom assets" },
+    { icon: LayersIcon, text: "Standard AI models" },
+    { icon: GlobeIcon, text: "Thumbnails are public", isLimitation: true },
 ];
 
 interface PricingModalProps {
@@ -108,6 +135,7 @@ export default function PricingModal({ open, onClose, theme, userEmail }: Pricin
     const isDark = theme === 'dark';
     const [loadingPlan, setLoadingPlan] = useState<PlanType | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [selectedPlan, setSelectedPlan] = useState<'creator' | 'automation'>('creator');
 
     const handleGetPlan = async (plan: PlanType) => {
         if (!userEmail) {
@@ -158,9 +186,9 @@ export default function PricingModal({ open, onClose, theme, userEmail }: Pricin
                 <div className={styles.content}>
                     {/* Header */}
                     <div className={styles.header}>
-                        <h2 className={styles.title}>Simple Pricing</h2>
+                        <h2 className={styles.title}>Simple, Credit-Based Pricing</h2>
                         <p className={styles.subtitle}>
-                            Pay for what you use. Different models, different costs.
+                            Start free, upgrade when you need more.
                         </p>
                     </div>
 
@@ -173,87 +201,115 @@ export default function PricingModal({ open, onClose, theme, userEmail }: Pricin
 
                     {/* Pricing Cards */}
                     <div className={styles.cardsContainer}>
-                        {/* Creator Plan */}
-                        <div className={`${styles.card} ${isDark ? styles.cardDark : styles.cardLight}`}>
+                        {/* Free Trial Card */}
+                        <div className={styles.cardFree}>
+                            {/* Free Badge */}
+                            <div className={styles.freeBadge}>
+                                <SparklesIcon className={styles.badgeIcon} />
+                                Start Here
+                            </div>
+
                             <div className={styles.cardContent}>
-                                <div>
-                                    <p className={styles.planLabel}>Creator</p>
+                                {/* Price Display */}
+                                <div className={styles.priceSection}>
+                                    <p className={styles.planLabelFree}>Free Trial</p>
                                     <div className={styles.priceRow}>
-                                        <span className={styles.price}>$12.99</span>
-                                        <span className={styles.period}>/mo</span>
+                                        <span className={styles.price}>$0</span>
                                     </div>
-                                    <p className={styles.credits}>1,430 credits</p>
+                                    <p className={styles.creditsFree}>30 credits</p>
                                 </div>
 
-                                <div className={styles.divider} />
+                                <div className={styles.dividerFree} />
 
+                                {/* Features */}
                                 <ul className={styles.featuresList}>
-                                    {features.map((feature, i) => (
+                                    {freeFeatures.map((feature, i) => (
                                         <li key={i} className={styles.featureItem}>
-                                            <feature.icon className={styles.featureIconMuted} />
-                                            <span>{feature.text}</span>
+                                            <feature.icon className={feature.isLimitation ? styles.featureIconWarning : styles.featureIconFree} />
+                                            <span className={feature.isLimitation ? styles.featureTextWarning : ''}>
+                                                {feature.text}
+                                            </span>
                                         </li>
                                     ))}
                                 </ul>
 
                                 <button
-                                    className={`${styles.ctaButton} ${styles.ctaSecondary} ${isDark ? styles.ctaSecondaryDark : styles.ctaSecondaryLight}`}
-                                    onClick={() => handleGetPlan('creator')}
-                                    disabled={loadingPlan !== null}
+                                    className={styles.ctaFree}
+                                    onClick={onClose}
                                 >
-                                    {loadingPlan === 'creator' ? <LoadingSpinner /> : 'Get Creator'}
+                                    Start Free
                                 </button>
                             </div>
                         </div>
 
-                        {/* Automation Plan */}
-                        <div className={`${styles.card} ${styles.cardPro}`}>
-                            {/* Best Value Badge */}
-                            <div className={styles.badge}>
-                                <CrownIcon className={styles.badgeIcon} />
-                                Best Value
+                        {/* Paid Plans Card */}
+                        <div className={styles.cardPaid}>
+                            {/* Plan Toggle */}
+                            <div className={`${styles.planToggle} ${isDark ? styles.planToggleDark : styles.planToggleLight}`}>
+                                <button
+                                    onClick={() => setSelectedPlan('creator')}
+                                    className={`${styles.toggleButton} ${selectedPlan === 'creator' ? styles.toggleButtonActive : ''}`}
+                                >
+                                    Creator
+                                </button>
+                                <button
+                                    onClick={() => setSelectedPlan('automation')}
+                                    className={`${styles.toggleButton} ${selectedPlan === 'automation' ? styles.toggleButtonActive : ''}`}
+                                >
+                                    Automation
+                                    {selectedPlan !== 'automation' && (
+                                        <span className={styles.bestBadge}>
+                                            <CrownIcon className={styles.bestBadgeIcon} />
+                                            Best
+                                        </span>
+                                    )}
+                                </button>
                             </div>
 
                             <div className={styles.cardContent}>
-                                <div>
-                                    <p className={`${styles.planLabel} ${styles.planLabelPro}`}>Automation</p>
+                                {/* Price Display */}
+                                <div className={styles.priceSection}>
                                     <div className={styles.priceRow}>
-                                        <span className={styles.price}>$39</span>
+                                        <span className={styles.price}>
+                                            {selectedPlan === 'creator' ? '$12.99' : '$39'}
+                                        </span>
                                         <span className={styles.period}>/mo</span>
                                     </div>
-                                    <p className={styles.credits}>4,500 credits</p>
+                                    <p className={styles.creditsPaid}>
+                                        {selectedPlan === 'creator' ? '1,430 credits' : '4,500 credits'}
+                                    </p>
                                 </div>
 
-                                <div className={`${styles.divider} ${styles.dividerPro}`} />
+                                <div className={styles.dividerPaid} />
 
+                                {/* Features */}
                                 <ul className={styles.featuresList}>
-                                    {features.map((feature, i) => (
+                                    {paidFeatures.map((feature, i) => (
                                         <li key={i} className={styles.featureItem}>
-                                            <feature.icon className={styles.featureIconPro} />
+                                            <feature.icon className={styles.featureIconPaid} />
                                             <span>{feature.text}</span>
                                         </li>
                                     ))}
                                 </ul>
 
                                 <button
-                                    className={`${styles.ctaButton} ${styles.ctaPrimary}`}
-                                    onClick={() => handleGetPlan('automation')}
+                                    className={styles.ctaPaid}
+                                    onClick={() => handleGetPlan(selectedPlan)}
                                     disabled={loadingPlan !== null}
                                 >
-                                    {loadingPlan === 'automation' ? <LoadingSpinner /> : 'Get Automation'}
+                                    {loadingPlan === selectedPlan
+                                        ? <LoadingSpinner />
+                                        : `Get ${selectedPlan === 'creator' ? 'Creator' : 'Automation'}`
+                                    }
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Free Plan CTA */}
+                    {/* Credit Info */}
                     <div className={styles.footer}>
                         <p className={styles.footerText}>
-                            Want to try first?{' '}
-                            <button className={styles.footerLink} onClick={onClose}>
-                                Start free
-                            </button>
-                            {' '}— no card required.
+                            Credits vary by AI model, from 7 to 75 per generation.
                         </p>
                     </div>
                 </div>
