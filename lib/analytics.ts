@@ -3,7 +3,7 @@
  * Sends events to both Vercel Analytics and Google Analytics
  */
 
-import { track } from '@vercel/analytics';
+import { track } from '@vercel/analytics/react';
 
 // Event properties type
 type EventProperties = Record<string, string | number | boolean | null | undefined>;
