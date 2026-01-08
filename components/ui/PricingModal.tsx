@@ -329,7 +329,7 @@ export default function PricingModal({
                     {/* Credit Info */}
                     <div className={styles.footer}>
                         <p className={styles.footerText}>
-                            Credits vary by AI model, from 7 to 75 per generation.
+                            Credits vary by AI model, from 3 to 47 per generation.
                         </p>
                     </div>
                 </div>

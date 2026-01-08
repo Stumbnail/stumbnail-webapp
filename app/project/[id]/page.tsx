@@ -1219,9 +1219,9 @@ export default function ProjectCanvasPage() {
     // Only Nano Banana Pro - resolution affects credits
     if (model.id === 'nano-banana-pro' || model.baseModel === 'nano-banana-pro') {
       const r = res || model.defaultResolution || '2K';
-      if (r === '4K') return 75;
-      // 1K and 2K both cost 37 credits
-      return 37;
+      if (r === '4K') return 47;
+      // 1K and 2K both cost 24 credits
+      return 24;
     }
 
     // All other models have fixed credits
