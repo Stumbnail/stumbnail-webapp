@@ -18,6 +18,14 @@ export interface ApiTemplate {
     tone?: string;
     type?: 'prompt' | 'prompt_based' | 'youtube_thumbnail';
     createdAt?: string;
+    variables?: {
+        id: string;
+        label: string;
+        type: 'text' | 'image';
+        placeholder?: string;
+        required: boolean;
+        description?: string;
+    }[] | null;
 }
 
 /**

@@ -284,6 +284,7 @@ export default function ProjectCanvasPage() {
   const promptImageInputRef = useRef<HTMLInputElement>(null);
   const hasPerformedInitialFit = useRef(false);
   const pendingTemplateRef = useRef<{ type: string; prompt?: string; imageURL?: string; category?: string; tone?: string } | null>(null);
+  const pendingAutoGenerateRef = useRef(false); // Track if we need to auto-generate after template load
 
   // Resolution Constants
   const RESOLUTION_MAP: Record<string, number> = {
@@ -688,6 +689,49 @@ export default function ProjectCanvasPage() {
             setSelectedTone('custom');
             setCustomTone(template.tone);
           }
+        }
+
+        // Handle attached images from template customization
+        if (template.attachedImages && Array.isArray(template.attachedImages)) {
+          const loadedImages: { id: string; file: File; preview: string }[] = [];
+
+          template.attachedImages.forEach((imgData: { id: string; preview: string; name: string; type: string }) => {
+            try {
+              // Convert base64 preview back to File object
+              const base64Data = imgData.preview.split(',')[1];
+              if (base64Data) {
+                const byteString = atob(base64Data);
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                  ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], { type: imgData.type || 'image/jpeg' });
+                const file = new File([blob], imgData.name || 'template-image.jpg', {
+                  type: imgData.type || 'image/jpeg'
+                });
+
+                loadedImages.push({
+                  id: imgData.id,
+                  file,
+                  preview: imgData.preview
+                });
+              }
+            } catch (err) {
+              console.error('[Template] Failed to convert image:', err);
+            }
+          });
+
+          if (loadedImages.length > 0) {
+            console.log('[Template] Loaded', loadedImages.length, 'attached images');
+            setAttachedImages(loadedImages);
+          }
+        }
+
+        // Check if auto-generation is requested
+        if (template.autoGenerate && template.prompt) {
+          console.log('[Template] Auto-generate requested, will trigger after state settles');
+          pendingAutoGenerateRef.current = true;
         }
       }
     } catch (error) {
@@ -1415,6 +1459,19 @@ export default function ProjectCanvasPage() {
     setThumbnailCount(count);
     trackBatchCountChange(count, 'free');
   }, []);
+
+  // Auto-trigger generation when template with autoGenerate flag is loaded
+  useEffect(() => {
+    if (pendingAutoGenerateRef.current && promptText && user?.email && !isGenerating && !isLoadingProject) {
+      console.log('[Template] Auto-triggering generation for template');
+      pendingAutoGenerateRef.current = false;
+      // Small delay to ensure all state is settled
+      const timer = setTimeout(() => {
+        handlePromptSubmit();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [promptText, user?.email, isGenerating, isLoadingProject, handlePromptSubmit]);
 
   const handleCreateNewStyle = useCallback(() => {
     console.log('Create new style clicked');
