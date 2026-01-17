@@ -48,6 +48,10 @@ const ProfileModal = dynamic(
   () => import('@/components/modals/ProfileModal'),
   { ssr: false }
 );
+const TemplateCustomizationModal = dynamic(
+  () => import('@/components/modals/TemplateCustomizationModal'),
+  { ssr: false }
+);
 
 // Styles
 import styles from './dashboard.module.css';
@@ -95,6 +99,8 @@ export default function DashboardPage() {
   const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -172,12 +178,11 @@ export default function DashboardPage() {
     setCurrentPage(1);
   }, []);
 
-  const handleTemplateClick = useCallback(async (template: Template) => {
-    // Create a new untitled project
+  // Direct create without customization (for templates without variables)
+  const handleTemplateDirectCreate = useCallback(async (template: Template) => {
     const newProject = await createNewProject('untitled', true);
     if (!newProject) return;
 
-    // Track template-based project creation
     trackProjectCreate('template', template.title, 'free');
 
     // Store template data for project page to consume
@@ -189,9 +194,59 @@ export default function DashboardPage() {
       tone: template.tone || null,
     }));
 
-    // Navigate to the new project
     router.push(`/project/${newProject.id}`);
   }, [createNewProject, router]);
+
+  const handleTemplateClick = useCallback((template: Template) => {
+    // If template has variables, show customization modal
+    if (template.variables && template.variables.length > 0) {
+      setSelectedTemplate(template);
+      setTemplateModalOpen(true);
+    } else {
+      // No variables - create project directly with original flow
+      handleTemplateDirectCreate(template);
+    }
+  }, [handleTemplateDirectCreate]);
+
+  // Handle customization modal submission
+  const handleTemplateCustomizationSubmit = useCallback(async (
+    customizedPrompt: string,
+    attachedImages: { id: string; file: File; preview: string }[],
+    category: string | null,
+    tone: string | null
+  ) => {
+    if (!selectedTemplate) return;
+
+    const newProject = await createNewProject('untitled', true);
+    if (!newProject) return;
+
+    trackProjectCreate('template', selectedTemplate.title, 'free');
+
+    // Store the customized prompt and images for project page
+    // Images will be stored as base64 in sessionStorage (for small images)
+    // or as file references that the project page can access
+    const imageData = attachedImages.map(img => ({
+      id: img.id,
+      preview: img.preview, // base64 preview
+      name: img.file.name,
+      type: img.file.type
+    }));
+
+    sessionStorage.setItem(`template_${newProject.id}`, JSON.stringify({
+      type: 'prompt',
+      prompt: customizedPrompt,
+      imageURL: selectedTemplate.image,
+      category: category,
+      tone: tone,
+      attachedImages: imageData,
+      autoGenerate: true // Trigger generation immediately on project load
+    }));
+
+    // Close modal and navigate
+    setTemplateModalOpen(false);
+    setSelectedTemplate(null);
+    router.push(`/project/${newProject.id}`);
+  }, [selectedTemplate, createNewProject, router]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -442,6 +497,12 @@ export default function DashboardPage() {
             <div className={styles.templatesHeader}>
               <div>
                 <h2 className={styles.sectionTitle}>Templates</h2>
+                <span className={styles.templatesBadge}>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                    <path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Proven for CTR
+                </span>
               </div>
               <button
                 onClick={handleSeeAllClick}
@@ -609,6 +670,18 @@ export default function DashboardPage() {
         userData={userData}
         theme={theme}
         onUpgradeClick={() => setPricingModalOpen(true)}
+      />
+
+      {/* Template Customization Modal */}
+      < TemplateCustomizationModal
+        isOpen={templateModalOpen}
+        onClose={() => {
+          setTemplateModalOpen(false);
+          setSelectedTemplate(null);
+        }}
+        onSubmit={handleTemplateCustomizationSubmit}
+        template={selectedTemplate}
+        theme={theme}
       />
 
       {/* Mobile Floating Action Button */}

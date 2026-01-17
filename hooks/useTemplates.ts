@@ -17,6 +17,7 @@ function transformTemplate(apiTemplate: ApiTemplate): Template {
         type: apiTemplate.type,
         category: apiTemplate.category,
         tone: apiTemplate.tone,
+        variables: apiTemplate.variables || undefined,
     };
 }
 
