@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import Image from 'next/image';
 import styles from './login.module.css';
 
@@ -16,7 +16,7 @@ import { trackLoginSuccess, trackSessionStart } from '@/lib/analytics';
 import { LoadingSpinner } from '@/components/ui';
 
 // Lazy load heavy GridMotion component (uses GSAP animations)
-const GridMotion = dynamic(
+const GridMotion = dynamicImport(
   () => import('@/components/GridMotion/GridMotion'),
   {
     ssr: false,

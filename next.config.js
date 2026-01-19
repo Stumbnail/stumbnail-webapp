@@ -5,10 +5,20 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   // Optimize bundle size
   experimental: {
     // Optimize package imports for better tree-shaking
     optimizePackageImports: ['lucide-react'],
+    // Skip static generation
+    isrFlushToDisk: false,
+  },
+  // Disable static exports
+  distDir: '.next',
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
   },
   // Compiler options for production optimization
   compiler: {

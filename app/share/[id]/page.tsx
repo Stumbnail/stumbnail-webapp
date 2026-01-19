@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { ProjectCanvas as CanvasPage } from '@/app/project/[id]/page';
+import { ProjectCanvas } from '@/app/project/[id]/ProjectCanvas';
 
 export default function SharePage() {
   const params = useParams();
@@ -12,7 +12,7 @@ export default function SharePage() {
   // This allows unauthenticated users to view shared projects
   const { user, loading } = useAuth(false);
 
-  // Pass user and loading to CanvasPage to avoid duplicate useAuth() calls
+  // Pass user and loading to ProjectCanvas to avoid duplicate useAuth() calls
   // This prevents race conditions that cause login redirects
-  return <CanvasPage projectId={projectId} viewMode={true} user={user} authLoading={loading} />;
+  return <ProjectCanvas projectId={projectId} viewMode={true} user={user} authLoading={loading} />;
 }

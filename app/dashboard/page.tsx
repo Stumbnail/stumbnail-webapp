@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 
 // Types
 import {
@@ -36,23 +36,23 @@ import { ProjectsGrid } from '@/components/projects';
 import { LoadingSpinner, PricingModal } from '@/components/ui';
 
 // Lazy load modals (only loaded when user opens them)
-const ProjectNameModal = dynamic(
+const ProjectNameModal = dynamicImport(
   () => import('@/components/modals/ProjectNameModal'),
   { ssr: false }
 );
-const ProjectActionModal = dynamic(
+const ProjectActionModal = dynamicImport(
   () => import('@/components/modals/ProjectActionModal'),
   { ssr: false }
 );
-const ProfileModal = dynamic(
+const ProfileModal = dynamicImport(
   () => import('@/components/modals/ProfileModal'),
   { ssr: false }
 );
-const TemplateCustomizationModal = dynamic(
+const TemplateCustomizationModal = dynamicImport(
   () => import('@/components/modals/TemplateCustomizationModal'),
   { ssr: false }
 );
-const ShareModal = dynamic(
+const ShareModal = dynamicImport(
   () => import('@/components/modals/ShareModal'),
   { ssr: false }
 );
