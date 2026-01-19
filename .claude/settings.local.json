@@ -34,7 +34,11 @@
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
       "Bash(git merge:*)",
-      "Bash(npx next build)"
+      "Bash(npx next build)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "Bash(timeout 180 npx next build:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
