@@ -8,10 +8,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Optimize bundle size
+  // Optimize bundle size and skip prerendering
   experimental: {
     // Optimize package imports for better tree-shaking
     optimizePackageImports: ['lucide-react'],
+    // Skip prerendering - all pages are server-rendered on demand
+    isrFlushToDisk: false,
   },
   // Compiler options for production optimization
   compiler: {

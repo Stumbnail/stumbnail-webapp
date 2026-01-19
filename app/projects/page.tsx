@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 
 // Types
 import { Project, EditProjectModalState, ProjectActionModalState } from '@/types';
@@ -26,15 +26,15 @@ import { LoadingSpinner, AnimatedBorder, PricingModal } from '@/components/ui';
 import { ProjectCard } from '@/components/projects';
 
 // Lazy load modals to reduce TBT
-const ProjectNameModal = dynamic(
+const ProjectNameModal = dynamicImport(
     () => import('@/components/modals/ProjectNameModal'),
     { ssr: false }
 );
-const ProjectActionModal = dynamic(
+const ProjectActionModal = dynamicImport(
     () => import('@/components/modals/ProjectActionModal'),
     { ssr: false }
 );
-const ProfileModal = dynamic(
+const ProfileModal = dynamicImport(
     () => import('@/components/modals/ProfileModal'),
     { ssr: false }
 );

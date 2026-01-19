@@ -38,7 +38,8 @@
       "Bash(wc:*)",
       "Bash(ls:*)",
       "Bash(timeout 180 npx next build:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(timeout 120 npx next build:*)"
     ],
     "deny": [],
     "ask": []

@@ -3,6 +3,11 @@ import { Space_Grotesk, Lexend } from 'next/font/google';
 import { Providers } from './providers';
 import './globals.css';
 
+// Force all pages to use dynamic rendering
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
+
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-space-grotesk',
