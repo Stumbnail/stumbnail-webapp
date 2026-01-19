@@ -35,7 +35,7 @@ import { trackProjectCreate } from '@/lib/analytics';
 // Components - Critical path components load normally
 import { Sidebar, Header } from '@/components/layout';
 import { ProjectsGrid } from '@/components/projects';
-import { LoadingSpinner, PricingModal, WhatsNewBanner } from '@/components/ui';
+import { LoadingSpinner, PricingModal } from '@/components/ui';
 
 // Lazy load modals (only loaded when user opens them)
 const ProjectNameModal = dynamicImport(
@@ -121,15 +121,6 @@ export default function DashboardPage() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
-
-  // What's New banner state
-  const [showWhatsNew, setShowWhatsNew] = useState(false);
-
-  // Initialize What's New banner visibility
-  useEffect(() => {
-    const dismissed = localStorage.getItem('whatsNewDismissed_sharing');
-    setShowWhatsNew(!dismissed);
-  }, []);
 
   // Edit project state
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -416,11 +407,6 @@ export default function DashboardPage() {
     setSearchQuery(e.target.value);
   }, []);
 
-  const handleCloseWhatsNew = useCallback(() => {
-    localStorage.setItem('whatsNewDismissed_sharing', 'true');
-    setShowWhatsNew(false);
-  }, []);
-
   // Show loading state
   if (authLoading) {
     return (
@@ -482,10 +468,6 @@ export default function DashboardPage() {
 
         {/* Content */}
         <div className={styles.content}>
-          {/* What's New Banner */}
-          {showWhatsNew && (
-            <WhatsNewBanner theme={theme} onClose={handleCloseWhatsNew} />
-          )}
           {/* My Projects Section */}
           <section className={styles.projectsSection}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
