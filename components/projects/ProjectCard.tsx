@@ -29,6 +29,7 @@ interface ProjectCardProps {
     onToggleFavorite: () => void;
     onOpen: () => void;
     onDelete: () => void;
+    onShare: (projectName: string, privacy: 'public' | 'private') => void;
 }
 
 export default function ProjectCard({
@@ -46,6 +47,7 @@ export default function ProjectCard({
     onToggleFavorite,
     onOpen,
     onDelete,
+    onShare,
 }: ProjectCardProps) {
     const router = useRouter();
     const editInputRef = useRef<HTMLInputElement>(null);
@@ -153,6 +155,19 @@ export default function ProjectCard({
                                             aria-hidden="true"
                                         />
                                         {project.isFavorite ? 'Unfavorite' : 'Favorite'}
+                                    </button>
+                                    <button
+                                        className={styles.projectDropdownItem}
+                                        onClick={() => onShare(project.name, project.privacy)}
+                                    >
+                                        <Image
+                                            src="/assets/dashboard/icons/link-square-02-stroke-rounded 1.svg"
+                                            alt=""
+                                            width={18}
+                                            height={18}
+                                            aria-hidden="true"
+                                        />
+                                        Share
                                     </button>
                                     <button
                                         className={styles.projectDropdownItem}

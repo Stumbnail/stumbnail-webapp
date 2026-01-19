@@ -49,8 +49,9 @@ interface ProjectsProviderProps {
 }
 
 export function ProjectsProvider({ children }: ProjectsProviderProps) {
-    // Get authenticated user
-    const { user } = useAuth();
+    // Get authenticated user - DO NOT redirect to login from here
+    // Individual pages handle their own auth redirects as needed
+    const { user } = useAuth(false);
 
     // Subscribe to Firestore projects (real-time with caching)
     const { projects: firestoreProjects, loading, error, isStale, cacheHit } = useProjectsFirestore(user);

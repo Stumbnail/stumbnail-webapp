@@ -28,9 +28,10 @@ service cloud.firestore {
     // PROJECTS COLLECTION (NEW)
     // =====================
     match /projects/{projectId} {
-      // Read: Only owner can read their projects
-      allow read: if request.auth != null && 
-                    resource.data.ownerId == request.auth.uid;
+      // Read: Public if privacy is 'public', OR owner can read their own projects
+      allow read: if resource.data.privacy == 'public' ||
+                    (request.auth != null && 
+                     resource.data.ownerId == request.auth.uid);
       
       // Write: Only backend (admin SDK bypasses rules)
       allow create, delete: if false;

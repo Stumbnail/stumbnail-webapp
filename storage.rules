@@ -1,0 +1,22 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Allow read access to all files
+    match /{allPaths=**} {
+      allow read;
+
+      // Allow delete if the user is authenticated
+      // Note: For better security, structure paths with user IDs
+      // e.g. thumbnails/{userId}/{filename}
+      allow delete: if request.auth != null;
+    }
+
+    // Better approach with user-specific paths
+    match /thumbnails/{userId}/{filename} {
+      allow read;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+  }
+}

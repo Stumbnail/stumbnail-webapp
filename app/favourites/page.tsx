@@ -189,6 +189,25 @@ export default function FavouritesPage() {
         setProjectMenuOpen(null);
     }, [projects]);
 
+    const handleShareProject = useCallback(async (projectId: string, privacy: string) => {
+        // If private, show alert asking to make it public first
+        if (privacy === 'private') {
+            alert('Please make this project public before sharing it.');
+            setProjectMenuOpen(null);
+            return;
+        }
+
+        // If public, copy share URL
+        const shareUrl = `${window.location.origin}/share/${projectId}`;
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert('Share link copied to clipboard!');
+        } catch (error) {
+            alert('Failed to copy link');
+        }
+        setProjectMenuOpen(null);
+    }, []);
+
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleProjectActionConfirm = useCallback(async () => {
@@ -315,6 +334,7 @@ export default function FavouritesPage() {
                                     onToggleFavorite={() => handleToggleFavorite(project.id)}
                                     onOpen={() => handleOpenProject(project.id)}
                                     onDelete={() => handleDeleteProject(project.id)}
+                                    onShare={(privacy) => handleShareProject(project.id, privacy)}
                                 />
                             ))}
                         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import styles from './login.module.css';
@@ -49,6 +49,8 @@ export default function LoginPage() {
   const [isDarkTheme, setIsDarkTheme] = useState(true);
   const [initialTheme, setInitialTheme] = useState<'light' | 'dark'>('dark');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
 
   // Check if user is already authenticated (don't redirect to login if not)
   const { user, loading: authLoading } = useAuth(false);
@@ -60,12 +62,12 @@ export default function LoginPage() {
     setIsDarkTheme(theme === 'dark');
   }, []);
 
-  // Redirect to dashboard if already authenticated
+  // Redirect to dashboard (or target URL) if already authenticated
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/dashboard');
+      router.push(redirectUrl || '/dashboard');
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, redirectUrl]);
 
   const themeClass = isDarkTheme ? styles.dark : styles.light;
 
@@ -85,7 +87,7 @@ export default function LoginPage() {
       // Track session start
       trackSessionStart(isNewUser, 'free', document.referrer || 'direct');
 
-      router.push('/dashboard');
+      router.push(redirectUrl || '/dashboard');
     } catch (err) {
       const firebaseError = err as FirebaseError;
 
@@ -100,7 +102,7 @@ export default function LoginPage() {
       setLoading(false);
       console.error('Sign in error:', err);
     }
-  }, [router]);
+  }, [router, redirectUrl]);
 
   // Show loading state while checking authentication
   if (authLoading || user) {
@@ -162,6 +164,22 @@ export default function LoginPage() {
         <h1 className={styles.heading}>
           Welcome to <span className={styles.brandName}>Stumbnail</span>
         </h1>
+
+        {redirectUrl && searchParams.get('message') && (
+          <div style={{
+            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            color: isDarkTheme ? '#93C5FD' : '#2563EB',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '24px',
+            fontSize: '14px',
+            lineHeight: '1.5',
+            textAlign: 'center'
+          }}>
+            {searchParams.get('message')}
+          </div>
+        )}
 
         <p className={styles.subtitle}>
           Login to access and start creating

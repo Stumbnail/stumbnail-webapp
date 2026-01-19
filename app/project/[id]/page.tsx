@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
@@ -29,6 +30,7 @@ import {
 import { addThumbnail, getProjectThumbnails, deleteThumbnail, updateThumbnail, updateThumbnailPositions, uploadThumbnail, trackThumbnailDownload, startGenerationJob, pollGenerationJob, startSmartMergeJob, pollSmartMergeJob, GenerateThumbnailRequest, ApiThumbnail, SmartMergeRequest } from '@/lib/services/thumbnailService';
 import { getProject, deleteProject } from '@/lib/services/projectService';
 import { calculateTotalCredits, getUserPlan } from '@/lib/services/userService';
+import { signInWithGoogle } from '@/lib/firebase'; // Added for inline login
 
 // Analytics
 import {
@@ -58,6 +60,14 @@ import styles from './projectCanvas.module.css';
 import { LoadingSpinner, AnimatedBorder, PricingModal } from '@/components/ui';
 import { ModelOptionsBar } from '@/components/generation';
 import { HighlightedPromptEditor } from '@/components/prompt';
+
+// Props interface
+interface ProjectCanvasPageProps {
+  projectId?: string;  // Can be passed as prop from share page
+  viewMode?: boolean;  // View-only mode for shared projects
+  user?: any;  // Can be passed from SharePage to avoid duplicate useAuth calls
+  authLoading?: boolean;  // Loading state from SharePage
+}
 
 // Types
 type CreationMode = 'url' | 'prompt';
@@ -264,13 +274,27 @@ const CanvasItem = ({
   );
 };
 
-export default function ProjectCanvasPage() {
+export default function ProjectCanvasPage({
+  projectId: propProjectId,
+  viewMode = false,
+  user: propUser,
+  authLoading: propAuthLoading
+}: ProjectCanvasPageProps = {}) {
   const router = useRouter();
   const params = useParams();
-  const projectId = params.id as string;
+  const projectId = propProjectId || (params?.id as string);
 
   // Custom hooks
-  const { user, loading: authLoading } = useAuth();
+  // Only call useAuth if user wasn't passed as prop (prevents duplicate listeners)
+  // This avoids race conditions when SharePage already called useAuth
+  const shouldRedirect = propUser === undefined ? !viewMode : false;
+  const { user: hookUser, loading: hookLoading } = useAuth(
+    shouldRedirect,
+    shouldRedirect ? "To view this project, you need to log in first." : undefined
+  );
+  const user = propUser ?? hookUser;
+  const authLoading = propAuthLoading ?? hookLoading;
+
   const { userData } = useUserData(user);
   const { theme } = useTheme({ userId: user?.uid });
 
@@ -348,6 +372,7 @@ export default function ProjectCanvasPage() {
   const [showUrlPopup, setShowUrlPopup] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [projectError, setProjectError] = useState<'not-found' | 'access-denied' | null>(null);
 
   // Prompt mode state
   const [promptText, setPromptText] = useState('');
@@ -492,13 +517,58 @@ export default function ProjectCanvasPage() {
   // Fetch project data and thumbnails on mount
   useEffect(() => {
     const fetchProjectData = async () => {
-      if (!projectId || !user) return;
+      // In view mode, allow fetching without user authentication
+      if (!projectId) return;
+      if (!viewMode && !user) return;
 
       setIsLoadingProject(true);
       try {
         // Fetch project details
-        const projectResponse = await getProject(projectId);
+        let projectResponse;
+
+        // In view mode, fetch directly from Firestore
+        if (viewMode) {
+          try {
+            const { getDoc, doc } = await import('firebase/firestore');
+            const { getFirestore } = await import('@/lib/firebase');
+
+            const db = await getFirestore();
+
+            const projectDoc = await getDoc(doc(db, 'projects', projectId));
+            if (projectDoc.exists()) {
+              projectResponse = {
+                success: true,
+                project: {
+                  id: projectDoc.id,
+                  ...projectDoc.data()
+                }
+              };
+            } else {
+              projectResponse = { success: false };
+            }
+          } catch (error: any) {
+            console.error('Error fetching project from Firestore:', error);
+            projectResponse = { success: false };
+            if (error.code === 'permission-denied') {
+              setProjectError('access-denied');
+            } else {
+              setProjectError('not-found');
+            }
+          }
+        } else {
+          // In edit mode, use API as normal
+          projectResponse = await getProject(projectId);
+          if (!projectResponse.success) {
+            setProjectError('not-found');
+          }
+        }
         if (projectResponse.success && projectResponse.project) {
+          // In view mode, check if user is the owner and redirect to edit mode
+          if (viewMode && user && projectResponse.project.ownerId === user.uid) {
+            router.push(`/project/${projectId}`);
+            return;
+          }
+
           setProjectName(projectResponse.project.name);
           setIsPublic(projectResponse.project.privacy === 'public');
 
@@ -509,7 +579,41 @@ export default function ProjectCanvasPage() {
         }
 
         // Fetch thumbnails
-        const thumbnailsResponse = await getProjectThumbnails(projectId);
+        let thumbnailsResponse;
+
+        // In view mode, fetch directly from Firestore to avoid API permission issues
+        if (viewMode) {
+          try {
+            const { collection, getDocs, getDoc, doc } = await import('firebase/firestore');
+            const { getFirestore } = await import('@/lib/firebase');
+
+            const db = await getFirestore();
+
+            // Verify project is public
+            const projectDoc = await getDoc(doc(db, 'projects', projectId));
+            if (!projectDoc.exists() || projectDoc.data()?.privacy !== 'public') {
+              throw new Error('Project is not public');
+            }
+
+            // Fetch thumbnails from Firestore
+            const thumbnailsCol = collection(db, 'projects', projectId, 'thumbnails');
+            const thumbnailsSnapshot = await getDocs(thumbnailsCol);
+
+            const thumbnails = thumbnailsSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+
+            thumbnailsResponse = { success: true, thumbnails };
+          } catch (error) {
+            console.error('Error fetching thumbnails from Firestore:', error);
+            thumbnailsResponse = { success: false, thumbnails: [] };
+          }
+        } else {
+          // In edit mode, use API as normal
+          thumbnailsResponse = await getProjectThumbnails(projectId);
+        }
+
         if (thumbnailsResponse.success && thumbnailsResponse.thumbnails) {
           // Convert API thumbnails to canvas elements
           // Use exact stored dimensions to preserve positions correctly
@@ -587,7 +691,7 @@ export default function ProjectCanvasPage() {
     };
 
     fetchProjectData();
-  }, [projectId, user]);
+  }, [projectId, user, viewMode]);
 
   // Handle initial viewport fitting
   useEffect(() => {
@@ -1478,6 +1582,24 @@ export default function ProjectCanvasPage() {
     // TODO: Implement style creation logic
   }, []);
 
+  // Inline Login Handler for Private Projects
+  const handleInlineLogin = useCallback(async () => {
+    try {
+      // Set loading state just for the interaction if needed, 
+      // but the main auth state change will trigger re-renders via useAuth
+      const user = await signInWithGoogle();
+      if (user) {
+        // Clear error so we attempt to fetch again
+        setProjectError(null);
+        // Trigger a re-fetch effectively by resetting loading state or depending on user change
+        setIsLoadingProject(true);
+      }
+    } catch (error) {
+      console.error('Inline login failed:', error);
+      setToast({ message: 'Login failed. Please try again.', type: 'error' });
+    }
+  }, []);
+
   // Image upload handler - registers with backend
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -1936,6 +2058,9 @@ export default function ProjectCanvasPage() {
 
     setSelectedElementIds(newSelectedIds);
 
+    // In view mode, allow selection but not dragging
+    if (viewMode) return;
+
     // Start dragging all selected elements
     const elementsToDrag = newSelectedIds.length > 0 ? newSelectedIds : [elementId];
     const elementStarts = canvasElements
@@ -1949,10 +2074,13 @@ export default function ProjectCanvasPage() {
       startY: e.clientY,
       elementStarts,
     });
-  }, [canvasElements, selectedElementIds, shiftPressed, toolMode, isHandToolActive]);
+  }, [canvasElements, selectedElementIds, shiftPressed, toolMode, isHandToolActive, viewMode]);
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent, handle: string) => {
     e.stopPropagation();
+
+    // Prevent resizing in view mode
+    if (viewMode) return;
 
     // Get all selected elements
     const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
@@ -1988,7 +2116,7 @@ export default function ProjectCanvasPage() {
       groupStartHeight: groupHeight,
       elementStarts,
     });
-  }, [canvasElements, selectedElementIds]);
+  }, [canvasElements, selectedElementIds, viewMode]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -2030,8 +2158,8 @@ export default function ProjectCanvasPage() {
         e.preventDefault();
       }
 
-      // Delete selected elements
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElementIds.length > 0) {
+      // Delete selected elements (only in edit mode)
+      if (!viewMode && (e.key === 'Delete' || e.key === 'Backspace') && selectedElementIds.length > 0) {
         // Delete from backend (fire and forget)
         selectedElementIds.forEach(id => {
           deleteThumbnail(projectId, id).catch(err => {
@@ -2715,14 +2843,100 @@ export default function ProjectCanvasPage() {
     );
   }
 
-  if (!user) {
-    return null;
+  // In edit mode (not view mode), require authentication
+  if (!user && !viewMode && !authLoading) {
+    return null; // Will trigger redirect in useAuth
   }
 
   // Show loading state while fetching project data
   if (isLoadingProject) {
     return (
       <LoadingSpinner theme={theme} text="Loading project..." fullScreen />
+    );
+  }
+
+  // Show error state (Private Project)
+  if (projectError === 'access-denied') {
+    return (
+      <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : styles.lightTheme}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', maxWidth: '400px', padding: '40px' }}>
+          <div style={{ marginBottom: '24px' }}>
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 15V17M6 21H18C19.1046 21 20 20.1046 20 19V10C20 8.89543 19.1046 8 18 8H6C4.89543 8 4 8.89543 4 10V19C4 20.1046 4.89543 21 6 21ZM16 8V6C16 3.79086 14.2091 2 12 2C9.79086 2 8 3.79086 8 6V8H16Z" stroke={theme === 'dark' ? '#fff' : '#000'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>Private Project</h1>
+          <p style={{ marginBottom: '32px', opacity: 0.7, lineHeight: 1.5 }}>
+            This project is private. Please log in with an authorized account to view it.
+          </p>
+          <button
+            onClick={handleInlineLogin}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              backgroundColor: theme === 'dark' ? '#fff' : '#000',
+              color: theme === 'dark' ? '#000' : '#fff',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '16px',
+              transition: 'transform 0.2s',
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                fill={theme === 'dark' ? '#4285F4' : '#fff'} // Use Google colors or simple specific
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill={theme === 'dark' ? '#34A853' : '#fff'}
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill={theme === 'dark' ? '#FBBC05' : '#fff'}
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill={theme === 'dark' ? '#EA4335' : '#fff'}
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            <span>Sign in with Google</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state (Not Found)
+  if (projectError === 'not-found') {
+    return (
+      <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : styles.lightTheme}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', maxWidth: '400px', padding: '40px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>Project Not Found</h1>
+          <p style={{ marginBottom: '32px', opacity: 0.7 }}>
+            The project you're looking for doesn't exist or has been deleted.
+          </p>
+          <Link
+            href={user ? "/dashboard" : "/"}
+            style={{
+              display: 'inline-block',
+              backgroundColor: theme === 'dark' ? '#333' : '#eee',
+              color: theme === 'dark' ? '#fff' : '#000',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontWeight: 600,
+              textDecoration: 'none'
+            }}
+          >
+            Go Home
+          </Link>
+        </div>
+      </div>
     );
   }
 
@@ -2808,387 +3022,488 @@ export default function ProjectCanvasPage() {
           <h1 className={styles.projectTitle}>{projectName}</h1>
         </div>
 
-        <div className={styles.publicToggleContainer}>
-          <span className={styles.publicToggleLabel}>Make project public</span>
-          <button
-            className={`${styles.toggleSwitch} ${isPublic ? styles.toggleActive : ''}`}
-            onClick={handleTogglePublic}
-            role="switch"
-            aria-checked={isPublic}
-          >
-            <span className={styles.toggleKnob} />
-          </button>
-        </div>
-
-        <div className={styles.createNewSection}>
-          <h2 className={styles.createNewTitle}>Create New</h2>
-          <div className={styles.createOptionsGrid}>
-            <button
-              className={`${styles.createOption} ${selectedMode === 'prompt' ? styles.createOptionSelected : ''}`}
-              onClick={() => handleModeSelect('prompt')}
-            >
-              <div className={styles.createOptionIcon}>
-                <Image src="/assets/project/icons/prompt.svg" alt="" width={34} height={34} />
+        {viewMode && (
+          <div className={styles.viewModeCta}>
+            <div className={styles.viewModeCtaHeader}>
+              <div className={styles.viewModeCtaIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
               </div>
-              <span className={styles.createOptionLabel}>Prompt</span>
-            </button>
+              <h2 className={styles.viewModeCtaTitle}>Viewing Shared Project</h2>
+            </div>
 
-            <button
-              className={`${styles.createOption} ${selectedMode === 'url' ? styles.createOptionSelected : ''}`}
-              onClick={() => {
-                handleModeSelect('url');
-                if (selectedMode !== 'url') {
-                  setShowUrlPopup(true);
-                } else {
-                  setShowUrlPopup(!showUrlPopup);
-                }
-              }}
-            >
-              <div className={styles.createOptionIcon}>
-                <Image src="/assets/project/icons/attachment-02-stroke-rounded 1.svg" alt="" width={34} height={34} />
-              </div>
-              <span className={styles.createOptionLabel}>Using URL</span>
-            </button>
-          </div>
+            <p className={styles.viewModeCtaDescription}>
+              {!user
+                ? "Like what you see? Create stunning YouTube thumbnails with AI - no design skills needed."
+                : "You're viewing someone else's creation. Ready to make your own?"
+              }
+            </p>
 
-          {/* URL Input - appears below tiles when URL mode is selected */}
-          {selectedMode === 'url' && showUrlPopup && (
-            <div className={styles.urlInputSection}>
-              <div className={`${styles.urlPopupInput} ${youtubeLinkError ? styles.urlPopupInputError : ''}`}>
-                <input
-                  ref={youtubeLinkInputRef}
-                  type="text"
-                  value={youtubeLink}
-                  onChange={(e) => {
-                    setYoutubeLink(e.target.value);
-                    setYoutubeLinkError(null);
-                  }}
-                  placeholder="Paste YouTube URL"
-                  className={styles.urlInput}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleYoutubeLinkSubmit();
+            {!user && (
+              <>
+                <div className={styles.viewModeCtaFeatures}>
+                  <div className={styles.viewModeCtaFeature}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>AI-powered thumbnail generation</span>
+                  </div>
+                  <div className={styles.viewModeCtaFeature}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Smart merge multiple images</span>
+                  </div>
+                  <div className={styles.viewModeCtaFeature}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Free credits to get started</span>
+                  </div>
+                </div>
+
+                <button
+                  className={styles.viewModeCtaButton}
+                  onClick={async () => {
+                    try {
+                      await signInWithGoogle();
+                      router.push('/dashboard');
+                    } catch (err: unknown) {
+                      const firebaseError = err as { code?: string };
+                      if (firebaseError.code !== 'auth/popup-closed-by-user' &&
+                          firebaseError.code !== 'auth/cancelled-popup-request') {
+                        console.error('Sign in error:', err);
+                      }
                     }
                   }}
-                />
-                <button
-                  className={styles.urlSubmitButton}
-                  onClick={handleYoutubeLinkSubmit}
-                  disabled={!youtubeLink.trim()}
                 >
-                  <Image src="/assets/project/icons/send-prompt.svg" alt="" width={16} height={16} />
+                  <svg className={styles.viewModeCtaButtonIcon} viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                  </svg>
+                  Sign in with Google
                 </button>
-              </div>
-              {youtubeLinkError && <p className={styles.urlPopupError}>{youtubeLinkError}</p>}
-            </div>
-          )}
-        </div>
 
-        {selectedMode === 'prompt' && (
-          <div className={styles.promptInputSection}>
-            {/* Prompt Container */}
-            <div className={styles.promptInputContainer}>
-              {/* Expand Button */}
-              <button
-                className={styles.expandPromptButton}
-                onClick={() => {
-                  setIsPromptModalOpen(true);
-                  trackPromptEditorOpen('expanded');
-                }}
-                title="Expand prompt editor"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 3H21V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M9 21H3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M21 3L14 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M3 21L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <HighlightedPromptEditor
-                value={promptText}
-                onChange={handlePromptChange}
-                placeholder="Describe your thumbnail"
-                className={styles.promptTextarea}
-                theme={theme}
-                rows={1}
-              />
-
-              <div className={styles.promptButtonsRow}>
-                {/* Left side actions: Add Image & Model Selector */}
-                <div className={styles.promptActionsLeft}>
-                  <button
-                    className={styles.addButton}
-                    title="Add reference image"
-                    onClick={() => promptImageInputRef.current?.click()}
-                  >
-                    <Image src="/assets/project/icons/add-image.svg" alt="" width={24} height={24} />
-                  </button>
-                  <input
-                    ref={promptImageInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => {
-                      const files = e.target.files;
-                      if (!files) return;
-
-                      // File size validation (max 10MB per file)
-                      const MAX_REF_FILE_SIZE = 10 * 1024 * 1024;
-                      const oversizedFiles = Array.from(files).filter(f => f.size > MAX_REF_FILE_SIZE);
-                      if (oversizedFiles.length > 0) {
-                        setToast({ message: 'Reference images must be under 10MB each', type: 'error' });
-                        if (promptImageInputRef.current) promptImageInputRef.current.value = '';
-                        return;
-                      }
-
-                      const newImages = Array.from(files).map(file => ({
-                        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                        file,
-                        preview: URL.createObjectURL(file)
-                      }));
-                      setAttachedImages(prev => [...prev, ...newImages]);
-                      if (promptImageInputRef.current) {
-                        promptImageInputRef.current.value = '';
-                      }
-                    }}
-                    style={{ display: 'none' }}
-                    aria-label="Upload reference image"
-                  />
-                  <div className={styles.promptDropdownWrapper}>
-                    <ModelDropdown
-                      selectedModel={promptModel}
-                      onSelectModel={setPromptModel}
-                      theme={theme}
-                      openUpward
-                      showLabel
-                      className={styles.ghostTrigger}
-                    />
-                  </div>
-                </div>
-
-                {/* Right side actions: Cost & Submit */}
-                <div className={styles.promptActionsRight}>
-                  <div className={styles.costDisplay} title="Cost in credits">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
-                      <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-                    </svg>
-                    <span>{sidebarCredits}</span>
-                  </div>
-                  <button
-                    className={styles.submitButton}
-                    onClick={handlePromptSubmit}
-                    disabled={!promptText.trim()}
-                    title="Generate Thumbnail"
-                  >
-                    <Image src="/assets/project/icons/send-prompt.svg" alt="" width={20} height={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Model-specific options */}
-            {promptModel?.options && (
-              <ModelOptionsBar
-                model={promptModel}
-                aspectRatio={aspectRatio}
-                resolution={resolution}
-                size={size}
-                megapixels={megapixels}
-                onAspectRatioChange={setAspectRatio}
-                onResolutionChange={setResolution}
-                onSizeChange={setSize}
-                onMegapixelsChange={setMegapixels}
-                theme={theme}
-                showMatchInput={attachedImages.length > 0}
-              />
+                <p className={styles.viewModeCtaHint}>Free to start - no credit card required</p>
+              </>
             )}
 
-            {/* Attached Images Preview */}
-            {attachedImages.length > 0 && (
-              <div className={styles.attachedImagesSection}>
-                <div className={styles.attachedImagesHeader}>
-                  <span className={styles.attachedImagesLabel}>Reference Images</span>
-                  <div className={styles.attachedImagesHintWrapper}>
-                    <button
-                      className={styles.attachedImagesHint}
-                      onClick={() => setShowSidebarTooltip(!showSidebarTooltip)}
-                      onBlur={() => setTimeout(() => setShowSidebarTooltip(false), 200)}
-                    >
-                      💡 Tip
-                    </button>
-                    {showSidebarTooltip && (
-                      <div className={styles.sidebarTooltip}>
-                        Reference images in prompts: 'Use the face from Image 1 with the style of Image 2'
-                      </div>
-                    )}
-                  </div>
+            {user && (
+              <>
+                <button
+                  className={`${styles.viewModeCtaButton} ${styles.viewModeCtaButtonPrimary}`}
+                  onClick={() => router.push('/dashboard')}
+                >
+                  <svg className={styles.viewModeCtaButtonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Create Your Own Project
+                </button>
+
+                <div className={styles.viewModeCtaDivider}>
+                  <span className={styles.viewModeCtaDividerLine} />
+                  <span className={styles.viewModeCtaDividerText}>or</span>
+                  <span className={styles.viewModeCtaDividerLine} />
                 </div>
-                <div className={styles.attachedImagesContainer}>
-                  {attachedImages.map((img, index) => (
-                    <div key={img.id} className={styles.attachedImageWrapper}>
-                      <div className={styles.attachedImageIndex}>{index + 1}</div>
-                      <Image
-                        src={img.preview}
-                        alt={`Image ${index + 1}: ${img.file.name}`}
-                        width={60}
-                        height={60}
-                        className={styles.attachedImagePreview}
-                      />
-                      <button
-                        className={styles.removeImageButton}
-                        onClick={() => {
-                          setAttachedImages(prev => {
-                            const imageToRemove = prev.find(i => i.id === img.id);
-                            if (imageToRemove) {
-                              URL.revokeObjectURL(imageToRemove.preview);
-                            }
-                            return prev.filter(i => i.id !== img.id);
-                          });
-                        }}
-                        aria-label={`Remove ${img.file.name}`}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
-                      <span className={styles.attachedImageName}>{img.file.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
+                <p className={styles.viewModeCtaHint}>
+                  Continue exploring - you can zoom, pan, and export thumbnails
+                </p>
+              </>
             )}
-
-            {/* Optional Category & Tone Hints */}
-            <div className={styles.optionalHintsSection}>
-              <span className={styles.optionalHintsLabel}>Category</span>
-              <div
-                className={styles.chipsContainer}
-                onMouseDown={(e) => {
-                  const container = e.currentTarget;
-                  const startX = e.pageX - container.offsetLeft;
-                  const scrollLeft = container.scrollLeft;
-                  const onMouseMove = (e: MouseEvent) => {
-                    const x = e.pageX - container.offsetLeft;
-                    container.scrollLeft = scrollLeft - (x - startX);
-                  };
-                  const onMouseUp = () => {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                  };
-                  document.addEventListener('mousemove', onMouseMove);
-                  document.addEventListener('mouseup', onMouseUp);
-                }}
-              >
-                {CATEGORY_OPTIONS.map((cat) => (
-                  <button
-                    key={cat.id}
-                    className={`${styles.hintChip} ${selectedCategory === cat.id ? styles.hintChipActive : ''}`}
-                    onClick={() => {
-                      setSelectedCategory(prev => prev === cat.id ? null : cat.id);
-                      if (selectedCategory !== cat.id) setCustomCategory('');
-                    }}
-                    type="button"
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-                <button
-                  className={`${styles.hintChip} ${selectedCategory === 'custom' ? styles.hintChipActive : ''}`}
-                  onClick={() => setSelectedCategory(prev => prev === 'custom' ? null : 'custom')}
-                  type="button"
-                >
-                  Custom
-                </button>
-              </div>
-              {selectedCategory === 'custom' && (
-                <div className={styles.customHintInputWrapper}>
-                  <input
-                    type="text"
-                    className={`${styles.customHintInput} ${customCategory.trim() ? styles.customHintInputFilled : ''}`}
-                    placeholder="e.g. Fitness, Music, ASMR..."
-                    value={customCategory}
-                    onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
-                    maxLength={50}
-                  />
-                  {customCategory.trim() && (
-                    <span className={styles.customHintCheck}>✓</span>
-                  )}
-                </div>
-              )}
-              <span className={styles.optionalHintsLabel}>Tone</span>
-              <div
-                className={styles.chipsContainer}
-                onMouseDown={(e) => {
-                  const container = e.currentTarget;
-                  const startX = e.pageX - container.offsetLeft;
-                  const scrollLeft = container.scrollLeft;
-                  const onMouseMove = (e: MouseEvent) => {
-                    const x = e.pageX - container.offsetLeft;
-                    container.scrollLeft = scrollLeft - (x - startX);
-                  };
-                  const onMouseUp = () => {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                  };
-                  document.addEventListener('mousemove', onMouseMove);
-                  document.addEventListener('mouseup', onMouseUp);
-                }}
-              >
-                {TONE_OPTIONS.map((tone) => (
-                  <button
-                    key={tone.id}
-                    className={`${styles.hintChip} ${selectedTone === tone.id ? styles.hintChipActive : ''}`}
-                    onClick={() => {
-                      setSelectedTone(prev => prev === tone.id ? null : tone.id);
-                      if (selectedTone !== tone.id) setCustomTone('');
-                    }}
-                    type="button"
-                  >
-                    {tone.label}
-                  </button>
-                ))}
-                <button
-                  className={`${styles.hintChip} ${selectedTone === 'custom' ? styles.hintChipActive : ''}`}
-                  onClick={() => setSelectedTone(prev => prev === 'custom' ? null : 'custom')}
-                  type="button"
-                >
-                  Custom
-                </button>
-              </div>
-              {selectedTone === 'custom' && (
-                <div className={styles.customHintInputWrapper}>
-                  <input
-                    type="text"
-                    className={`${styles.customHintInput} ${customTone.trim() ? styles.customHintInputFilled : ''}`}
-                    placeholder="e.g. Mysterious, Exciting, Cozy..."
-                    value={customTone}
-                    onChange={(e) => setCustomTone(e.target.value.slice(0, 50))}
-                    maxLength={50}
-                  />
-                  {customTone.trim() && (
-                    <span className={styles.customHintCheck}>✓</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Thumbnail Count Selector */}
-            <div className={styles.thumbnailCountSection}>
-              <span className={styles.thumbnailCountLabel}>Thumbnails to generate</span>
-              <div className={styles.thumbnailCountButtons}>
-                {[1, 2, 3, 4].map((count) => (
-                  <button
-                    key={count}
-                    className={`${styles.countButton} ${thumbnailCount === count ? styles.countButtonActive : ''}`}
-                    onClick={() => handleThumbnailCountChange(count)}
-                  >
-                    {count}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
+        )}
+
+        {!viewMode && (
+          <>
+            <div className={styles.publicToggleContainer}>
+              <span className={styles.publicToggleLabel}>Make project public</span>
+              <button
+                className={`${styles.toggleSwitch} ${isPublic ? styles.toggleActive : ''}`}
+                onClick={handleTogglePublic}
+                role="switch"
+                aria-checked={isPublic}
+              >
+                <span className={styles.toggleKnob} />
+              </button>
+            </div>
+
+            <div className={styles.createNewSection}>
+              <h2 className={styles.createNewTitle}>Create New</h2>
+              <div className={styles.createOptionsGrid}>
+                <button
+                  className={`${styles.createOption} ${selectedMode === 'prompt' ? styles.createOptionSelected : ''}`}
+                  onClick={() => handleModeSelect('prompt')}
+                >
+                  <div className={styles.createOptionIcon}>
+                    <Image src="/assets/project/icons/prompt.svg" alt="" width={34} height={34} />
+                  </div>
+                  <span className={styles.createOptionLabel}>Prompt</span>
+                </button>
+
+                <button
+                  className={`${styles.createOption} ${selectedMode === 'url' ? styles.createOptionSelected : ''}`}
+                  onClick={() => {
+                    handleModeSelect('url');
+                    if (selectedMode !== 'url') {
+                      setShowUrlPopup(true);
+                    } else {
+                      setShowUrlPopup(!showUrlPopup);
+                    }
+                  }}
+                >
+                  <div className={styles.createOptionIcon}>
+                    <Image src="/assets/project/icons/attachment-02-stroke-rounded 1.svg" alt="" width={34} height={34} />
+                  </div>
+                  <span className={styles.createOptionLabel}>Using URL</span>
+                </button>
+              </div>
+
+              {/* URL Input - appears below tiles when URL mode is selected */}
+              {selectedMode === 'url' && showUrlPopup && (
+                <div className={styles.urlInputSection}>
+                  <div className={`${styles.urlPopupInput} ${youtubeLinkError ? styles.urlPopupInputError : ''}`}>
+                    <input
+                      ref={youtubeLinkInputRef}
+                      type="text"
+                      value={youtubeLink}
+                      onChange={(e) => {
+                        setYoutubeLink(e.target.value);
+                        setYoutubeLinkError(null);
+                      }}
+                      placeholder="Paste YouTube URL"
+                      className={styles.urlInput}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleYoutubeLinkSubmit();
+                        }
+                      }}
+                    />
+                    <button
+                      className={styles.urlSubmitButton}
+                      onClick={handleYoutubeLinkSubmit}
+                      disabled={!youtubeLink.trim()}
+                    >
+                      <Image src="/assets/project/icons/send-prompt.svg" alt="" width={16} height={16} />
+                    </button>
+                  </div>
+                  {youtubeLinkError && <p className={styles.urlPopupError}>{youtubeLinkError}</p>}
+                </div>
+              )}
+            </div>
+
+            {selectedMode === 'prompt' && (
+              <div className={styles.promptInputSection}>
+                {/* Prompt Container */}
+                <div className={styles.promptInputContainer}>
+                  {/* Expand Button */}
+                  <button
+                    className={styles.expandPromptButton}
+                    onClick={() => {
+                      setIsPromptModalOpen(true);
+                      trackPromptEditorOpen('expanded');
+                    }}
+                    title="Expand prompt editor"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15 3H21V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M9 21H3V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M21 3L14 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M3 21L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <HighlightedPromptEditor
+                    value={promptText}
+                    onChange={handlePromptChange}
+                    placeholder="Describe your thumbnail"
+                    className={styles.promptTextarea}
+                    theme={theme}
+                    rows={1}
+                  />
+
+                  <div className={styles.promptButtonsRow}>
+                    {/* Left side actions: Add Image & Model Selector */}
+                    <div className={styles.promptActionsLeft}>
+                      <button
+                        className={styles.addButton}
+                        title="Add reference image"
+                        onClick={() => promptImageInputRef.current?.click()}
+                      >
+                        <Image src="/assets/project/icons/add-image.svg" alt="" width={24} height={24} />
+                      </button>
+                      <input
+                        ref={promptImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (!files) return;
+
+                          // File size validation (max 10MB per file)
+                          const MAX_REF_FILE_SIZE = 10 * 1024 * 1024;
+                          const oversizedFiles = Array.from(files).filter(f => f.size > MAX_REF_FILE_SIZE);
+                          if (oversizedFiles.length > 0) {
+                            setToast({ message: 'Reference images must be under 10MB each', type: 'error' });
+                            if (promptImageInputRef.current) promptImageInputRef.current.value = '';
+                            return;
+                          }
+
+                          const newImages = Array.from(files).map(file => ({
+                            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            file,
+                            preview: URL.createObjectURL(file)
+                          }));
+                          setAttachedImages(prev => [...prev, ...newImages]);
+                          if (promptImageInputRef.current) {
+                            promptImageInputRef.current.value = '';
+                          }
+                        }}
+                        style={{ display: 'none' }}
+                        aria-label="Upload reference image"
+                      />
+                      <div className={styles.promptDropdownWrapper}>
+                        <ModelDropdown
+                          selectedModel={promptModel}
+                          onSelectModel={setPromptModel}
+                          theme={theme}
+                          openUpward
+                          showLabel
+                          className={styles.ghostTrigger}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Right side actions: Cost & Submit */}
+                    <div className={styles.promptActionsRight}>
+                      <div className={styles.costDisplay} title="Cost in credits">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                          <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                        </svg>
+                        <span>{sidebarCredits}</span>
+                      </div>
+                      <button
+                        className={styles.submitButton}
+                        onClick={handlePromptSubmit}
+                        disabled={!promptText.trim()}
+                        title="Generate Thumbnail"
+                      >
+                        <Image src="/assets/project/icons/send-prompt.svg" alt="" width={20} height={20} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Model-specific options */}
+                {promptModel?.options && (
+                  <ModelOptionsBar
+                    model={promptModel}
+                    aspectRatio={aspectRatio}
+                    resolution={resolution}
+                    size={size}
+                    megapixels={megapixels}
+                    onAspectRatioChange={setAspectRatio}
+                    onResolutionChange={setResolution}
+                    onSizeChange={setSize}
+                    onMegapixelsChange={setMegapixels}
+                    theme={theme}
+                    showMatchInput={attachedImages.length > 0}
+                  />
+                )}
+
+                {/* Attached Images Preview */}
+                {attachedImages.length > 0 && (
+                  <div className={styles.attachedImagesSection}>
+                    <div className={styles.attachedImagesHeader}>
+                      <span className={styles.attachedImagesLabel}>Reference Images</span>
+                      <div className={styles.attachedImagesHintWrapper}>
+                        <button
+                          className={styles.attachedImagesHint}
+                          onClick={() => setShowSidebarTooltip(!showSidebarTooltip)}
+                          onBlur={() => setTimeout(() => setShowSidebarTooltip(false), 200)}
+                        >
+                          💡 Tip
+                        </button>
+                        {showSidebarTooltip && (
+                          <div className={styles.sidebarTooltip}>
+                            Reference images in prompts: 'Use the face from Image 1 with the style of Image 2'
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.attachedImagesContainer}>
+                      {attachedImages.map((img, index) => (
+                        <div key={img.id} className={styles.attachedImageWrapper}>
+                          <div className={styles.attachedImageIndex}>{index + 1}</div>
+                          <Image
+                            src={img.preview}
+                            alt={`Image ${index + 1}: ${img.file.name}`}
+                            width={60}
+                            height={60}
+                            className={styles.attachedImagePreview}
+                          />
+                          <button
+                            className={styles.removeImageButton}
+                            onClick={() => {
+                              setAttachedImages(prev => {
+                                const imageToRemove = prev.find(i => i.id === img.id);
+                                if (imageToRemove) {
+                                  URL.revokeObjectURL(imageToRemove.preview);
+                                }
+                                return prev.filter(i => i.id !== img.id);
+                              });
+                            }}
+                            aria-label={`Remove ${img.file.name}`}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                          <span className={styles.attachedImageName}>{img.file.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Optional Category & Tone Hints */}
+                <div className={styles.optionalHintsSection}>
+                  <span className={styles.optionalHintsLabel}>Category</span>
+                  <div
+                    className={styles.chipsContainer}
+                    onMouseDown={(e) => {
+                      const container = e.currentTarget;
+                      const startX = e.pageX - container.offsetLeft;
+                      const scrollLeft = container.scrollLeft;
+                      const onMouseMove = (e: MouseEvent) => {
+                        const x = e.pageX - container.offsetLeft;
+                        container.scrollLeft = scrollLeft - (x - startX);
+                      };
+                      const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                      };
+                      document.addEventListener('mousemove', onMouseMove);
+                      document.addEventListener('mouseup', onMouseUp);
+                    }}
+                  >
+                    {CATEGORY_OPTIONS.map((cat) => (
+                      <button
+                        key={cat.id}
+                        className={`${styles.hintChip} ${selectedCategory === cat.id ? styles.hintChipActive : ''}`}
+                        onClick={() => {
+                          setSelectedCategory(prev => prev === cat.id ? null : cat.id);
+                          if (selectedCategory !== cat.id) setCustomCategory('');
+                        }}
+                        type="button"
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                    <button
+                      className={`${styles.hintChip} ${selectedCategory === 'custom' ? styles.hintChipActive : ''}`}
+                      onClick={() => setSelectedCategory(prev => prev === 'custom' ? null : 'custom')}
+                      type="button"
+                    >
+                      Custom
+                    </button>
+                  </div>
+                  {selectedCategory === 'custom' && (
+                    <div className={styles.customHintInputWrapper}>
+                      <input
+                        type="text"
+                        className={`${styles.customHintInput} ${customCategory.trim() ? styles.customHintInputFilled : ''}`}
+                        placeholder="e.g. Fitness, Music, ASMR..."
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
+                        maxLength={50}
+                      />
+                      {customCategory.trim() && (
+                        <span className={styles.customHintCheck}>✓</span>
+                      )}
+                    </div>
+                  )}
+                  <span className={styles.optionalHintsLabel}>Tone</span>
+                  <div
+                    className={styles.chipsContainer}
+                    onMouseDown={(e) => {
+                      const container = e.currentTarget;
+                      const startX = e.pageX - container.offsetLeft;
+                      const scrollLeft = container.scrollLeft;
+                      const onMouseMove = (e: MouseEvent) => {
+                        const x = e.pageX - container.offsetLeft;
+                        container.scrollLeft = scrollLeft - (x - startX);
+                      };
+                      const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                      };
+                      document.addEventListener('mousemove', onMouseMove);
+                      document.addEventListener('mouseup', onMouseUp);
+                    }}
+                  >
+                    {TONE_OPTIONS.map((tone) => (
+                      <button
+                        key={tone.id}
+                        className={`${styles.hintChip} ${selectedTone === tone.id ? styles.hintChipActive : ''}`}
+                        onClick={() => {
+                          setSelectedTone(prev => prev === tone.id ? null : tone.id);
+                          if (selectedTone !== tone.id) setCustomTone('');
+                        }}
+                        type="button"
+                      >
+                        {tone.label}
+                      </button>
+                    ))}
+                    <button
+                      className={`${styles.hintChip} ${selectedTone === 'custom' ? styles.hintChipActive : ''}`}
+                      onClick={() => setSelectedTone(prev => prev === 'custom' ? null : 'custom')}
+                      type="button"
+                    >
+                      Custom
+                    </button>
+                  </div>
+                  {selectedTone === 'custom' && (
+                    <div className={styles.customHintInputWrapper}>
+                      <input
+                        type="text"
+                        className={`${styles.customHintInput} ${customTone.trim() ? styles.customHintInputFilled : ''}`}
+                        placeholder="e.g. Mysterious, Exciting, Cozy..."
+                        value={customTone}
+                        onChange={(e) => setCustomTone(e.target.value.slice(0, 50))}
+                        maxLength={50}
+                      />
+                      {customTone.trim() && (
+                        <span className={styles.customHintCheck}>✓</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Thumbnail Count Selector */}
+                <div className={styles.thumbnailCountSection}>
+                  <span className={styles.thumbnailCountLabel}>Thumbnails to generate</span>
+                  <div className={styles.thumbnailCountButtons}>
+                    {[1, 2, 3, 4].map((count) => (
+                      <button
+                        key={count}
+                        className={`${styles.countButton} ${thumbnailCount === count ? styles.countButtonActive : ''}`}
+                        onClick={() => handleThumbnailCountChange(count)}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Sidebar Bottom Stats */}
@@ -3483,7 +3798,7 @@ export default function ProjectCanvasPage() {
             ))}
 
             {/* Multi-select: Smart Merge panel or Single-select: Individual prompts */}
-            {selectedElementIds.length > 1 ? (
+            {!viewMode && selectedElementIds.length > 1 ? (
               // Multiple elements selected - show Smart Merge
               (() => {
                 const selectedElements = canvasElements.filter(el => selectedElementIds.includes(el.id));
@@ -3823,7 +4138,7 @@ export default function ProjectCanvasPage() {
                   </div>
                 );
               })()
-            ) : (
+            ) : !viewMode && selectedElementIds.length > 0 ? (
               // Single element selected - show individual prompt panels
               selectedElementIds.map(elementId => {
                 const element = canvasElements.find(el => el.id === elementId);
@@ -3993,7 +4308,7 @@ export default function ProjectCanvasPage() {
                   </div>
                 );
               })
-            )}
+            ) : null}
           </div>
         </div>
 
