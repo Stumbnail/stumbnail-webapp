@@ -1,3 +1,17 @@
+# What's New
+
+## Sharing Feature - January 2026
+
+We added a sharing feature. Now users can share projects with their friends. They can download the thumbnails directly from the source.
+
+### Key Features
+- Share projects with friends via shareable links
+- Direct thumbnail downloads from shared projects
+- Public/private project privacy settings
+- Easy access through project menu
+
+---
+
 # Login Page Updates - Fixed Background & Avatars
 
 ## What Was Fixed
