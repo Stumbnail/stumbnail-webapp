@@ -67,8 +67,6 @@ interface ProjectCanvasPageProps {
   viewMode?: boolean;  // View-only mode for shared projects
   user?: any;  // Can be passed from SharePage to avoid duplicate useAuth calls
   authLoading?: boolean;  // Loading state from SharePage
-  params?: { id: string };  // Next.js page params
-  searchParams?: Record<string, string | string[] | undefined>;  // Next.js search params
 }
 
 // Types
@@ -276,7 +274,7 @@ const CanvasItem = ({
   );
 };
 
-export default function ProjectCanvasPage(props: ProjectCanvasPageProps) {
+export function ProjectCanvas(props: ProjectCanvasPageProps) {
   const {
     projectId: propProjectId,
     viewMode = false,
@@ -3077,7 +3075,7 @@ export default function ProjectCanvasPage(props: ProjectCanvasPageProps) {
                     } catch (err: unknown) {
                       const firebaseError = err as { code?: string };
                       if (firebaseError.code !== 'auth/popup-closed-by-user' &&
-                          firebaseError.code !== 'auth/cancelled-popup-request') {
+                        firebaseError.code !== 'auth/cancelled-popup-request') {
                         console.error('Sign in error:', err);
                       }
                     }
@@ -4505,4 +4503,9 @@ export default function ProjectCanvasPage(props: ProjectCanvasPageProps) {
       />
     </div>
   );
+}
+
+
+export default function Page() {
+  return <ProjectCanvas />;
 }

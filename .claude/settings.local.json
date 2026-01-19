@@ -26,7 +26,15 @@
       "WebFetch(domain:localhost)",
       "Bash(if exist .next rmdir /s /q .next)",
       "Bash(npx tsc:*)",
-      "Bash(npm update:*)"
+      "Bash(npm update:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(npx next build)"
     ],
     "deny": [],
     "ask": []

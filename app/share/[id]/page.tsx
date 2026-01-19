@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import CanvasPage from '@/app/project/[id]/page';
+import { ProjectCanvas as CanvasPage } from '@/app/project/[id]/page';
 
 export default function SharePage() {
   const params = useParams();
