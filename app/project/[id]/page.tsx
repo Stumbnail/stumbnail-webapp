@@ -61,12 +61,14 @@ import { LoadingSpinner, AnimatedBorder, PricingModal } from '@/components/ui';
 import { ModelOptionsBar } from '@/components/generation';
 import { HighlightedPromptEditor } from '@/components/prompt';
 
-// Props interface
+// Props interface for when used as a shared component
 interface ProjectCanvasPageProps {
   projectId?: string;  // Can be passed as prop from share page
   viewMode?: boolean;  // View-only mode for shared projects
   user?: any;  // Can be passed from SharePage to avoid duplicate useAuth calls
   authLoading?: boolean;  // Loading state from SharePage
+  params?: { id: string };  // Next.js page params
+  searchParams?: Record<string, string | string[] | undefined>;  // Next.js search params
 }
 
 // Types
@@ -274,12 +276,14 @@ const CanvasItem = ({
   );
 };
 
-export default function ProjectCanvasPage({
-  projectId: propProjectId,
-  viewMode = false,
-  user: propUser,
-  authLoading: propAuthLoading
-}: ProjectCanvasPageProps = {}) {
+export default function ProjectCanvasPage(props: ProjectCanvasPageProps = {}) {
+  const {
+    projectId: propProjectId,
+    viewMode = false,
+    user: propUser,
+    authLoading: propAuthLoading
+  } = props;
+
   const router = useRouter();
   const params = useParams();
   const projectId = propProjectId || (params?.id as string);
