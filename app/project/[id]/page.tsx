@@ -276,13 +276,13 @@ const CanvasItem = ({
   );
 };
 
-export default function ProjectCanvasPage(props: ProjectCanvasPageProps = {}) {
+export default function ProjectCanvasPage(props: ProjectCanvasPageProps) {
   const {
     projectId: propProjectId,
     viewMode = false,
     user: propUser,
     authLoading: propAuthLoading
-  } = props;
+  } = props || {};
 
   const router = useRouter();
   const params = useParams();
