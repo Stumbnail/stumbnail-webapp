@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { User } from 'firebase/auth';
 import { AuthState } from '@/types';
 
@@ -9,12 +9,14 @@ import { AuthState } from '@/types';
  * Custom hook for managing authentication state
  * Uses lazy-loaded Firebase to reduce initial bundle size
  */
-export function useAuth(redirectToLogin: boolean = true) {
+export function useAuth(redirectToLogin: boolean = true, redirectMessage?: string) {
     const [authState, setAuthState] = useState<AuthState>({
         user: null,
         loading: true,
     });
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         let unsubscribe: (() => void) | null = null;
@@ -29,7 +31,22 @@ export function useAuth(redirectToLogin: boolean = true) {
                     } else {
                         setAuthState({ user: null, loading: false });
                         if (redirectToLogin) {
-                            router.push('/login');
+                            // Construct return URL
+                            let returnUrl = pathname;
+                            const params = searchParams?.toString();
+                            if (params) {
+                                returnUrl += `?${params}`;
+                            }
+
+                            // Prevent redirect loops if already on login
+                            if (pathname?.startsWith('/login')) return;
+
+                            let loginUrl = `/login?redirect=${encodeURIComponent(returnUrl || '/')}`;
+                            if (redirectMessage) {
+                                loginUrl += `&message=${encodeURIComponent(redirectMessage)}`;
+                            }
+
+                            router.push(loginUrl);
                         }
                     }
                 });
@@ -46,7 +63,7 @@ export function useAuth(redirectToLogin: boolean = true) {
                 unsubscribe();
             }
         };
-    }, [router, redirectToLogin]);
+    }, [router, redirectToLogin, pathname, searchParams]);
 
     const signOut = useCallback(async () => {
         try {

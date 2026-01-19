@@ -2019,6 +2019,157 @@
 }
 
 /* ============================================
+   VIEW MODE CTA (Shared Project)
+   ============================================ */
+
+.viewModeCta {
+  padding: 20px 16px;
+  margin-bottom: 20px;
+  background-color: #f5f5f5;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.viewModeCtaHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.viewModeCtaIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: rgba(255, 111, 97, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewModeCtaIcon svg {
+  width: 18px;
+  height: 18px;
+  color: #ff6f61;
+}
+
+.viewModeCtaTitle {
+  font-family: var(--font-lexend), 'Lexend', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #141414;
+  margin: 0;
+}
+
+.viewModeCtaDescription {
+  font-family: var(--font-space-grotesk), 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #666;
+  margin: 0 0 16px 0;
+}
+
+.viewModeCtaFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: rgba(255, 111, 97, 0.05);
+  border-radius: 8px;
+}
+
+.viewModeCtaFeature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-space-grotesk), 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  color: #444;
+}
+
+.viewModeCtaFeature svg {
+  width: 14px;
+  height: 14px;
+  color: #ff6f61;
+  flex-shrink: 0;
+}
+
+.viewModeCtaButton {
+  width: 100%;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-space-grotesk), 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #2d2d2d;
+  border: 1px solid #3d3d3d;
+  color: #ffeae8;
+}
+
+.viewModeCtaButton:hover {
+  background-color: #3a3a3a;
+  border-color: #4a4a4a;
+  box-shadow: 0 4px 12px rgba(255, 111, 97, 0.15);
+}
+
+.viewModeCtaButton:active {
+  transform: scale(0.98);
+}
+
+.viewModeCtaButtonPrimary {
+  background: linear-gradient(135deg, #ff6f61 0%, #ff8a7a 100%);
+  border: none;
+  color: #ffffff;
+}
+
+.viewModeCtaButtonPrimary:hover {
+  background: linear-gradient(135deg, #ff5a4a 0%, #ff6f61 100%);
+  box-shadow: 0 4px 16px rgba(255, 111, 97, 0.35);
+}
+
+.viewModeCtaButtonIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.viewModeCtaDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.viewModeCtaDividerLine {
+  flex: 1;
+  height: 1px;
+  background-color: #ddd;
+}
+
+.viewModeCtaDividerText {
+  font-family: var(--font-space-grotesk), 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.viewModeCtaHint {
+  font-family: var(--font-space-grotesk), 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  color: #888;
+  text-align: center;
+  margin-top: 12px;
+}
+
+/* ============================================
    DARK THEME
    ============================================ */
 
@@ -2050,6 +2201,44 @@
 
 .darkTheme .toggleSwitch {
   background-color: #444;
+}
+
+/* Dark theme - View Mode CTA */
+.darkTheme .viewModeCta {
+  background-color: #1e1e1e;
+  border-color: #333;
+}
+
+.darkTheme .viewModeCtaIcon {
+  background-color: rgba(255, 111, 97, 0.15);
+}
+
+.darkTheme .viewModeCtaTitle {
+  color: #ffeae8;
+}
+
+.darkTheme .viewModeCtaDescription {
+  color: #999;
+}
+
+.darkTheme .viewModeCtaFeatures {
+  background-color: rgba(255, 111, 97, 0.08);
+}
+
+.darkTheme .viewModeCtaFeature {
+  color: #bbb;
+}
+
+.darkTheme .viewModeCtaDividerLine {
+  background-color: #444;
+}
+
+.darkTheme .viewModeCtaDividerText {
+  color: #666;
+}
+
+.darkTheme .viewModeCtaHint {
+  color: #666;
 }
 
 .darkTheme .sidebarBottomStats {

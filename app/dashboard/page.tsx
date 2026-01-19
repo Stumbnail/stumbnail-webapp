@@ -52,6 +52,10 @@ const TemplateCustomizationModal = dynamic(
   () => import('@/components/modals/TemplateCustomizationModal'),
   { ssr: false }
 );
+const ShareModal = dynamic(
+  () => import('@/components/modals/ShareModal'),
+  { ssr: false }
+);
 
 // Styles
 import styles from './dashboard.module.css';
@@ -101,6 +105,17 @@ export default function DashboardPage() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [shareModalState, setShareModalState] = useState<{
+    isOpen: boolean;
+    projectId: string;
+    projectName: string;
+    privacy: 'public' | 'private';
+  }>({
+    isOpen: false,
+    projectId: '',
+    projectName: '',
+    privacy: 'private'
+  });
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -318,6 +333,30 @@ export default function DashboardPage() {
     setProjectMenuOpen(null);
   }, [projects]);
 
+  const handleShareProject = useCallback((projectId: string, projectName: string, privacy: 'public' | 'private') => {
+    setShareModalState({
+      isOpen: true,
+      projectId,
+      projectName,
+      privacy
+    });
+    setProjectMenuOpen(null);
+  }, []);
+
+  const handleMakePublic = useCallback(async () => {
+    if (!shareModalState.projectId) return;
+
+    await updateProject(shareModalState.projectId, {
+      privacy: 'public'
+    });
+
+    // Update the modal state to reflect the new privacy
+    setShareModalState(prev => ({
+      ...prev,
+      privacy: 'public'
+    }));
+  }, [shareModalState.projectId, updateProject]);
+
   const handleEditProjectConfirm = useCallback((name: string, isPublic: boolean) => {
     if (editProjectModal.projectId === null) return;
 
@@ -488,6 +527,7 @@ export default function DashboardPage() {
               onToggleFavorite={handleToggleFavorite}
               onOpenProject={handleOpenProject}
               onDeleteProject={handleDeleteProject}
+              onShareProject={handleShareProject}
             />
           </section>
 
@@ -670,6 +710,17 @@ export default function DashboardPage() {
         userData={userData}
         theme={theme}
         onUpgradeClick={() => setPricingModalOpen(true)}
+      />
+
+      {/* Share Modal */}
+      < ShareModal
+        isOpen={shareModalState.isOpen}
+        onClose={() => setShareModalState(prev => ({ ...prev, isOpen: false }))}
+        projectId={shareModalState.projectId}
+        projectName={shareModalState.projectName}
+        privacy={shareModalState.privacy}
+        onMakePublic={handleMakePublic}
+        theme={theme}
       />
 
       {/* Template Customization Modal */}

@@ -25,6 +25,7 @@ interface ProjectsGridProps {
     onToggleFavorite: (projectId: string) => void;
     onOpenProject: (projectId: string) => void;
     onDeleteProject: (projectId: string) => void;
+    onShareProject: (projectId: string, projectName: string, privacy: 'public' | 'private') => void;
 }
 
 export default function ProjectsGrid({
@@ -45,6 +46,7 @@ export default function ProjectsGrid({
     onToggleFavorite,
     onOpenProject,
     onDeleteProject,
+    onShareProject,
 }: ProjectsGridProps) {
     const router = useRouter();
 
@@ -130,6 +132,7 @@ export default function ProjectsGrid({
                         onToggleFavorite={() => onToggleFavorite(project.id)}
                         onOpen={() => onOpenProject(project.id)}
                         onDelete={() => onDeleteProject(project.id)}
+                        onShare={(projectName, privacy) => onShareProject(project.id, projectName, privacy)}
                     />
                 ))}
             </div>
