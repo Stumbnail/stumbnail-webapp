@@ -77,6 +77,7 @@ type ToolMode = 'select' | 'hand';
 
 interface CanvasElement {
     id: string;
+    backendId?: string;  // Actual ID from backend, stored separately to keep React key stable
     type: 'image' | 'youtube-thumbnail' | 'generated' | 'uploaded' | 'smart-merge' | 'edit';
     src: string;
     x: number;
@@ -160,15 +161,29 @@ const CanvasItem = ({
 }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
 
     // Check if the src is valid (not empty, not just whitespace)
     const hasValidSrc = element.src && element.src.trim().length > 0;
 
-    // Reset loaded state when src changes (e.g. from placeholder to generated image)
+    // Reset loaded state when src changes and check if already loaded (from cache)
     useEffect(() => {
         setIsLoaded(false);
         setHasError(false);
+
+        // Check if the image is already loaded from cache
+        // This handles the case where the image loads before React attaches event handlers
+        if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+            setIsLoaded(true);
+        }
     }, [element.src]);
+
+    // Additional check after render to catch cached images that load synchronously
+    useLayoutEffect(() => {
+        if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+            setIsLoaded(true);
+        }
+    });
 
     // Reset error state when element starts generating
     useEffect(() => {
@@ -227,6 +242,7 @@ const CanvasItem = ({
                     )}
                     {hasValidSrc && (
                         <img
+                            ref={imgRef}
                             src={element.src}
                             alt={element.prompt || "Thumbnail"}
                             className={styles.elementImage}
@@ -672,6 +688,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
 
                             return {
                                 id: thumb.id,
+                                backendId: thumb.id,  // Set backendId same as id for elements loaded from backend
                                 type: thumb.type === 'uploaded' ? 'image' : thumb.type,
                                 src: thumb.thumbnailUrl,
                                 x: thumb.x || 0,
@@ -1230,10 +1247,12 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                     });
 
                     if (response.success && response.thumbnail) {
+                        // Store backend ID without changing the element's id (which is used as React key)
+                        // Changing the id would cause CanvasItem to remount, resetting isLoaded state
                         setCanvasElements(prev => prev.map(el =>
-                            el.id === newElementId ? { ...el, id: response.thumbnail.id } : el
+                            el.id === newElementId ? { ...el, backendId: response.thumbnail.id } : el
                         ));
-                        setSelectedElementIds([response.thumbnail.id]);
+                        // Note: selectedElementIds doesn't need updating since id stays the same
                     }
                 } catch (error) {
                     console.error('Failed to save template thumbnail:', error);
@@ -1307,9 +1326,10 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                     });
 
                     if (response.success && response.thumbnail) {
-                        // Update local ID with real backend ID
+                        // Store backend ID without changing the element's id (which is used as React key)
+                        // Changing the id would cause CanvasItem to remount, resetting isLoaded state
                         setCanvasElements(prev => prev.map(el =>
-                            el.id === tempId ? { ...el, id: response.thumbnail.id } : el
+                            el.id === tempId ? { ...el, backendId: response.thumbnail.id } : el
                         ));
                     }
                 } catch (error) {
@@ -1371,8 +1391,10 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                         });
 
                         if (response.success && response.thumbnail) {
+                            // Store backend ID without changing the element's id (which is used as React key)
+                            // Changing the id would cause CanvasItem to remount, resetting isLoaded state
                             setCanvasElements(prev => prev.map(el =>
-                                el.id === tempId ? { ...el, id: response.thumbnail.id } : el
+                                el.id === tempId ? { ...el, backendId: response.thumbnail.id } : el
                             ));
                         }
                     } catch (error) {
@@ -2022,12 +2044,12 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
 
         // Persist position/size changes after drag or resize
         if (dragState.isDragging && dragState.elementIds.length > 0) {
-            // Get current positions of dragged elements (exclude generating placeholders)
+            // Get current positions of dragged elements (exclude generating placeholders and unsync'd elements)
             const updates = canvasElements
-                .filter(el => dragState.elementIds.includes(el.id) && el.status !== 'generating')
-                .map(el => ({ id: el.id, x: el.x, y: el.y }));
+                .filter(el => dragState.elementIds.includes(el.id) && el.status !== 'generating' && el.backendId)
+                .map(el => ({ id: el.backendId!, x: el.x, y: el.y }));
 
-            // Persist to backend (fire and forget) if there are any non-generating elements
+            // Persist to backend (fire and forget) if there are any synced elements
             if (updates.length > 0) {
                 updateThumbnailPositions(projectId, updates).catch(err => {
                     console.error('Failed to persist drag positions:', err);
@@ -2036,12 +2058,12 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         }
 
         if (resizeState.isResizing && resizeState.elementIds.length > 0) {
-            // Get current positions and sizes of resized elements (exclude generating placeholders)
+            // Get current positions and sizes of resized elements (exclude generating placeholders and unsync'd elements)
             const updates = canvasElements
-                .filter(el => resizeState.elementIds.includes(el.id) && el.status !== 'generating')
-                .map(el => ({ id: el.id, x: el.x, y: el.y, width: el.width, height: el.height }));
+                .filter(el => resizeState.elementIds.includes(el.id) && el.status !== 'generating' && el.backendId)
+                .map(el => ({ id: el.backendId!, x: el.x, y: el.y, width: el.width, height: el.height }));
 
-            // Persist to backend (fire and forget) if there are any non-generating elements
+            // Persist to backend (fire and forget) if there are any synced elements
             if (updates.length > 0) {
                 updateThumbnailPositions(projectId, updates).catch(err => {
                     console.error('Failed to persist resize positions:', err);
@@ -2255,10 +2277,10 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                             : el
                     );
 
-                    // Persist nudged positions (debounced via timeout, exclude generating placeholders)
+                    // Persist nudged positions (debounced via timeout, exclude generating placeholders and unsync'd elements)
                     const updates = newElements
-                        .filter(el => selectedElementIds.includes(el.id) && el.status !== 'generating')
-                        .map(el => ({ id: el.id, x: el.x, y: el.y }));
+                        .filter(el => selectedElementIds.includes(el.id) && el.status !== 'generating' && el.backendId)
+                        .map(el => ({ id: el.backendId!, x: el.x, y: el.y }));
 
                     // Use a small delay to batch rapid arrow key presses
                     if (updates.length > 0) {
@@ -3643,8 +3665,8 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
 
                                             console.log('Download triggered for:', filename);
 
-                                            // Track download and export
-                                            trackThumbnailDownload(projectId, element.id).catch(console.error);
+                                            // Track download and export (use backendId if available for API calls)
+                                            trackThumbnailDownload(projectId, element.backendId || element.id).catch(console.error);
                                             trackCanvasExport('png', 'original', 'free');
 
                                             // Small delay between downloads
