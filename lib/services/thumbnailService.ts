@@ -163,6 +163,7 @@ export interface JobStatusResponse {
     progress: number;  // 0-100
     isComplete: boolean;
     isFailed: boolean;
+    cancelled?: boolean;  // Job was cancelled by user
     error?: string;
     errorDetails?: {
         code?: string;
@@ -416,15 +417,44 @@ export async function startGenerationJob(request: GenerateThumbnailRequest): Pro
  * Poll a generation job until completion with progress callbacks
  * @param jobId - The job ID to poll
  * @param onProgress - Callback for progress updates (status message, progress percentage)
+ * @param onTimeout - Callback when timeout warning is triggered (at 30 seconds)
  * @param pollInterval - Polling interval in milliseconds (default 2000ms)
+ * @param maxDuration - Maximum duration in milliseconds before auto-cancel (default 180000ms = 3 minutes)
  * @returns The final GenerateThumbnailResponse on success
  */
 export async function pollGenerationJob(
     jobId: string,
     onProgress?: (status: string, progress: number) => void,
-    pollInterval: number = 2000
-): Promise<{ success: true; result: GenerateThumbnailResponse } | { success: false; error: string; suggestion?: string; code?: string }> {
+    onTimeout?: () => void,
+    pollInterval: number = 2000,
+    maxDuration: number = 180000 // 3 minutes
+): Promise<{ success: true; result: GenerateThumbnailResponse } | { success: false; error: string; suggestion?: string; code?: string; cancelled?: boolean }> {
+    const startTime = Date.now();
+    let timeoutWarningShown = false;
+
     while (true) {
+        const elapsed = Date.now() - startTime;
+
+        // Show timeout warning at 30 seconds
+        if (!timeoutWarningShown && elapsed >= 30000 && onTimeout) {
+            timeoutWarningShown = true;
+            onTimeout();
+        }
+
+        // Auto-cancel at 3 minutes
+        if (elapsed >= maxDuration) {
+            try {
+                await cancelJob(jobId);
+            } catch (cancelError) {
+                console.error('Error cancelling job:', cancelError);
+            }
+            return {
+                success: false,
+                error: 'Generation timed out after 3 minutes',
+                cancelled: true,
+            };
+        }
+
         const statusResponse = await pollJobStatus(jobId);
 
         // Update progress
@@ -437,13 +467,14 @@ export async function pollGenerationJob(
             return { success: true, result: statusResponse.result as GenerateThumbnailResponse };
         }
 
-        // Handle failure
+        // Handle failure or cancellation
         if (statusResponse.isFailed) {
             return {
                 success: false,
                 error: statusResponse.error || 'Generation failed',
                 suggestion: statusResponse.errorDetails?.suggestion,
                 code: statusResponse.errorDetails?.code,
+                cancelled: statusResponse.cancelled,
             };
         }
 
@@ -487,18 +518,54 @@ export async function pollJobStatus(jobId: string): Promise<JobStatusResponse> {
 }
 
 /**
+ * Cancel a running job
+ */
+export async function cancelJob(jobId: string): Promise<{ success: boolean; message?: string }> {
+    return apiPost<{ success: boolean; message?: string }>(`/api/jobs/${jobId}/cancel`);
+}
+
+/**
  * Poll a Smart Merge job until completion with progress callbacks
  * @param jobId - The job ID to poll
  * @param onProgress - Callback for progress updates (status message, progress percentage)
+ * @param onTimeout - Callback when timeout warning is triggered (at 30 seconds)
  * @param pollInterval - Polling interval in milliseconds (default 2000ms)
+ * @param maxDuration - Maximum duration in milliseconds before auto-cancel (default 180000ms = 3 minutes)
  * @returns The final SmartMergeResponse on success
  */
 export async function pollSmartMergeJob(
     jobId: string,
     onProgress?: (status: string, progress: number) => void,
-    pollInterval: number = 2000
-): Promise<{ success: true; result: SmartMergeResponse } | { success: false; error: string; suggestion?: string; code?: string }> {
+    onTimeout?: () => void,
+    pollInterval: number = 2000,
+    maxDuration: number = 180000 // 3 minutes
+): Promise<{ success: true; result: SmartMergeResponse } | { success: false; error: string; suggestion?: string; code?: string; cancelled?: boolean }> {
+    const startTime = Date.now();
+    let timeoutWarningShown = false;
+
     while (true) {
+        const elapsed = Date.now() - startTime;
+
+        // Show timeout warning at 30 seconds
+        if (!timeoutWarningShown && elapsed >= 30000 && onTimeout) {
+            timeoutWarningShown = true;
+            onTimeout();
+        }
+
+        // Auto-cancel at 3 minutes
+        if (elapsed >= maxDuration) {
+            try {
+                await cancelJob(jobId);
+            } catch (cancelError) {
+                console.error('Error cancelling job:', cancelError);
+            }
+            return {
+                success: false,
+                error: 'Generation timed out after 3 minutes',
+                cancelled: true,
+            };
+        }
+
         const statusResponse = await pollJobStatus(jobId);
 
         // Update progress
@@ -511,13 +578,14 @@ export async function pollSmartMergeJob(
             return { success: true, result: statusResponse.result as SmartMergeResponse };
         }
 
-        // Handle failure
+        // Handle failure or cancellation
         if (statusResponse.isFailed) {
             return {
                 success: false,
                 error: statusResponse.error || 'Generation failed',
                 suggestion: statusResponse.errorDetails?.suggestion,
                 code: statusResponse.errorDetails?.code,
+                cancelled: statusResponse.cancelled,
             };
         }
 

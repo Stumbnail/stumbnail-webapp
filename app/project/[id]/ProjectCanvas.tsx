@@ -435,7 +435,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
     const [isSmartMergeDragging, setIsSmartMergeDragging] = useState(false);
 
     const [isSmartMergeGenerating, setIsSmartMergeGenerating] = useState(false);
-    // Smart Merge model state - default to Pro (19 credits)
+    // Smart Merge model state - default to Pro (24 credits)
     const [smartMergeModel, setSmartMergeModel] = useState<string>('nano-banana-pro');
 
     // Tool State
@@ -1434,7 +1434,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
 
     const handlePromptSubmit = useCallback(async () => {
         if (!promptText.trim() || !user?.email) return;
-        if (isGenerating) return; // Prevent double submission
+        // Allow multiple generations - removed isGenerating check to allow sequential generations
 
         setIsGenerating(true);
         setGenerationError(null);
@@ -1542,6 +1542,14 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                         setCanvasElements(prev => prev.map(el =>
                             el.id === elementId
                                 ? { ...el, statusText: status, progress }
+                                : el
+                        ));
+                    },
+                    () => {
+                        // Timeout warning callback (triggered at 30 seconds)
+                        setCanvasElements(prev => prev.map(el =>
+                            el.id === elementId
+                                ? { ...el, statusText: 'Taking longer than usual, please wait...' }
                                 : el
                         ));
                     }
@@ -1840,6 +1848,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
     const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
         const target = e.target as HTMLElement;
         const isOnElement = target.closest(`.${styles.canvasElement}`);
+        const isOnSmartMergePanel = target.closest(`.${styles.conversionFormPanel}`);
 
         // Middle click or hand tool - start panning
         if (e.button === 1 || (e.button === 0 && (toolMode === 'hand' || isHandToolActive))) {
@@ -1850,7 +1859,8 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         }
 
         // Left click on empty canvas - start rubberband selection
-        if (e.button === 0 && !isOnElement && toolMode === 'select') {
+        // But don't clear selection or start rubberband if clicking on Smart Merge panel
+        if (e.button === 0 && !isOnElement && !isOnSmartMergePanel && toolMode === 'select') {
             const canvasPos = screenToCanvas(e.clientX, e.clientY);
 
             if (!shiftPressed) {
@@ -2461,7 +2471,8 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         const elSize = elementSizes[elementId] || model.defaultSize;
         const elMegapixels = elementMegapixels[elementId] || model.defaultMegapixels;
 
-        if (!prompt?.trim() || !user || isGenerating) return;
+        if (!prompt?.trim() || !user) return;
+        // Allow multiple generations - removed isGenerating check to allow sequential generations
 
         setIsGenerating(true);
         setGenerationError(null);
@@ -2566,6 +2577,14 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                     setCanvasElements(prev => prev.map(el =>
                         el.id === newId
                             ? { ...el, statusText: status, progress }
+                            : el
+                    ));
+                },
+                () => {
+                    // Timeout warning callback (triggered at 30 seconds)
+                    setCanvasElements(prev => prev.map(el =>
+                        el.id === newId
+                            ? { ...el, statusText: 'Taking longer than usual, please wait...' }
                             : el
                     ));
                 }
@@ -2816,6 +2835,14 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                     setCanvasElements(prev => prev.map(el =>
                         el.id === newId
                             ? { ...el, statusText: status, progress }
+                            : el
+                    ));
+                },
+                () => {
+                    // Timeout warning callback (triggered at 30 seconds)
+                    setCanvasElements(prev => prev.map(el =>
+                        el.id === newId
+                            ? { ...el, statusText: 'Taking longer than usual, please wait...' }
                             : el
                     ));
                 }
@@ -4101,7 +4128,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                             <button
                                                                 className={`${styles.textOptionButton} ${smartMergeModel === 'nano-banana' ? styles.textOptionButtonActive : ''}`}
                                                                 onClick={() => setSmartMergeModel('nano-banana')}
-                                                                title="Standard quality (10 credits)"
+                                                                title="Standard quality (6 credits)"
                                                             >
                                                                 Standard
                                                                 <div className={styles.inlineCreditsIcon}>
@@ -4109,13 +4136,13 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                                         <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
                                                                         <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
                                                                     </svg>
-                                                                    10
+                                                                    6
                                                                 </div>
                                                             </button>
                                                             <button
                                                                 className={`${styles.textOptionButton} ${smartMergeModel === 'nano-banana-pro' ? styles.textOptionButtonActive : ''}`}
                                                                 onClick={() => setSmartMergeModel('nano-banana-pro')}
-                                                                title="Pro quality (19 credits)"
+                                                                title="Pro quality (24 credits)"
                                                             >
                                                                 Pro
                                                                 <div className={styles.inlineCreditsIcon}>
@@ -4123,7 +4150,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                                         <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
                                                                         <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
                                                                     </svg>
-                                                                    19
+                                                                    24
                                                                 </div>
                                                             </button>
                                                         </div>
@@ -4147,7 +4174,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                                 <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
                                                                 <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
                                                             </svg>
-                                                            {smartMergeModel === 'nano-banana' ? 10 : 37}
+                                                            {smartMergeModel === 'nano-banana' ? 6 : 24}
                                                         </div>
                                                     </>
                                                 )}
@@ -4193,8 +4220,8 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                 if (!element) return null;
 
                                 const elementPrompt = elementPrompts[elementId] || '';
-                                // Default to Nano Banana (Simple) for editing/floating prompt as per user preference
-                                const elementModel = elementModels[elementId] || AVAILABLE_MODELS.find(m => m.id === 'nano-banana') || DEFAULT_MODEL;
+                                // Use same default as generation logic (DEFAULT_MODEL = nano-banana-pro)
+                                const elementModel = elementModels[elementId] || DEFAULT_MODEL;
                                 const elementAttachedImages = modifyAttachedImages[elementId] || [];
 
                                 // Calculate credits for this element (only resolution matters for nano-banana-pro)
