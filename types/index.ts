@@ -170,3 +170,66 @@ export interface PlanInfo {
     name: string;
     monthlyCredits: number;
 }
+
+// Analytics types
+export type ConfidenceRating = 'yes' | 'maybe' | 'no';
+
+export type IntentAnswer =
+    | 'youtube'
+    | 'social'
+    | 'professional'
+    | 'exploring'
+    | 'other';
+
+export type PaywallReason =
+    | 'exploring'
+    | 'price'
+    | 'quality'
+    | 'features'
+    | 'alternatives'
+    | 'confusing'
+    | 'frequency'
+    | 'other';
+
+export type SatisfactionIssue =
+    | 'typography'
+    | 'composition'
+    | 'face'
+    | 'background'
+    | 'reference'
+    | 'generic'
+    | 'other';
+
+export interface AnalyticsEvent {
+    uid: string;
+    session_id: string;
+    event_name: string;
+    timestamp: Date;
+    route?: string;
+    project_id?: string;
+    credits_remaining?: number;
+    plan_tier?: PlanType;
+    generation_count_in_session?: number;
+    properties?: Record<string, unknown>;
+}
+
+export interface IntentPromptState {
+    shownAt?: Date;
+    answeredAt?: Date;
+    answer?: IntentAnswer;
+}
+
+export interface PaywallReasonState {
+    lastShownAt?: Date;
+    answers?: Array<{
+        reason: PaywallReason;
+        optionalText?: string;
+        timestamp: Date;
+    }>;
+}
+
+export interface ConfidenceThrottleState {
+    count: number;
+    lastShownAt: number;
+    projectIds: string[];
+}

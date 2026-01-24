@@ -1,0 +1,290 @@
+/* IntentPromptModal.module.css */
+/* Full-screen intent capture modal - shown on first meaningful entry */
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.overlayLight {
+    background: #fafafa;
+}
+
+.overlayDark {
+    background: #0f0f0f;
+}
+
+.content {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    padding: 48px 32px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Decorative orbs */
+.orbTop {
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 111, 97, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.orbBottom {
+    position: absolute;
+    bottom: -100px;
+    left: -100px;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 111, 97, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.logoIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    color: #ff6f61;
+}
+
+.subtitle {
+    font-size: 16px;
+    margin: 0;
+    opacity: 0.6;
+}
+
+/* Options */
+.options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 2px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    color: inherit;
+}
+
+.overlayLight .option {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+.overlayDark .option {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.option:hover {
+    transform: translateX(4px);
+}
+
+.overlayLight .option:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.overlayDark .option:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.option.optionSelected {
+    border-color: #ff6f61;
+    background: rgba(255, 111, 97, 0.08);
+}
+
+.option.optionSelected:hover {
+    transform: translateX(4px);
+}
+
+.optionIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.overlayLight .optionIcon {
+    background: rgba(0, 0, 0, 0.05);
+    color: #333;
+}
+
+.overlayDark .optionIcon {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.option.optionSelected .optionIcon {
+    background: #ff6f61;
+    color: white;
+}
+
+.optionContent {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.optionLabel {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.optionDescription {
+    font-size: 13px;
+    opacity: 0.5;
+}
+
+.optionCheck {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff6f61;
+    flex-shrink: 0;
+}
+
+/* Continue Button */
+.continueButton {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #ff6f61;
+    color: white;
+}
+
+.continueButton:hover:not(:disabled) {
+    background: #e85a4d;
+    transform: translateY(-2px);
+}
+
+.continueButton:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.continueButton.continueButtonDisabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Spinner */
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .content {
+        padding: 32px 20px;
+    }
+
+    .title {
+        font-size: 24px;
+    }
+
+    .subtitle {
+        font-size: 14px;
+    }
+
+    .option {
+        padding: 14px 16px;
+        gap: 12px;
+    }
+
+    .optionIcon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .optionLabel {
+        font-size: 14px;
+    }
+
+    .optionDescription {
+        font-size: 12px;
+    }
+}

@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import dynamicImport from 'next/dynamic';
 import Image from 'next/image';
 import styles from './login.module.css';
 
@@ -16,15 +15,6 @@ import { trackLoginSuccess, trackSessionStart } from '@/lib/analytics';
 
 // UI Components
 import { LoadingSpinner } from '@/components/ui';
-
-// Lazy load heavy GridMotion component (uses GSAP animations)
-const GridMotion = dynamicImport(
-  () => import('@/components/GridMotion/GridMotion'),
-  {
-    ssr: false,
-    loading: () => <div className={styles.backgroundPlaceholder} />
-  }
-);
 
 interface FirebaseError extends Error {
   code?: string;
@@ -113,10 +103,6 @@ export default function LoginPage() {
     );
   }
 
-  // Generate thumbnail grid items for GridMotion (28 items total)
-  const thumbnails = Array.from({ length: 13 }, (_, i) => `/assets/thumbnails/thumb${i + 1}.png`);
-  const gridItems = Array.from({ length: 28 }, (_, i) => thumbnails[i % thumbnails.length]);
-
   // Avatar data with proper alt text
   const avatars = [
     { src: '/assets/avatars/user1.png', alt: 'User avatar 1' },
@@ -127,13 +113,8 @@ export default function LoginPage() {
 
   return (
     <div className={`${styles.container} ${themeClass}`}>
-      {/* GridMotion Background - Lazy loaded */}
-      <div className={styles.backgroundGrid}>
-        <GridMotion
-          items={gridItems}
-          gradientColor={isDarkTheme ? "rgba(12, 11, 11, 0.9)" : "rgba(26, 26, 26, 0.8)"}
-        />
-      </div>
+      {/* Simple Background */}
+      <div className={styles.backgroundSimple} />
 
       {/* Dark Overlay */}
       <div className={styles.overlay} />
@@ -144,24 +125,15 @@ export default function LoginPage() {
 
       {/* Login Card */}
       <div className={styles.loginCard}>
-        {/* Theme Toggle Button */}
-        <button
-          onClick={() => setIsDarkTheme(!isDarkTheme)}
-          className={styles.themeToggle}
-          aria-label={isDarkTheme ? 'Switch to light theme' : 'Switch to dark theme'}
-        >
-          {isDarkTheme ? '☀️ Light' : '🌙 Dark'}
-        </button>
-
-        <div className={styles.logoContainer}>
+        <a href="https://stumbnail.com" className={styles.logoContainer} title="Go to Stumbnail homepage">
           <Image
             src="/assets/logo.svg"
-            alt="Stumbnail"
+            alt="Stumbnail - Go to homepage"
             width={64}
             height={64}
             priority
           />
-        </div>
+        </a>
 
         <h1 className={styles.heading}>
           Welcome to <span className={styles.brandName}>Stumbnail</span>

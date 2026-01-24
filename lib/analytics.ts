@@ -1,15 +1,143 @@
 /**
  * Analytics utility for tracking custom events
  * Sends events to both Vercel Analytics and Google Analytics
+ * Also supports Firestore event storage for detailed analytics
  */
 
 import { track } from '@vercel/analytics/react';
+import { apiPost } from './api';
 
 // Event properties type
 type EventProperties = Record<string, string | number | boolean | null | undefined>;
 
 // User plan type
 type UserPlan = 'free' | 'creator' | 'automation';
+
+// Session storage keys
+const SESSION_ID_KEY = 'stumbnail_session_id';
+const GENERATION_COUNT_KEY = 'stumbnail_gen_count';
+
+// ============================================
+// Session Management
+// ============================================
+
+/**
+ * Get or create a session ID (persists in localStorage for the browser session)
+ */
+export function getSessionId(): string {
+    if (typeof window === 'undefined') return 'server';
+
+    let sessionId = localStorage.getItem(SESSION_ID_KEY);
+    if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        localStorage.setItem(SESSION_ID_KEY, sessionId);
+    }
+    return sessionId;
+}
+
+/**
+ * Get the current generation count for this session
+ */
+export function getGenerationCount(): number {
+    if (typeof window === 'undefined') return 0;
+    return parseInt(sessionStorage.getItem(GENERATION_COUNT_KEY) || '0', 10);
+}
+
+/**
+ * Increment and return the generation count for this session
+ */
+export function incrementGenerationCount(): number {
+    if (typeof window === 'undefined') return 0;
+    const count = getGenerationCount() + 1;
+    sessionStorage.setItem(GENERATION_COUNT_KEY, count.toString());
+    return count;
+}
+
+/**
+ * Reset the session (useful for testing or on explicit logout)
+ */
+export function resetSession(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(SESSION_ID_KEY);
+    sessionStorage.removeItem(GENERATION_COUNT_KEY);
+}
+
+// ============================================
+// Firestore Event Tracking
+// ============================================
+
+interface FirestoreEventPayload {
+    event_name: string;
+    session_id: string;
+    route?: string;
+    project_id?: string;
+    credits_remaining?: number;
+    plan_tier?: UserPlan;
+    generation_count_in_session?: number;
+    properties?: EventProperties;
+}
+
+/**
+ * Track an event to Firestore via the API (fire-and-forget, non-blocking)
+ * This is for detailed analytics that need to be stored in Firestore
+ */
+export function trackFirestoreEvent(
+    eventName: string,
+    properties: EventProperties = {},
+    context: {
+        route?: string;
+        projectId?: string;
+        creditsRemaining?: number;
+        planTier?: UserPlan;
+    } = {}
+): void {
+    if (typeof window === 'undefined') return;
+
+    const payload: FirestoreEventPayload = {
+        event_name: eventName,
+        session_id: getSessionId(),
+        route: context.route || window.location.pathname,
+        project_id: context.projectId,
+        credits_remaining: context.creditsRemaining,
+        plan_tier: context.planTier,
+        generation_count_in_session: getGenerationCount(),
+        properties
+    };
+
+    // Fire and forget - don't await, don't block
+    setTimeout(() => {
+        apiPost('/api/analytics/event', payload as unknown as Record<string, unknown>)
+            .catch((err) => console.warn('[Analytics] Firestore tracking failed:', err));
+    }, 0);
+}
+
+/**
+ * Track multiple events to Firestore in batch (fire-and-forget)
+ */
+export function trackFirestoreEventsBatch(
+    events: Array<{ eventName: string; properties?: EventProperties }>
+): void {
+    if (typeof window === 'undefined' || events.length === 0) return;
+
+    const sessionId = getSessionId();
+    const genCount = getGenerationCount();
+    const route = window.location.pathname;
+
+    const payload = {
+        events: events.map(e => ({
+            event_name: e.eventName,
+            session_id: sessionId,
+            route,
+            generation_count_in_session: genCount,
+            properties: e.properties || {}
+        }))
+    };
+
+    setTimeout(() => {
+        apiPost('/api/analytics/events', payload as unknown as Record<string, unknown>)
+            .catch((err) => console.warn('[Analytics] Firestore batch tracking failed:', err));
+    }, 0);
+}
 
 /**
  * Track a custom event to both Vercel Analytics and Google Analytics

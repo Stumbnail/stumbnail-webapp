@@ -31,6 +31,7 @@ import { getUserPlan } from '@/lib/services/userService';
 
 // Analytics
 import { trackProjectCreate } from '@/lib/analytics';
+import { needsIntentPrompt, submitIntentAnswer, trackAppOpen, setAnalyticsUserContext } from '@/lib/services/analyticsService';
 
 // Components - Critical path components load normally
 import { Sidebar, Header } from '@/components/layout';
@@ -56,6 +57,10 @@ const TemplateCustomizationModal = dynamicImport(
 );
 const ShareModal = dynamicImport(
   () => import('@/components/modals/ShareModal'),
+  { ssr: false }
+);
+const IntentPromptModal = dynamicImport(
+  () => import('@/components/modals/IntentPromptModal'),
   { ssr: false }
 );
 
@@ -119,6 +124,10 @@ export default function DashboardPage() {
     privacy: 'private'
   });
 
+  // Intent prompt state (for first-time users)
+  const [intentModalOpen, setIntentModalOpen] = useState(false);
+  const [intentChecked, setIntentChecked] = useState(false);
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -151,6 +160,45 @@ export default function DashboardPage() {
   );
 
   const hasMoreProjects = filteredProjects.length > maxProjectsToShow;
+
+  // Check if user needs to see intent prompt and track app_open
+  useEffect(() => {
+    if (!user || authLoading || intentChecked) return;
+
+    const checkIntentPrompt = async () => {
+      try {
+        // Track app open event
+        const isReturning = localStorage.getItem('stumbnail_has_visited') === 'true';
+        trackAppOpen(isReturning);
+        if (!isReturning) {
+          localStorage.setItem('stumbnail_has_visited', 'true');
+        }
+
+        // Check if intent prompt is needed
+        const needsPrompt = await needsIntentPrompt();
+        if (needsPrompt) {
+          setIntentModalOpen(true);
+        }
+      } catch (error) {
+        console.warn('[Dashboard] Error checking intent prompt:', error);
+      } finally {
+        setIntentChecked(true);
+      }
+    };
+
+    checkIntentPrompt();
+  }, [user, authLoading, intentChecked]);
+
+  // Set analytics user context when user data is available
+  useEffect(() => {
+    if (userData) {
+      const plan = getUserPlan(userData);
+      setAnalyticsUserContext({
+        creditsRemaining: userData.subscriptionCredits + userData.toppedUpBalance + userData.trialCredits,
+        planTier: plan.type,
+      });
+    }
+  }, [userData]);
 
   // Click outside handling for project menu
   useEffect(() => {
@@ -405,6 +453,17 @@ export default function DashboardPage() {
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+  }, []);
+
+  const handleIntentSubmit = useCallback(async (answer: string) => {
+    try {
+      await submitIntentAnswer(answer);
+      setIntentModalOpen(false);
+    } catch (error) {
+      console.error('[Dashboard] Error submitting intent:', error);
+      // Still close the modal on error to not block the user
+      setIntentModalOpen(false);
+    }
   }, []);
 
   // Show loading state
@@ -734,6 +793,13 @@ export default function DashboardPage() {
         }}
         onSubmit={handleTemplateCustomizationSubmit}
         template={selectedTemplate}
+        theme={theme}
+      />
+
+      {/* Intent Prompt Modal (first-time users) */}
+      <IntentPromptModal
+        open={intentModalOpen}
+        onSubmit={handleIntentSubmit}
         theme={theme}
       />
 

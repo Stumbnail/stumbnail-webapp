@@ -44,12 +44,37 @@ import {
     trackCategorySelect,
     trackBatchCountChange,
     trackVisibilityToggle,
-    trackErrorDisplayed
+    trackErrorDisplayed,
+    incrementGenerationCount
 } from '@/lib/analytics';
+import {
+    trackEditorOpen,
+    trackResultsViewed,
+    trackExportClicked,
+    trackExportSucceeded,
+    canShowConfidenceFeedback,
+    markConfidenceFeedbackShown,
+    submitConfidenceFeedback,
+    canShowExportSatisfaction,
+    markExportSatisfactionShown,
+    submitExportSatisfaction,
+    submitSatisfactionIssue,
+    setAnalyticsUserContext
+} from '@/lib/services/analyticsService';
 
 // Lazy load dropdowns
 const ModelDropdown = dynamic(
     () => import('@/app/dashboard/ModelDropdown'),
+    { ssr: false }
+);
+
+// Lazy load feedback components
+const ConfidenceFeedback = dynamic(
+    () => import('@/components/feedback/ConfidenceFeedback'),
+    { ssr: false }
+);
+const ExportSatisfactionToast = dynamic(
+    () => import('@/components/feedback/ExportSatisfactionToast'),
     { ssr: false }
 );
 
@@ -327,6 +352,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
     const youtubeLinkInputRef = useRef<HTMLInputElement>(null);
     const promptImageInputRef = useRef<HTMLInputElement>(null);
     const hasPerformedInitialFit = useRef(false);
+    const hasTrackedEditorOpen = useRef(false); // Track if we've sent the editor_open analytics event
     const pendingTemplateRef = useRef<{ type: string; prompt?: string; imageURL?: string; category?: string; tone?: string } | null>(null);
     const pendingAutoGenerateRef = useRef(false); // Track if we need to auto-generate after template load
 
@@ -405,6 +431,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
     const [selectedTone, setSelectedTone] = useState<string | null>(null);
     const [customCategory, setCustomCategory] = useState('');
     const [customTone, setCustomTone] = useState('');
+    const [showHintsDropdown, setShowHintsDropdown] = useState(false);
 
     // Modify prompt state - stores prompts per element ID
     const [elementPrompts, setElementPrompts] = useState<Record<string, string>>({});
@@ -449,6 +476,12 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string, type: 'error' | 'success' } | null>(null);
+
+    // Feedback state for analytics instrumentation
+    const [showConfidenceFeedback, setShowConfidenceFeedback] = useState(false);
+    const [showExportSatisfaction, setShowExportSatisfaction] = useState(false);
+    const [lastGeneratedThumbnailIds, setLastGeneratedThumbnailIds] = useState<string[]>([]);
+    const [lastExportedThumbnailIds, setLastExportedThumbnailIds] = useState<string[]>([]);
 
     // Mobile sidebar state
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(true);
@@ -735,6 +768,33 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
 
         fetchProjectData();
     }, [projectId, user, viewMode]);
+
+    // Reset editor open tracking when project changes
+    useEffect(() => {
+        hasTrackedEditorOpen.current = false;
+    }, [projectId]);
+
+    // Track editor open event for analytics (once per project load)
+    useEffect(() => {
+        if (!projectId || isLoadingProject || hasTrackedEditorOpen.current) return;
+        // Track once when project loads (not in view mode)
+        if (!viewMode) {
+            hasTrackedEditorOpen.current = true;
+            trackEditorOpen(projectId, canvasElements.length > 0);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId, isLoadingProject, viewMode]);
+
+    // Set analytics user context when user data is available
+    useEffect(() => {
+        if (userData) {
+            const plan = getUserPlan(userData);
+            setAnalyticsUserContext({
+                creditsRemaining: userData.subscriptionCredits + userData.toppedUpBalance + userData.trialCredits,
+                planTier: plan.type,
+            });
+        }
+    }, [userData]);
 
     // Handle initial viewport fitting
     useEffect(() => {
@@ -1491,6 +1551,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
 
         // Track success for prompt clearing
         let hasError = false;
+        const successfulThumbnailIds: string[] = []; // Track actual backend IDs for analytics
 
         // Generate thumbnails via API
         try {
@@ -1560,12 +1621,19 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                     const durationMs = Date.now() - startTime;
                     trackGenerationSuccess('prompt', promptModel?.id || 'nano-banana-pro', durationMs, 'free');
 
+                    // Capture the actual backend thumbnail ID for analytics
+                    const backendThumbnailId = result.result.thumbnail?.id;
+                    if (backendThumbnailId) {
+                        successfulThumbnailIds.push(backendThumbnailId);
+                    }
+
                     // Update the element with the generated image
                     setCanvasElements(prev => prev.map(el =>
                         el.id === elementId
                             ? {
                                 ...el,
-                                id: result.result.thumbnail?.id || el.id, // Update ID to match backend
+                                id: backendThumbnailId || el.id, // Update ID to match backend
+                                backendId: backendThumbnailId || el.backendId, // Also store in backendId for API calls
                                 src: result.result.image,
                                 status: 'complete' as const,
                                 statusText: undefined,
@@ -1611,6 +1679,24 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
             if (!hasError) {
                 setPromptText('');
                 setAttachedImages([]);
+
+                // Track generation count and show confidence feedback
+                incrementGenerationCount();
+                trackResultsViewed(projectId, newElementIds.length);
+
+                // Store the generated thumbnail IDs for feedback (actual backend IDs)
+                if (successfulThumbnailIds.length > 0) {
+                    setLastGeneratedThumbnailIds(successfulThumbnailIds);
+                }
+
+                // Show confidence feedback if throttle allows
+                if (canShowConfidenceFeedback(projectId)) {
+                    // Small delay to let the UI settle
+                    setTimeout(() => {
+                        setShowConfidenceFeedback(true);
+                        markConfidenceFeedbackShown(projectId);
+                    }, 1000);
+                }
             }
         }
     }, [promptText, promptModel, thumbnailCount, addElementAtViewportCenter, fitElementsInView, user, projectId, isPublic, attachedImages, isGenerating, aspectRatio, resolution, size, megapixels]);
@@ -3447,115 +3533,154 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                     </div>
                                 )}
 
-                                {/* Optional Category & Tone Hints */}
+                                {/* Optional Category & Tone Hints - Collapsible */}
                                 <div className={styles.optionalHintsSection}>
-                                    <span className={styles.optionalHintsLabel}>Category</span>
-                                    <div
-                                        className={styles.chipsContainer}
-                                        onMouseDown={(e) => {
-                                            const container = e.currentTarget;
-                                            const startX = e.pageX - container.offsetLeft;
-                                            const scrollLeft = container.scrollLeft;
-                                            const onMouseMove = (e: MouseEvent) => {
-                                                const x = e.pageX - container.offsetLeft;
-                                                container.scrollLeft = scrollLeft - (x - startX);
-                                            };
-                                            const onMouseUp = () => {
-                                                document.removeEventListener('mousemove', onMouseMove);
-                                                document.removeEventListener('mouseup', onMouseUp);
-                                            };
-                                            document.addEventListener('mousemove', onMouseMove);
-                                            document.addEventListener('mouseup', onMouseUp);
-                                        }}
+                                    <button
+                                        type="button"
+                                        className={styles.hintsDropdownHeader}
+                                        onClick={() => setShowHintsDropdown(prev => !prev)}
                                     >
-                                        {CATEGORY_OPTIONS.map((cat) => (
-                                            <button
-                                                key={cat.id}
-                                                className={`${styles.hintChip} ${selectedCategory === cat.id ? styles.hintChipActive : ''}`}
-                                                onClick={() => {
-                                                    setSelectedCategory(prev => prev === cat.id ? null : cat.id);
-                                                    if (selectedCategory !== cat.id) setCustomCategory('');
-                                                }}
-                                                type="button"
+                                        <div className={styles.hintsDropdownLeft}>
+                                            <svg
+                                                className={`${styles.hintsDropdownChevron} ${showHintsDropdown ? styles.hintsDropdownChevronOpen : ''}`}
+                                                width="12"
+                                                height="12"
+                                                viewBox="0 0 12 12"
+                                                fill="none"
                                             >
-                                                {cat.label}
-                                            </button>
-                                        ))}
-                                        <button
-                                            className={`${styles.hintChip} ${selectedCategory === 'custom' ? styles.hintChipActive : ''}`}
-                                            onClick={() => setSelectedCategory(prev => prev === 'custom' ? null : 'custom')}
-                                            type="button"
-                                        >
-                                            Custom
-                                        </button>
-                                    </div>
-                                    {selectedCategory === 'custom' && (
-                                        <div className={styles.customHintInputWrapper}>
-                                            <input
-                                                type="text"
-                                                className={`${styles.customHintInput} ${customCategory.trim() ? styles.customHintInputFilled : ''}`}
-                                                placeholder="e.g. Fitness, Music, ASMR..."
-                                                value={customCategory}
-                                                onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
-                                                maxLength={50}
-                                            />
-                                            {customCategory.trim() && (
-                                                <span className={styles.customHintCheck}>✓</span>
+                                                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                            <span>Category & Tone</span>
+                                            {(selectedCategory || selectedTone) && (
+                                                <span className={styles.hintsSelectedBadge}>
+                                                    {[selectedCategory, selectedTone].filter(Boolean).length} selected
+                                                </span>
                                             )}
                                         </div>
-                                    )}
-                                    <span className={styles.optionalHintsLabel}>Tone</span>
-                                    <div
-                                        className={styles.chipsContainer}
-                                        onMouseDown={(e) => {
-                                            const container = e.currentTarget;
-                                            const startX = e.pageX - container.offsetLeft;
-                                            const scrollLeft = container.scrollLeft;
-                                            const onMouseMove = (e: MouseEvent) => {
-                                                const x = e.pageX - container.offsetLeft;
-                                                container.scrollLeft = scrollLeft - (x - startX);
-                                            };
-                                            const onMouseUp = () => {
-                                                document.removeEventListener('mousemove', onMouseMove);
-                                                document.removeEventListener('mouseup', onMouseUp);
-                                            };
-                                            document.addEventListener('mousemove', onMouseMove);
-                                            document.addEventListener('mouseup', onMouseUp);
-                                        }}
-                                    >
-                                        {TONE_OPTIONS.map((tone) => (
-                                            <button
-                                                key={tone.id}
-                                                className={`${styles.hintChip} ${selectedTone === tone.id ? styles.hintChipActive : ''}`}
-                                                onClick={() => {
-                                                    setSelectedTone(prev => prev === tone.id ? null : tone.id);
-                                                    if (selectedTone !== tone.id) setCustomTone('');
-                                                }}
-                                                type="button"
-                                            >
-                                                {tone.label}
-                                            </button>
-                                        ))}
-                                        <button
-                                            className={`${styles.hintChip} ${selectedTone === 'custom' ? styles.hintChipActive : ''}`}
-                                            onClick={() => setSelectedTone(prev => prev === 'custom' ? null : 'custom')}
-                                            type="button"
+                                        <div
+                                            className={styles.hintsInfoIcon}
+                                            title="Selecting the right category and tone helps the AI understand your content better, resulting in more relevant and higher-quality thumbnails."
+                                            onClick={(e) => e.stopPropagation()}
                                         >
-                                            Custom
-                                        </button>
-                                    </div>
-                                    {selectedTone === 'custom' && (
-                                        <div className={styles.customHintInputWrapper}>
-                                            <input
-                                                type="text"
-                                                className={`${styles.customHintInput} ${customTone.trim() ? styles.customHintInputFilled : ''}`}
-                                                placeholder="e.g. Mysterious, Exciting, Cozy..."
-                                                value={customTone}
-                                                onChange={(e) => setCustomTone(e.target.value.slice(0, 50))}
-                                                maxLength={50}
-                                            />
-                                            {customTone.trim() && (
-                                                <span className={styles.customHintCheck}>✓</span>
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" />
+                                                <path d="M7 6V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                                <circle cx="7" cy="4" r="0.75" fill="currentColor" />
+                                            </svg>
+                                        </div>
+                                    </button>
+
+                                    {showHintsDropdown && (
+                                        <div className={styles.hintsDropdownContent}>
+                                            <span className={styles.optionalHintsLabel}>Category</span>
+                                            <div
+                                                className={styles.chipsContainer}
+                                                onMouseDown={(e) => {
+                                                    const container = e.currentTarget;
+                                                    const startX = e.pageX - container.offsetLeft;
+                                                    const scrollLeft = container.scrollLeft;
+                                                    const onMouseMove = (e: MouseEvent) => {
+                                                        const x = e.pageX - container.offsetLeft;
+                                                        container.scrollLeft = scrollLeft - (x - startX);
+                                                    };
+                                                    const onMouseUp = () => {
+                                                        document.removeEventListener('mousemove', onMouseMove);
+                                                        document.removeEventListener('mouseup', onMouseUp);
+                                                    };
+                                                    document.addEventListener('mousemove', onMouseMove);
+                                                    document.addEventListener('mouseup', onMouseUp);
+                                                }}
+                                            >
+                                                {CATEGORY_OPTIONS.map((cat) => (
+                                                    <button
+                                                        key={cat.id}
+                                                        className={`${styles.hintChip} ${selectedCategory === cat.id ? styles.hintChipActive : ''}`}
+                                                        onClick={() => {
+                                                            setSelectedCategory(prev => prev === cat.id ? null : cat.id);
+                                                            if (selectedCategory !== cat.id) setCustomCategory('');
+                                                        }}
+                                                        type="button"
+                                                    >
+                                                        {cat.label}
+                                                    </button>
+                                                ))}
+                                                <button
+                                                    className={`${styles.hintChip} ${selectedCategory === 'custom' ? styles.hintChipActive : ''}`}
+                                                    onClick={() => setSelectedCategory(prev => prev === 'custom' ? null : 'custom')}
+                                                    type="button"
+                                                >
+                                                    Custom
+                                                </button>
+                                            </div>
+                                            {selectedCategory === 'custom' && (
+                                                <div className={styles.customHintInputWrapper}>
+                                                    <input
+                                                        type="text"
+                                                        className={`${styles.customHintInput} ${customCategory.trim() ? styles.customHintInputFilled : ''}`}
+                                                        placeholder="e.g. Fitness, Music, ASMR..."
+                                                        value={customCategory}
+                                                        onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
+                                                        maxLength={50}
+                                                    />
+                                                    {customCategory.trim() && (
+                                                        <span className={styles.customHintCheck}>✓</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            <span className={styles.optionalHintsLabel}>Tone</span>
+                                            <div
+                                                className={styles.chipsContainer}
+                                                onMouseDown={(e) => {
+                                                    const container = e.currentTarget;
+                                                    const startX = e.pageX - container.offsetLeft;
+                                                    const scrollLeft = container.scrollLeft;
+                                                    const onMouseMove = (e: MouseEvent) => {
+                                                        const x = e.pageX - container.offsetLeft;
+                                                        container.scrollLeft = scrollLeft - (x - startX);
+                                                    };
+                                                    const onMouseUp = () => {
+                                                        document.removeEventListener('mousemove', onMouseMove);
+                                                        document.removeEventListener('mouseup', onMouseUp);
+                                                    };
+                                                    document.addEventListener('mousemove', onMouseMove);
+                                                    document.addEventListener('mouseup', onMouseUp);
+                                                }}
+                                            >
+                                                {TONE_OPTIONS.map((tone) => (
+                                                    <button
+                                                        key={tone.id}
+                                                        className={`${styles.hintChip} ${selectedTone === tone.id ? styles.hintChipActive : ''}`}
+                                                        onClick={() => {
+                                                            setSelectedTone(prev => prev === tone.id ? null : tone.id);
+                                                            if (selectedTone !== tone.id) setCustomTone('');
+                                                        }}
+                                                        type="button"
+                                                    >
+                                                        {tone.label}
+                                                    </button>
+                                                ))}
+                                                <button
+                                                    className={`${styles.hintChip} ${selectedTone === 'custom' ? styles.hintChipActive : ''}`}
+                                                    onClick={() => setSelectedTone(prev => prev === 'custom' ? null : 'custom')}
+                                                    type="button"
+                                                >
+                                                    Custom
+                                                </button>
+                                            </div>
+                                            {selectedTone === 'custom' && (
+                                                <div className={styles.customHintInputWrapper}>
+                                                    <input
+                                                        type="text"
+                                                        className={`${styles.customHintInput} ${customTone.trim() ? styles.customHintInputFilled : ''}`}
+                                                        placeholder="e.g. Mysterious, Exciting, Cozy..."
+                                                        value={customTone}
+                                                        onChange={(e) => setCustomTone(e.target.value.slice(0, 50))}
+                                                        maxLength={50}
+                                                    />
+                                                    {customTone.trim() && (
+                                                        <span className={styles.customHintCheck}>✓</span>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     )}
@@ -3642,7 +3767,12 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                         return;
                                     }
 
+                                    // Track export clicked
+                                    trackExportClicked(selectedElements.length);
+
                                     console.log('Exporting', selectedElements.length, 'thumbnails');
+                                    let exportSuccessCount = 0;
+                                    const exportedThumbnailIds: string[] = []; // Track exported backend IDs for satisfaction feedback
 
                                     for (let i = 0; i < selectedElements.length; i++) {
                                         const element = selectedElements[i];
@@ -3693,8 +3823,12 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                             console.log('Download triggered for:', filename);
 
                                             // Track download and export (use backendId if available for API calls)
-                                            trackThumbnailDownload(projectId, element.backendId || element.id).catch(console.error);
+                                            const thumbnailId = element.backendId || element.id;
+                                            trackThumbnailDownload(projectId, thumbnailId).catch(console.error);
                                             trackCanvasExport('png', 'original', 'free');
+                                            trackExportSucceeded(projectId, thumbnailId);
+                                            exportedThumbnailIds.push(thumbnailId);
+                                            exportSuccessCount++;
 
                                             // Small delay between downloads
                                             if (i < selectedElements.length - 1) {
@@ -3705,6 +3839,15 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                             // Fallback: open in new tab
                                             window.open(element.src, '_blank');
                                         }
+                                    }
+
+                                    // Show satisfaction toast if exports succeeded and throttle allows
+                                    if (exportSuccessCount > 0 && canShowExportSatisfaction()) {
+                                        setLastExportedThumbnailIds(exportedThumbnailIds);
+                                        setTimeout(() => {
+                                            setShowExportSatisfaction(true);
+                                            markExportSatisfactionShown();
+                                        }, 500);
                                     }
                                 }}
                                 title="Export selected thumbnails"
@@ -4573,6 +4716,46 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                 onClose={() => setPricingModalOpen(false)}
                 theme={theme}
                 userEmail={user?.email || undefined}
+            />
+
+            {/* Confidence Feedback (appears after generation) */}
+            {showConfidenceFeedback && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '100px',
+                    left: 0,
+                    right: 0,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    zIndex: 1000
+                }}>
+                    <div style={{ pointerEvents: 'auto' }}>
+                        <ConfidenceFeedback
+                            open={showConfidenceFeedback}
+                            onSubmit={(rating) => {
+                                submitConfidenceFeedback(rating, projectId, lastGeneratedThumbnailIds);
+                                setShowConfidenceFeedback(false);
+                            }}
+                            onDismiss={() => setShowConfidenceFeedback(false)}
+                            theme={theme}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Export Satisfaction Toast */}
+            <ExportSatisfactionToast
+                open={showExportSatisfaction}
+                onSubmit={(rating, issue, issueText) => {
+                    submitExportSatisfaction(rating, projectId, lastExportedThumbnailIds);
+                    if (issue) {
+                        submitSatisfactionIssue(issue, issueText, projectId, lastExportedThumbnailIds);
+                    }
+                    setShowExportSatisfaction(false);
+                }}
+                onDismiss={() => setShowExportSatisfaction(false)}
+                theme={theme}
             />
         </div>
     );

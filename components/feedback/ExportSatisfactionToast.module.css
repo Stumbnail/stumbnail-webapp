@@ -1,0 +1,300 @@
+/* ExportSatisfactionToast.module.css */
+/* Small toast that appears after successful export */
+
+.container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.25s ease;
+    max-width: 320px;
+    width: 320px;
+}
+
+.container.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.containerLight {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #1a1a1a;
+}
+
+.containerDark {
+    background: #1e1e1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.dismissButton {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: all 0.15s ease;
+    background: transparent;
+    color: inherit;
+}
+
+.dismissButton:hover {
+    opacity: 1;
+    background: rgba(128, 128, 128, 0.1);
+}
+
+/* Rating Section */
+.ratingSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.question {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.ratings {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.ratingButton {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.containerLight .ratingButton {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.06);
+    color: #333;
+}
+
+.containerDark .ratingButton {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.ratingButton:hover {
+    transform: translateY(-2px);
+}
+
+.containerLight .ratingButton:hover {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.containerDark .ratingButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.ratingButton.ratingButtonSelected {
+    background: #ff6f61;
+    border-color: #ff6f61;
+    color: white;
+}
+
+.ratingLabels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    opacity: 0.5;
+    padding: 0 4px;
+}
+
+/* Issue Section */
+.issueSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.issueQuestion {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.issueOptions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+    margin-right: -4px;
+}
+
+/* Custom scrollbar for issue options */
+.issueOptions::-webkit-scrollbar {
+    width: 4px;
+}
+
+.issueOptions::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.containerLight .issueOptions::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+}
+
+.containerDark .issueOptions::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.issueOption {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.containerLight .issueOption {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.06);
+    color: #333;
+}
+
+.containerDark .issueOption {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+
+.issueOption:hover {
+    transform: translateX(2px);
+}
+
+.containerLight .issueOption:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.containerDark .issueOption:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.issueOption.issueOptionSelected {
+    border-color: #ff6f61;
+    background: rgba(255, 111, 97, 0.1);
+}
+
+.otherInput {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.containerLight .otherInput {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #333;
+}
+
+.containerDark .otherInput {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.otherInput:focus {
+    border-color: #ff6f61;
+}
+
+.otherInput::placeholder {
+    opacity: 0.5;
+}
+
+.submitButton {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: #ff6f61;
+    color: white;
+}
+
+.submitButton:hover:not(:disabled) {
+    background: #e85a4d;
+    transform: translateY(-1px);
+}
+
+.submitButton:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Thank you state */
+.thankYou {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #16a34a;
+    padding: 8px 0;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .container {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        max-width: none;
+        width: auto;
+    }
+}

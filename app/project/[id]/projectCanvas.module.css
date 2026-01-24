@@ -940,6 +940,83 @@
   padding: 12px 0;
 }
 
+/* Hints Dropdown Header */
+.hintsDropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: #f8f8f8;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+}
+
+.hintsDropdownHeader:hover {
+  border-color: #d5d5d5;
+  background: #f5f5f5;
+}
+
+.hintsDropdownLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hintsDropdownChevron {
+  color: #888;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.hintsDropdownChevronOpen {
+  transform: rotate(180deg);
+}
+
+.hintsSelectedBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ff6f61;
+  background: rgba(255, 111, 97, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.hintsInfoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  transition: color 0.2s ease;
+  cursor: help;
+}
+
+.hintsInfoIcon:hover {
+  color: #ff6f61;
+}
+
+.hintsDropdownContent {
+  padding-top: 12px;
+  animation: hintsSlideDown 0.2s ease;
+}
+
+@keyframes hintsSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .optionalHintsLabel {
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 12px;

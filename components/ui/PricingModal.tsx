@@ -1,10 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { Theme } from '@/types';
 import { redirectToCheckout, PlanType } from '@/lib/services/subscriptionService';
 import styles from './PricingModal.module.css';
 import { trackPricingModalOpen, trackPricingModalPlanClick } from '@/lib/analytics';
+import {
+    trackPaywallViewed,
+    trackUpgradeClicked,
+    needsPaywallReason,
+    submitPaywallReason
+} from '@/lib/services/analyticsService';
+
+// Lazy load the paywall reason modal
+const PaywallReasonModal = dynamic(
+    () => import('@/components/modals/PaywallReasonModal'),
+    { ssr: false }
+);
 
 // Icons
 function SparklesIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -146,13 +159,59 @@ export default function PricingModal({
     const [loadingPlan, setLoadingPlan] = useState<PlanType | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [selectedPlan, setSelectedPlan] = useState<'creator' | 'automation'>('creator');
+    const [showPaywallReason, setShowPaywallReason] = useState(false);
+    const hasCheckedPaywallReason = useRef(false);
+    const didStartCheckout = useRef(false);
 
-    // Track modal open
+    // Track modal open and Firestore analytics
     useEffect(() => {
         if (open) {
             trackPricingModalOpen(source, currentPlan);
+            trackPaywallViewed(source, currentPlan);
+            // Reset checkout flag when modal opens
+            didStartCheckout.current = false;
         }
     }, [open, source, currentPlan]);
+
+    // Handle close with optional paywall reason prompt
+    const handleClose = async () => {
+        // Don't show reason modal if user started checkout
+        if (didStartCheckout.current) {
+            onClose();
+            return;
+        }
+
+        // Check if we should show the paywall reason modal (7-day throttle)
+        if (!hasCheckedPaywallReason.current) {
+            hasCheckedPaywallReason.current = true;
+            try {
+                const shouldShow = await needsPaywallReason();
+                if (shouldShow) {
+                    setShowPaywallReason(true);
+                    return;
+                }
+            } catch (err) {
+                console.warn('[PricingModal] Error checking paywall reason:', err);
+            }
+        }
+
+        onClose();
+    };
+
+    const handlePaywallReasonSubmit = async (reason: string, optionalText?: string) => {
+        try {
+            await submitPaywallReason(reason, optionalText);
+        } catch (err) {
+            console.warn('[PricingModal] Error submitting paywall reason:', err);
+        }
+        setShowPaywallReason(false);
+        onClose();
+    };
+
+    const handlePaywallReasonDismiss = () => {
+        setShowPaywallReason(false);
+        onClose();
+    };
 
     const handleGetPlan = async (plan: PlanType) => {
         if (!userEmail) {
@@ -162,6 +221,10 @@ export default function PricingModal({
 
         // Track plan click
         trackPricingModalPlanClick(plan, currentPlan);
+        trackUpgradeClicked(source, currentPlan, plan);
+
+        // Mark that checkout was started (don't show paywall reason on close)
+        didStartCheckout.current = true;
 
         setLoadingPlan(plan);
         setError(null);
@@ -173,13 +236,27 @@ export default function PricingModal({
             console.error('Checkout error:', err);
             setError(err instanceof Error ? err.message : 'Failed to start checkout');
             setLoadingPlan(null);
+            // Reset checkout flag on error
+            didStartCheckout.current = false;
         }
     };
 
-    if (!open) return null;
+    if (!open && !showPaywallReason) return null;
+
+    // Show paywall reason modal if triggered
+    if (showPaywallReason) {
+        return (
+            <PaywallReasonModal
+                open={showPaywallReason}
+                onSubmit={handlePaywallReasonSubmit}
+                onDismiss={handlePaywallReasonDismiss}
+                theme={theme}
+            />
+        );
+    }
 
     return (
-        <div className={styles.overlay} onClick={onClose}>
+        <div className={styles.overlay} onClick={handleClose}>
             {/* Backdrop */}
             <div className={`${styles.backdrop} ${isDark ? styles.backdropDark : styles.backdropLight}`} />
 
@@ -190,7 +267,7 @@ export default function PricingModal({
             >
                 {/* Close Button */}
                 <button
-                    onClick={onClose}
+                    onClick={handleClose}
                     className={`${styles.closeButton} ${isDark ? styles.closeButtonDark : styles.closeButtonLight}`}
                     aria-label="Close pricing"
                 >
@@ -255,7 +332,7 @@ export default function PricingModal({
 
                                 <button
                                     className={styles.ctaFree}
-                                    onClick={onClose}
+                                    onClick={handleClose}
                                 >
                                     Start Free
                                 </button>
