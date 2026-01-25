@@ -23,7 +23,6 @@ import {
     getContentTypeDefaults,
     createDefaultSmartMergeConfig,
     SmartMergeConfig as SmartMergeConfigType,
-    TextIncludeOption,
 } from '@/lib/constants/smartMerge';
 
 // Services
@@ -2883,11 +2882,16 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                     custom_content_description: smartMergeConfig.customContentDescription || undefined,
                     focus_subject_index: smartMergeConfig.focusSubjectIndex,
                     include_text: smartMergeConfig.includeText,
+                    text_mode: smartMergeConfig.includeText ? smartMergeConfig.textMode : undefined,
                     video_title: smartMergeConfig.videoTitle || undefined,
                     text_content: smartMergeConfig.textContent || undefined,
                     text_placement: smartMergeConfig.textPlacement,
                     text_style: smartMergeConfig.textStyle,
+                    text_color: smartMergeConfig.textColor || undefined,
+                    text_font: smartMergeConfig.textFont || undefined,
                     emotional_tone: smartMergeConfig.emotionalTone || undefined,
+                    custom_emotional_tone: smartMergeConfig.emotionalTone === 'custom' ? smartMergeConfig.customEmotionalTone : undefined,
+                    custom_instructions: smartMergeConfig.customInstructions || undefined,
                 },
                 reference_images: assetUrls,
                 aspect_ratio: aspectRatio || '16:9',
@@ -4142,63 +4146,115 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                 </div>
                                             </div>
 
-                                            {/* Text Options */}
+                                            {/* Include Text Toggle */}
                                             <div className={styles.formField}>
-                                                <label className={styles.formLabel}>Text</label>
-                                                <div className={styles.textOptionsToggle}>
+                                                <div className={styles.includeTextToggleRow}>
+                                                    <label className={styles.formLabel}>Include Text</label>
                                                     <button
-                                                        className={`${styles.textOptionButton} ${smartMergeConfig.includeText === 'none' ? styles.textOptionButtonActive : ''}`}
-                                                        onClick={() => updateSmartMergeConfig({ includeText: 'none' })}
+                                                        className={`${styles.toggleSwitch} ${smartMergeConfig.includeText ? styles.toggleSwitchOn : ''}`}
+                                                        onClick={() => updateSmartMergeConfig({ includeText: !smartMergeConfig.includeText })}
+                                                        role="switch"
+                                                        aria-checked={smartMergeConfig.includeText}
                                                     >
-                                                        No Text
-                                                    </button>
-                                                    <button
-                                                        className={`${styles.textOptionButton} ${smartMergeConfig.includeText === 'ai' ? styles.textOptionButtonActive : ''}`}
-                                                        onClick={() => updateSmartMergeConfig({ includeText: 'ai' })}
-                                                    >
-                                                        AI Generated
-                                                    </button>
-                                                    <button
-                                                        className={`${styles.textOptionButton} ${smartMergeConfig.includeText === 'custom' ? styles.textOptionButtonActive : ''}`}
-                                                        onClick={() => updateSmartMergeConfig({ includeText: 'custom' })}
-                                                    >
-                                                        Custom
+                                                        <span className={styles.toggleSwitchKnob} />
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {/* AI Text - Video Title Input for context */}
-                                            {smartMergeConfig.includeText === 'ai' && (
-                                                <div className={styles.customTextSection}>
-                                                    <label className={styles.textOptionGroupLabel}>Video Title (for AI context)</label>
-                                                    <input
-                                                        type="text"
-                                                        value={smartMergeConfig.videoTitle}
-                                                        onChange={(e) => updateSmartMergeConfig({ videoTitle: e.target.value })}
-                                                        placeholder="e.g., I Built the ULTIMATE Gaming Setup..."
-                                                        className={styles.customTextInput}
-                                                    />
-                                                    <p className={styles.formHint}>
-                                                        AI will analyze your title and images to suggest impactful thumbnail text
-                                                    </p>
+                                            {/* No Text Message */}
+                                            {!smartMergeConfig.includeText && (
+                                                <div className={styles.noTextMessage}>
+                                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M8 5V8M8 11H8.01M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                    </svg>
+                                                    <span>No text will appear in the final generated image</span>
                                                 </div>
                                             )}
 
-                                            {/* Custom Text Input Section */}
-                                            {smartMergeConfig.includeText === 'custom' && (
-                                                <div className={styles.customTextSection}>
-                                                    <input
-                                                        type="text"
-                                                        value={smartMergeConfig.textContent}
-                                                        onChange={(e) => updateSmartMergeConfig({ textContent: e.target.value })}
-                                                        placeholder="Enter your thumbnail text"
-                                                        className={styles.customTextInput}
-                                                        maxLength={50}
-                                                    />
-                                                    <span className={styles.customTextCharCount}>
-                                                        {smartMergeConfig.textContent.length}/50
-                                                    </span>
-                                                    <div className={styles.textPlacementStyleRow}>
+                                            {/* Text Options (when includeText is true) */}
+                                            {smartMergeConfig.includeText && (
+                                                <div className={styles.textOptionsSection}>
+                                                    {/* AI / Custom Mode Toggle */}
+                                                    <div className={styles.textModeToggle}>
+                                                        <button
+                                                            className={`${styles.textOptionButton} ${smartMergeConfig.textMode === 'ai' ? styles.textOptionButtonActive : ''}`}
+                                                            onClick={() => updateSmartMergeConfig({ textMode: 'ai' })}
+                                                        >
+                                                            AI Generated
+                                                        </button>
+                                                        <button
+                                                            className={`${styles.textOptionButton} ${smartMergeConfig.textMode === 'custom' ? styles.textOptionButtonActive : ''}`}
+                                                            onClick={() => updateSmartMergeConfig({ textMode: 'custom' })}
+                                                        >
+                                                            Custom
+                                                        </button>
+                                                    </div>
+
+                                                    {/* AI Text - Video Title Input */}
+                                                    {smartMergeConfig.textMode === 'ai' && (
+                                                        <div className={styles.textInputSection}>
+                                                            <label className={styles.textOptionGroupLabel}>Video Title (for AI context)</label>
+                                                            <input
+                                                                type="text"
+                                                                value={smartMergeConfig.videoTitle}
+                                                                onChange={(e) => updateSmartMergeConfig({ videoTitle: e.target.value })}
+                                                                placeholder="e.g., I Built the ULTIMATE Gaming Setup..."
+                                                                className={styles.customTextInput}
+                                                            />
+                                                            <p className={styles.formHint}>
+                                                                AI will analyze your title and images to suggest impactful thumbnail text
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Custom Text Input */}
+                                                    {smartMergeConfig.textMode === 'custom' && (
+                                                        <div className={styles.textInputSection}>
+                                                            <div className={styles.customTextInputWrapper}>
+                                                                <input
+                                                                    type="text"
+                                                                    value={smartMergeConfig.textContent}
+                                                                    onChange={(e) => updateSmartMergeConfig({ textContent: e.target.value })}
+                                                                    placeholder="Enter your thumbnail text"
+                                                                    className={styles.customTextInput}
+                                                                    maxLength={50}
+                                                                />
+                                                                <span className={styles.customTextCharCount}>
+                                                                    {smartMergeConfig.textContent.length}/50
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Typography Options */}
+                                                    <div className={styles.typographySection}>
+                                                        <span className={styles.typographySectionLabel}>Typography</span>
+
+                                                        {/* Color */}
+                                                        <div className={styles.textOptionGroup}>
+                                                            <span className={styles.textOptionGroupLabel}>Color</span>
+                                                            <input
+                                                                type="text"
+                                                                value={smartMergeConfig.textColor}
+                                                                onChange={(e) => updateSmartMergeConfig({ textColor: e.target.value })}
+                                                                placeholder="e.g., red, #FF5500, or linear-gradient(90deg, #FF4500, #FFD700)"
+                                                                className={styles.customTextInput}
+                                                            />
+                                                        </div>
+
+                                                        {/* Font */}
+                                                        <div className={styles.textOptionGroup}>
+                                                            <span className={styles.textOptionGroupLabel}>Font</span>
+                                                            <input
+                                                                type="text"
+                                                                value={smartMergeConfig.textFont}
+                                                                onChange={(e) => updateSmartMergeConfig({ textFont: e.target.value })}
+                                                                placeholder="e.g., Impact, Bebas, Montserrat"
+                                                                className={styles.customTextInput}
+                                                            />
+                                                        </div>
+
+                                                        {/* Placement */}
                                                         <div className={styles.textOptionGroup}>
                                                             <span className={styles.textOptionGroupLabel}>Placement</span>
                                                             <div className={styles.textOptionChips}>
@@ -4213,6 +4269,8 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                                 ))}
                                                             </div>
                                                         </div>
+
+                                                        {/* Style */}
                                                         <div className={styles.textOptionGroup}>
                                                             <span className={styles.textOptionGroupLabel}>Style</span>
                                                             <div className={styles.textOptionChips}>
@@ -4221,6 +4279,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                                         key={ts.id}
                                                                         className={`${styles.textOptionChip} ${smartMergeConfig.textStyle === ts.id ? styles.textOptionChipActive : ''}`}
                                                                         onClick={() => updateSmartMergeConfig({ textStyle: ts.id })}
+                                                                        title={ts.description}
                                                                     >
                                                                         {ts.label}
                                                                     </button>
@@ -4248,6 +4307,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                             {/* Advanced Options Content */}
                                             {showAdvancedOptions && (
                                                 <div className={styles.advancedOptionsContent}>
+                                                    {/* Emotional Tone */}
                                                     <div className={styles.formField}>
                                                         <label className={styles.formLabel}>Emotional Tone</label>
                                                         <div className={styles.emotionalToneChips}>
@@ -4262,6 +4322,30 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                                 </button>
                                                             ))}
                                                         </div>
+                                                        {smartMergeConfig.emotionalTone === 'custom' && (
+                                                            <input
+                                                                type="text"
+                                                                value={smartMergeConfig.customEmotionalTone}
+                                                                onChange={(e) => updateSmartMergeConfig({ customEmotionalTone: e.target.value })}
+                                                                placeholder="Enter your emotional tone (e.g., nostalgic, mysterious, energetic)"
+                                                                className={styles.customTextInput}
+                                                            />
+                                                        )}
+                                                    </div>
+
+                                                    {/* Custom Instructions */}
+                                                    <div className={styles.formField}>
+                                                        <label className={styles.formLabel}>Custom Instructions</label>
+                                                        <textarea
+                                                            value={smartMergeConfig.customInstructions}
+                                                            onChange={(e) => updateSmartMergeConfig({ customInstructions: e.target.value })}
+                                                            placeholder="e.g., Place image 1 on the left, image 2 on the right. This is a comparison thumbnail showing before/after..."
+                                                            className={styles.customInstructionsTextarea}
+                                                            rows={3}
+                                                        />
+                                                        <p className={styles.formHint}>
+                                                            Any custom context, composition, or instructions for the AI
+                                                        </p>
                                                     </div>
 
                                                     {/* Model Selection */}

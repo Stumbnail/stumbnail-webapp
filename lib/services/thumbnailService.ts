@@ -285,14 +285,19 @@ export interface UploadThumbnailRequest {
  */
 export interface SmartMergeConfig {
     content_type: string;
-    custom_content_description?: string;
+    custom_content_description?: string; // Exact user wording (not prefixed with "custom")
     focus_subject_index: number | null;
-    include_text: 'none' | 'ai' | 'custom';
-    video_title?: string;
-    text_content?: string;
+    include_text: boolean; // true = include text, false = no text
+    text_mode?: 'ai' | 'custom'; // Only when include_text is true
+    video_title?: string; // For AI text inference
+    text_content?: string; // For custom text
     text_placement: 'top' | 'center' | 'bottom' | 'auto';
-    text_style: 'bold' | 'outlined' | 'shadow' | 'minimal' | '3d' | 'gradient' | 'neon' | 'grunge' | 'comic' | 'handwritten';
+    text_style: string;
+    text_color?: string; // Any color (word, hex, gradient, etc.)
+    text_font?: string; // Any font name or description
     emotional_tone?: string;
+    custom_emotional_tone?: string; // Exact user phrase
+    custom_instructions?: string; // Custom instructions for composition/context
 }
 
 /**

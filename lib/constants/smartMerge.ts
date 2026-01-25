@@ -25,22 +25,28 @@ export interface TextStyleOption {
     description?: string;
 }
 
-export type TextIncludeOption = 'none' | 'ai' | 'custom';
+export type TextModeOption = 'ai' | 'custom';
 
 export interface SmartMergeConfig {
     contentType: string;
-    customContentDescription: string; // Used when contentType is 'custom'
+    customContentDescription: string; // Exact user wording (no "custom" prefix)
     focusSubjectIndex: number | null; // null = auto-detect, -1 = balanced
-    includeText: TextIncludeOption;
-    videoTitle: string; // Used by AI to infer good thumbnail text
-    textContent: string;
+    includeText: boolean; // Toggle: true = include text, false = no text
+    textMode: TextModeOption; // When includeText=true: 'ai' or 'custom'
+    videoTitle: string; // For AI text inference
+    textContent: string; // For custom text
     textPlacement: TextPlacementOption['id'];
     textStyle: TextStyleOption['id'];
-    emotionalTone: string | null; // null = inferred from contentType
+    textColor: string; // Any color (words like "red", hex "#FF0000", gradients, etc.)
+    textFont: string; // Any font name or description
+    emotionalTone: string | null; // null = inferred from contentType, or preset ID, or 'custom'
+    customEmotionalTone: string; // Exact user phrase when emotionalTone='custom'
+    customInstructions: string; // Custom instructions for composition/context
 }
 
 export interface ContentTypeDefaults {
-    includeText: TextIncludeOption;
+    includeText: boolean;
+    textMode: TextModeOption;
     textStyle: TextStyleOption['id'];
     emotionalTone: string;
 }
@@ -66,6 +72,7 @@ export const EMOTIONAL_TONES: EmotionalToneOption[] = [
     { id: 'shocking', label: 'Shocking', icon: '' },
     { id: 'professional', label: 'Professional', icon: '' },
     { id: 'fun', label: 'Fun', icon: '' },
+    { id: 'custom', label: 'Custom', icon: '' },
 ];
 
 // Text Placement Options
@@ -92,15 +99,15 @@ export const TEXT_STYLES: TextStyleOption[] = [
 
 // Default configurations per content type
 export const CONTENT_TYPE_DEFAULTS: Record<string, ContentTypeDefaults> = {
-    gaming: { includeText: 'ai', textStyle: 'bold', emotionalTone: 'intense' },
-    tech: { includeText: 'ai', textStyle: 'outlined', emotionalTone: 'professional' },
-    vlog: { includeText: 'none', textStyle: 'minimal', emotionalTone: 'friendly' },
-    reaction: { includeText: 'ai', textStyle: 'bold', emotionalTone: 'shocking' },
-    comedy: { includeText: 'ai', textStyle: 'bold', emotionalTone: 'fun' },
-    educational: { includeText: 'ai', textStyle: 'outlined', emotionalTone: 'professional' },
-    music: { includeText: 'none', textStyle: 'shadow', emotionalTone: 'intense' },
-    news: { includeText: 'ai', textStyle: 'bold', emotionalTone: 'professional' },
-    custom: { includeText: 'none', textStyle: 'minimal', emotionalTone: 'friendly' },
+    gaming: { includeText: true, textMode: 'ai', textStyle: 'bold', emotionalTone: 'intense' },
+    tech: { includeText: true, textMode: 'ai', textStyle: 'outlined', emotionalTone: 'professional' },
+    vlog: { includeText: false, textMode: 'ai', textStyle: 'minimal', emotionalTone: 'friendly' },
+    reaction: { includeText: true, textMode: 'ai', textStyle: 'bold', emotionalTone: 'shocking' },
+    comedy: { includeText: true, textMode: 'ai', textStyle: 'bold', emotionalTone: 'fun' },
+    educational: { includeText: true, textMode: 'ai', textStyle: 'outlined', emotionalTone: 'professional' },
+    music: { includeText: false, textMode: 'ai', textStyle: 'shadow', emotionalTone: 'intense' },
+    news: { includeText: true, textMode: 'ai', textStyle: 'bold', emotionalTone: 'professional' },
+    custom: { includeText: false, textMode: 'ai', textStyle: 'minimal', emotionalTone: 'friendly' },
 };
 
 // Get defaults for a content type
@@ -113,15 +120,60 @@ export function createDefaultSmartMergeConfig(contentType: string = 'gaming'): S
     const defaults = getContentTypeDefaults(contentType);
     return {
         contentType,
-        customContentDescription: '', // For custom content type
+        customContentDescription: '',
         focusSubjectIndex: null, // auto-detect
         includeText: defaults.includeText,
-        videoTitle: '', // For AI text inference
+        textMode: defaults.textMode,
+        videoTitle: '',
         textContent: '',
         textPlacement: 'auto',
         textStyle: defaults.textStyle,
+        textColor: '', // User enters any color/gradient
+        textFont: '', // User enters any font name
         emotionalTone: null, // will use inferred default
+        customEmotionalTone: '',
+        customInstructions: '',
     };
+}
+
+// Get the effective content type label for prompts
+// If custom, returns the user's description; otherwise returns the preset label
+function getEffectiveContentType(config: SmartMergeConfig): string {
+    if (config.contentType === 'custom' && config.customContentDescription.trim()) {
+        return config.customContentDescription.trim();
+    }
+    const contentType = CONTENT_TYPES.find(ct => ct.id === config.contentType);
+    return contentType?.label || 'professional';
+}
+
+// Get the effective emotional tone for prompts
+// If custom, returns the user's phrase; otherwise returns the preset label
+function getEffectiveEmotionalTone(config: SmartMergeConfig): string | null {
+    if (config.emotionalTone === 'custom' && config.customEmotionalTone.trim()) {
+        return config.customEmotionalTone.trim();
+    }
+    if (config.emotionalTone && config.emotionalTone !== 'custom') {
+        const tone = EMOTIONAL_TONES.find(et => et.id === config.emotionalTone);
+        return tone?.label.toLowerCase() || null;
+    }
+    // Use default from content type
+    const defaults = getContentTypeDefaults(config.contentType);
+    const defaultTone = EMOTIONAL_TONES.find(et => et.id === defaults.emotionalTone);
+    return defaultTone?.label.toLowerCase() || null;
+}
+
+// Get the effective text color for prompts
+function getEffectiveTextColor(config: SmartMergeConfig): string | null {
+    if (!config.includeText) return null;
+    if (!config.textColor || config.textColor.trim() === '') return null; // Let AI decide
+    return config.textColor.trim();
+}
+
+// Get the effective text font for prompts
+function getEffectiveTextFont(config: SmartMergeConfig): string | null {
+    if (!config.includeText) return null;
+    if (!config.textFont || config.textFont.trim() === '') return null; // Let AI decide
+    return config.textFont.trim();
 }
 
 // Build a generation prompt from Smart Merge config
@@ -129,16 +181,18 @@ export function buildSmartMergePrompt(
     config: SmartMergeConfig,
     assetCount: number
 ): string {
-    const contentType = CONTENT_TYPES.find(ct => ct.id === config.contentType);
-    const emotionalTone = config.emotionalTone
-        ? EMOTIONAL_TONES.find(et => et.id === config.emotionalTone)
-        : EMOTIONAL_TONES.find(et => et.id === getContentTypeDefaults(config.contentType).emotionalTone);
+    const effectiveContentType = getEffectiveContentType(config);
+    const effectiveTone = getEffectiveEmotionalTone(config);
+    const contentTypeInfo = CONTENT_TYPES.find(ct => ct.id === config.contentType);
 
-    let prompt = `Create a high-quality YouTube thumbnail in ${contentType?.label || 'professional'} style. `;
+    let prompt = `Create a high-quality YouTube thumbnail in ${effectiveContentType} style. `;
 
     // Add emotional tone
-    if (emotionalTone) {
-        prompt += `The mood should be ${emotionalTone.label.toLowerCase()}, with ${contentType?.description || 'appealing visuals'}. `;
+    if (effectiveTone) {
+        const description = config.contentType !== 'custom'
+            ? contentTypeInfo?.description || 'appealing visuals'
+            : 'appealing visuals';
+        prompt += `The mood should be ${effectiveTone}, with ${description}. `;
     }
 
     // Add focus subject instruction
@@ -151,23 +205,43 @@ export function buildSmartMergePrompt(
     }
 
     // Add text instructions
-    if (config.includeText === 'none') {
-        prompt += `Do not include any text in the thumbnail. `;
-    } else if (config.includeText === 'ai') {
-        prompt += `Add impactful text that matches the ${contentType?.label || 'content'} style. `;
+    if (!config.includeText) {
+        prompt += `Do not include any text or characters in the thumbnail. `;
+    } else {
+        if (config.textMode === 'ai') {
+            prompt += `Add impactful text that matches the ${effectiveContentType} style. `;
+        } else if (config.textMode === 'custom' && config.textContent) {
+            prompt += `Include the text "${config.textContent}" in the thumbnail. `;
+        }
+
+        // Add text placement
         if (config.textPlacement !== 'auto') {
             prompt += `Position the text at the ${config.textPlacement} of the image. `;
         }
+
+        // Add text style
         prompt += `Use a ${config.textStyle} text style. `;
-    } else if (config.includeText === 'custom' && config.textContent) {
-        prompt += `Include the text "${config.textContent}" in the thumbnail. `;
-        if (config.textPlacement !== 'auto') {
-            prompt += `Position it at the ${config.textPlacement}. `;
+
+        // Add text color if specified
+        const effectiveColor = getEffectiveTextColor(config);
+        if (effectiveColor) {
+            prompt += `The text color should be ${effectiveColor}. `;
         }
-        prompt += `Use a ${config.textStyle} text style. `;
+
+        // Add text font if specified
+        const effectiveFont = getEffectiveTextFont(config);
+        if (effectiveFont) {
+            prompt += `Use ${effectiveFont} font. `;
+        }
     }
 
-    prompt += `Ensure the thumbnail is eye-catching, high resolution, and optimized for YouTube's 16:9 aspect ratio.`;
+    prompt += `Ensure the thumbnail is eye-catching, high resolution, and optimized for YouTube's 16:9 aspect ratio. `;
+    prompt += `Do not include a YouTube logo unless explicitly requested.`;
+
+    // Add custom instructions at the end (important context from user)
+    if (config.customInstructions.trim()) {
+        prompt += `\n\nAdditional instructions: ${config.customInstructions.trim()}`;
+    }
 
     return prompt;
 }

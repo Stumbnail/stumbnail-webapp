@@ -3231,6 +3231,183 @@
   color: #ff6f61;
 }
 
+/* Include Text Toggle Row */
+.includeTextToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Toggle Switch */
+.toggleSwitch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: #d1d5db;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 0;
+}
+
+.toggleSwitch:hover {
+  background: #9ca3af;
+}
+
+.toggleSwitchOn {
+  background: #ff6f61;
+}
+
+.toggleSwitchOn:hover {
+  background: #e55a4d;
+}
+
+.toggleSwitchKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.toggleSwitchOn .toggleSwitchKnob {
+  transform: translateX(20px);
+}
+
+/* No Text Message */
+.noTextMessage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  border: 1px dashed #e5e5e5;
+  color: #888;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+}
+
+.noTextMessage svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+/* Text Options Section (when includeText is true) */
+.textOptionsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  background: #f8f8f8;
+  border-radius: 12px;
+  border: 1px solid #e5e5e5;
+  animation: slideDown 0.2s ease;
+}
+
+/* Text Mode Toggle (AI / Custom) */
+.textModeToggle {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: #e8e8e8;
+  border-radius: 10px;
+}
+
+/* Text Input Section */
+.textInputSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Custom Text Input Wrapper */
+.customTextInputWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Typography Section */
+.typographySection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.typographySectionLabel {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Text Color Chips */
+.textColorChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.textColorChip {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #e5e5e5;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 10px;
+  color: #666;
+  background: #ffffff;
+}
+
+.textColorChip:hover {
+  border-color: #ff6f61;
+  transform: scale(1.05);
+}
+
+.textColorChipActive {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 2px rgba(255, 111, 97, 0.3);
+}
+
+/* Custom Instructions Textarea */
+.customInstructionsTextarea {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  color: #141414;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color 0.2s ease;
+}
+
+.customInstructionsTextarea:focus {
+  border-color: #ff6f61;
+}
+
+.customInstructionsTextarea::placeholder {
+  color: #a3a3a3;
+}
+
 /* Advanced Options Section */
 .advancedOptionsToggle {
   display: flex;
@@ -3465,6 +3642,77 @@
   background: rgba(255, 111, 97, 0.15);
   border-color: #ff6f61;
   color: #ff6f61;
+}
+
+/* Dark Theme: Toggle Switch */
+.darkTheme .toggleSwitch {
+  background: #555;
+}
+
+.darkTheme .toggleSwitch:hover {
+  background: #666;
+}
+
+.darkTheme .toggleSwitchOn {
+  background: #ff6f61;
+}
+
+.darkTheme .toggleSwitchOn:hover {
+  background: #e55a4d;
+}
+
+/* Dark Theme: No Text Message */
+.darkTheme .noTextMessage {
+  background: #333;
+  border-color: #444;
+  color: #888;
+}
+
+/* Dark Theme: Text Options Section */
+.darkTheme .textOptionsSection {
+  background: #333;
+  border-color: #444;
+}
+
+/* Dark Theme: Text Mode Toggle */
+.darkTheme .textModeToggle {
+  background: #2a2a2a;
+}
+
+/* Dark Theme: Typography Section */
+.darkTheme .typographySection {
+  border-color: #444;
+}
+
+.darkTheme .typographySectionLabel {
+  color: #888;
+}
+
+/* Dark Theme: Text Color Chips */
+.darkTheme .textColorChip {
+  border-color: #444;
+  background: #2a2a2a;
+  color: #aaa;
+}
+
+.darkTheme .textColorChip:hover {
+  border-color: #ff6f61;
+}
+
+.darkTheme .textColorChipActive {
+  border-color: #ff6f61;
+  box-shadow: 0 0 0 2px rgba(255, 111, 97, 0.3);
+}
+
+/* Dark Theme: Custom Instructions Textarea */
+.darkTheme .customInstructionsTextarea {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #fff;
+}
+
+.darkTheme .customInstructionsTextarea::placeholder {
+  color: #666;
 }
 
 /* Uploading Overlay */
