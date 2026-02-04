@@ -250,8 +250,8 @@ export default function Sidebar({
                 )}
             </div>
 
-            {/* Upgrade Plan Button - Hidden for Automation plan users */}
-            {plan.type !== 'automation' && (
+            {/* Upgrade Plan Button - Hidden for highest tier users */}
+            {plan.type !== 'creator' && plan.type !== 'automation' && (
                 <AnimatedBorder
                     borderColor="#e8a838"
                     borderWidth={1.5}

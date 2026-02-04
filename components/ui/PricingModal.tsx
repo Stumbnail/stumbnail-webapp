@@ -92,16 +92,6 @@ function LockIcon({ className = "w-4 h-4" }: { className?: string }) {
     );
 }
 
-function GlobeIcon({ className = "w-4 h-4" }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-            <path d="M2 12h20" />
-        </svg>
-    );
-}
-
 function CrownIcon({ className = "w-4 h-4" }: { className?: string }) {
     return (
         <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -129,14 +119,11 @@ const paidFeatures = [
     { icon: LockIcon, text: "Keep thumbnails private" },
 ];
 
-const freeFeatures = [
-    { icon: MergeIcon, text: "Smart Merge: combine assets with AI" },
-    { icon: WandIcon, text: "Prompt-based generation" },
-    { icon: YouTubeIcon, text: "Clone any YouTube thumbnail" },
-    { icon: ImageIcon, text: "Upload custom assets" },
-    { icon: LayersIcon, text: "Standard AI models" },
-    { icon: GlobeIcon, text: "Thumbnails are public", isLimitation: true },
-];
+const weeksPerMonth = 52 / 12;
+const formatMonthlyPrice = (price: number) =>
+    Number.isInteger(price) ? `$${price}` : `$${price.toFixed(2)}`;
+const formatWeeklyPrice = (monthlyPrice: number) =>
+    `$${(monthlyPrice / weeksPerMonth).toFixed(2)}`;
 
 interface PricingModalProps {
     open: boolean;
@@ -144,7 +131,7 @@ interface PricingModalProps {
     theme: Theme;
     userEmail?: string;
     source?: 'sidebar' | 'credits' | 'generate' | 'exhausted';
-    currentPlan?: 'free' | 'creator' | 'automation';
+    currentPlan?: 'free' | 'starter' | 'creator' | 'automation';
 }
 
 export default function PricingModal({
@@ -158,7 +145,6 @@ export default function PricingModal({
     const isDark = theme === 'dark';
     const [loadingPlan, setLoadingPlan] = useState<PlanType | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [selectedPlan, setSelectedPlan] = useState<'creator' | 'automation'>('creator');
     const [showPaywallReason, setShowPaywallReason] = useState(false);
     const hasCheckedPaywallReason = useRef(false);
     const didStartCheckout = useRef(false);
@@ -285,7 +271,7 @@ export default function PricingModal({
                     <div className={styles.header}>
                         <h2 className={styles.title}>Simple, Credit-Based Pricing</h2>
                         <p className={styles.subtitle}>
-                            Start free, upgrade when you need more.
+                            Prices shown per week. Billed monthly.
                         </p>
                     </div>
 
@@ -298,82 +284,68 @@ export default function PricingModal({
 
                     {/* Pricing Cards */}
                     <div className={styles.cardsContainer}>
-                        {/* Free Trial Card */}
+                        {/* Starter Plan */}
                         <div className={styles.cardFree}>
-                            {/* Free Badge */}
                             <div className={styles.freeBadge}>
                                 <SparklesIcon className={styles.badgeIcon} />
-                                Start Here
+                                Starter
                             </div>
 
                             <div className={styles.cardContent}>
                                 {/* Price Display */}
                                 <div className={styles.priceSection}>
-                                    <p className={styles.planLabelFree}>Free Trial</p>
+                                    <p className={styles.planLabelFree}>Starter Plan</p>
                                     <div className={styles.priceRow}>
-                                        <span className={styles.price}>$0</span>
+                                        <span className={styles.price}>{formatWeeklyPrice(4)}</span>
+                                        <span className={styles.period}>/wk</span>
                                     </div>
-                                    <p className={styles.creditsFree}>30 credits</p>
+                                    <p className={styles.billedLine}>Billed {formatMonthlyPrice(4)}/mo</p>
+                                    <p className={styles.creditsFree}>590 credits/mo</p>
                                 </div>
 
                                 <div className={styles.dividerFree} />
 
                                 {/* Features */}
                                 <ul className={styles.featuresList}>
-                                    {freeFeatures.map((feature, i) => (
+                                    {paidFeatures.map((feature, i) => (
                                         <li key={i} className={styles.featureItem}>
-                                            <feature.icon className={feature.isLimitation ? styles.featureIconWarning : styles.featureIconFree} />
-                                            <span className={feature.isLimitation ? styles.featureTextWarning : ''}>
-                                                {feature.text}
-                                            </span>
+                                            <feature.icon className={styles.featureIconFree} />
+                                            <span>{feature.text}</span>
                                         </li>
                                     ))}
                                 </ul>
 
                                 <button
                                     className={styles.ctaFree}
-                                    onClick={handleClose}
+                                    onClick={() => handleGetPlan('starter')}
+                                    disabled={loadingPlan !== null}
                                 >
-                                    Start Free
+                                    {loadingPlan === 'starter'
+                                        ? <LoadingSpinner />
+                                        : 'Choose Starter'
+                                    }
                                 </button>
                             </div>
                         </div>
 
-                        {/* Paid Plans Card */}
+                        {/* Creator Plan */}
                         <div className={styles.cardPaid}>
-                            {/* Plan Toggle */}
-                            <div className={`${styles.planToggle} ${isDark ? styles.planToggleDark : styles.planToggleLight}`}>
-                                <button
-                                    onClick={() => setSelectedPlan('creator')}
-                                    className={`${styles.toggleButton} ${selectedPlan === 'creator' ? styles.toggleButtonActive : ''}`}
-                                >
-                                    Creator
-                                </button>
-                                <button
-                                    onClick={() => setSelectedPlan('automation')}
-                                    className={`${styles.toggleButton} ${selectedPlan === 'automation' ? styles.toggleButtonActive : ''}`}
-                                >
-                                    Automation
-                                    {selectedPlan !== 'automation' && (
-                                        <span className={styles.bestBadge}>
-                                            <CrownIcon className={styles.bestBadgeIcon} />
-                                            Best
-                                        </span>
-                                    )}
-                                </button>
+                            <div className={styles.valueBadge}>
+                                <CrownIcon className={styles.badgeIcon} />
+                                Best Value
                             </div>
-
                             <div className={styles.cardContent}>
                                 {/* Price Display */}
                                 <div className={styles.priceSection}>
                                     <div className={styles.priceRow}>
                                         <span className={styles.price}>
-                                            {selectedPlan === 'creator' ? '$12.99' : '$39'}
+                                            {formatWeeklyPrice(9.99)}
                                         </span>
-                                        <span className={styles.period}>/mo</span>
+                                        <span className={styles.period}>/wk</span>
                                     </div>
+                                    <p className={styles.billedLine}>Billed {formatMonthlyPrice(9.99)}/mo</p>
                                     <p className={styles.creditsPaid}>
-                                        {selectedPlan === 'creator' ? '1,430 credits' : '4,500 credits'}
+                                        1,475 credits/mo
                                     </p>
                                 </div>
 
@@ -391,12 +363,12 @@ export default function PricingModal({
 
                                 <button
                                     className={styles.ctaPaid}
-                                    onClick={() => handleGetPlan(selectedPlan)}
+                                    onClick={() => handleGetPlan('creator')}
                                     disabled={loadingPlan !== null}
                                 >
-                                    {loadingPlan === selectedPlan
+                                    {loadingPlan === 'creator'
                                         ? <LoadingSpinner />
-                                        : `Get ${selectedPlan === 'creator' ? 'Creator' : 'Automation'}`
+                                        : 'Choose Creator'
                                     }
                                 </button>
                             </div>

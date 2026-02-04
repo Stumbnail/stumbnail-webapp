@@ -24,7 +24,7 @@ export default function ProfileModal({ open, onClose, user, userData, theme, onU
 
     const plan = getUserPlan(userData);
     const hasActiveSubscription = plan.type !== 'free';
-    const canUpgrade = plan.type !== 'automation'; // Not on highest tier
+    const canUpgrade = plan.type !== 'creator' && plan.type !== 'automation'; // Not on highest tier
 
     const handleManageSubscription = async () => {
         setIsLoadingPortal(true);

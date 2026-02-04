@@ -11,7 +11,7 @@ import { apiPost } from './api';
 type EventProperties = Record<string, string | number | boolean | null | undefined>;
 
 // User plan type
-type UserPlan = 'free' | 'creator' | 'automation';
+type UserPlan = 'free' | 'starter' | 'creator' | 'automation';
 
 // Session storage keys
 const SESSION_ID_KEY = 'stumbnail_session_id';

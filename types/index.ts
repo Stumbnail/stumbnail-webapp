@@ -163,7 +163,7 @@ export interface UserDataState {
 }
 
 // Plan types
-export type PlanType = 'free' | 'creator' | 'automation';
+export type PlanType = 'free' | 'starter' | 'creator' | 'automation';
 
 export interface PlanInfo {
     type: PlanType;

@@ -144,8 +144,8 @@ export function calculateDisplayCredits(userData: UserData | null): number {
 
 /**
  * Determine user's plan based on subscription credits
- * Creator: 1100 credits/month
- * Automation: 4500 credits/month
+ * Starter: 590 credits/month
+ * Creator: 1475 credits/month
  * Free: 0 subscription credits
  * @param userData - User data from Firestore
  * @returns Plan information
@@ -157,10 +157,10 @@ export function getUserPlan(userData: UserData | null): PlanInfo {
 
   const subCredits = userData.subscriptionCredits || 0;
 
-  if (subCredits >= 4500) {
-    return { type: 'automation', name: 'Automation', monthlyCredits: 4500 };
-  } else if (subCredits >= 1100) {
-    return { type: 'creator', name: 'Creator', monthlyCredits: 1100 };
+  if (subCredits >= 1475) {
+    return { type: 'creator', name: 'Creator', monthlyCredits: 1475 };
+  } else if (subCredits >= 590) {
+    return { type: 'starter', name: 'Starter', monthlyCredits: 590 };
   } else {
     return { type: 'free', name: 'Free', monthlyCredits: 0 };
   }

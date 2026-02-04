@@ -5,9 +5,14 @@
 import { apiPost, apiGet } from '../api';
 
 // Product IDs from environment variables
+export const STRIPE_STARTER_PRODUCT_ID =
+    process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_STARTER || 'prod_TufaAq6ft8sKfpE';
 export const STRIPE_CREATOR_PRODUCT_ID = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_CREATOR || '';
-export const STRIPE_AUTOMATION_PRODUCT_ID = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_AUTOMATION || '';
 export const STRIPE_MORECREDITS_PRODUCT_ID = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_MORECREDITS || '';
+
+// Price IDs (optional, used by backend if it supports explicit price selection)
+export const STRIPE_STARTER_PRICE_ID =
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER || 'price_1SwqFmGMDfeS63Cne0n2Xo9M';
 
 interface CheckoutResponse {
     url: string;
@@ -35,17 +40,17 @@ interface SubscriptionStatus {
     };
 }
 
-export type PlanType = 'creator' | 'automation' | 'morecredits';
+export type PlanType = 'starter' | 'creator' | 'morecredits';
 
 /**
  * Get product ID for a given plan type
  */
 function getProductId(plan: PlanType): string {
     switch (plan) {
+        case 'starter':
+            return STRIPE_STARTER_PRODUCT_ID;
         case 'creator':
             return STRIPE_CREATOR_PRODUCT_ID;
-        case 'automation':
-            return STRIPE_AUTOMATION_PRODUCT_ID;
         case 'morecredits':
             return STRIPE_MORECREDITS_PRODUCT_ID;
         default:
@@ -62,10 +67,12 @@ function getProductId(plan: PlanType): string {
 export async function createCheckoutSession(
     productId: string,
     customerEmail: string,
-    couponId?: string
+    couponId?: string,
+    priceId?: string
 ): Promise<CheckoutResponse> {
     return apiPost<CheckoutResponse>('/api/subscription/checkout', {
         productId,
+        priceId,
         customerEmail,
         couponId
     });
@@ -90,7 +97,7 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
 
 /**
  * Redirect user to Stripe checkout for subscription or one-time purchase
- * @param plan - 'creator', 'automation', or 'morecredits'
+ * @param plan - 'starter', 'creator', or 'morecredits'
  * @param email - User's email address
  */
 export async function redirectToCheckout(
@@ -98,12 +105,13 @@ export async function redirectToCheckout(
     email: string
 ): Promise<void> {
     const productId = getProductId(plan);
+    const priceId = plan === 'starter' ? STRIPE_STARTER_PRICE_ID : undefined;
 
     if (!productId) {
         throw new Error(`Missing Stripe product ID for ${plan} plan. Please configure NEXT_PUBLIC_STRIPE_PRODUCT_ID_${plan.toUpperCase()}.`);
     }
 
-    const { url } = await createCheckoutSession(productId, email);
+    const { url } = await createCheckoutSession(productId, email, undefined, priceId);
 
     // Redirect to Stripe checkout
     window.location.href = url;

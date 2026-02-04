@@ -22,7 +22,7 @@ const CONFIDENCE_COOLDOWN_MS = 60 * 1000; // 60 seconds
 // Store for user context (set by the app when user data is available)
 let userContext: {
     creditsRemaining?: number;
-    planTier?: 'free' | 'creator' | 'automation';
+    planTier?: 'free' | 'starter' | 'creator' | 'automation';
 } = {};
 
 /**
@@ -30,7 +30,7 @@ let userContext: {
  */
 export function setAnalyticsUserContext(context: {
     creditsRemaining?: number;
-    planTier?: 'free' | 'creator' | 'automation';
+    planTier?: 'free' | 'starter' | 'creator' | 'automation';
 }): void {
     userContext = context;
 }
