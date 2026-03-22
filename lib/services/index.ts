@@ -4,7 +4,6 @@
 
 export * from './projectService';
 export * from './thumbnailService';
-export * from './templateService';
 export * from './userService';
 
 // Firestore services - use named exports to avoid conflicts

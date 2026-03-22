@@ -54,9 +54,9 @@ export default function Header({
                     type="text"
                     value={searchQuery}
                     onChange={onSearchChange}
-                    placeholder="Search projects or templates..."
+                    placeholder="Search projects..."
                     className={styles.searchInput}
-                    aria-label="Search projects or templates"
+                    aria-label="Search projects"
                 />
             </div>
 

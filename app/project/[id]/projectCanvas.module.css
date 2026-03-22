@@ -6,6 +6,14 @@
   height: 100vh;
   max-height: 100vh;
   background-color: #ffffff;
+  --surface-canvas: #fdfbf8;
+  --surface-muted: #f4f1ed;
+  --surface-soft: #faf7f3;
+  --surface-subtle: #fdfbf8;
+  --surface-hover: #eee9e3;
+  --surface-border: #e8e1da;
+  --surface-border-strong: #ddd5cd;
+  --surface-grid-dot: #ddd6cf;
   overflow: hidden;
 }
 
@@ -15,7 +23,7 @@
   flex: 1;
   position: relative;
   height: 100vh;
-  background-color: #fafafa;
+  background-color: var(--surface-canvas);
   overflow: hidden;
 }
 
@@ -52,7 +60,7 @@
 .loadingSpinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e8e8e8;
+  border: 3px solid var(--surface-muted);
   border-top-color: #ff6f61;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -69,15 +77,16 @@
   position: relative;
   width: 340px;
   height: 100vh;
-  background-color: #f8f8f8;
-  padding: 20px 4px;
+  margin-left: 16px;
+  background-color: var(--surface-soft);
+  padding: 20px 12px;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   z-index: 10;
   overflow-y: overlay;
   overflow-x: hidden;
-  border-right: 1px solid #e5e5e5;
+  border-right: 1px solid var(--surface-border);
   /* Thin scrollbar for Firefox */
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
@@ -145,7 +154,7 @@
   border-radius: 12px;
   padding: 12px 16px;
   margin-bottom: 24px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
 }
 
 .publicToggleLabel {
@@ -159,7 +168,7 @@
   position: relative;
   width: 44px;
   height: 24px;
-  background-color: #d5d5d5;
+  background-color: var(--surface-border-strong);
   border: none;
   border-radius: 12px;
   cursor: pointer;
@@ -191,7 +200,7 @@
 .sidebarBottomStats {
   margin-top: auto;
   padding: 16px 0;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--surface-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,7 +247,7 @@
   justify-content: center;
   gap: 8px;
   background-color: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 10px;
   padding: 12px 16px;
   height: auto;
@@ -307,7 +316,7 @@
   align-items: center;
   gap: 8px;
   background-color: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 12px;
   padding: 8px 12px;
   transition: border-color 0.2s ease;
@@ -385,7 +394,7 @@
 .youtubeInputContainer {
   position: relative;
   background-color: #ffffff;
-  border: 1px solid #d5d5d5;
+  border: 1px solid var(--surface-border-strong);
   border-radius: 24px;
   padding: 0;
   width: 100%;
@@ -489,7 +498,7 @@
 }
 
 .submitButton:disabled {
-  background-color: #d5d5d5;
+  background-color: var(--surface-border-strong);
   cursor: not-allowed;
 }
 
@@ -512,11 +521,11 @@
 .promptInputContainer {
   position: relative;
   background-color: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 24px;
   padding: 0;
   width: 100%;
-  height: 279px;
+  height: 236px;
   display: flex;
   flex-direction: column;
   transition: border-color 0.2s ease;
@@ -654,8 +663,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  border-top: 1px solid #e5e5e5;
-  background: #fafafa;
+  border-top: 1px solid var(--surface-border);
+  background: var(--surface-subtle);
 }
 
 .promptButtonsRow {
@@ -800,9 +809,9 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 12px;
-  background-color: #f8f8f8;
+  background-color: var(--surface-soft);
   border-radius: 12px;
-  border: 1px dashed #d5d5d5;
+  border: 1px dashed var(--surface-border-strong);
 }
 
 .attachedImageWrapper {
@@ -908,7 +917,7 @@
   align-items: center;
   justify-content: center;
   background-color: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 12px;
   cursor: pointer;
   font-family: var(--font-space-grotesk), sans-serif;
@@ -947,8 +956,8 @@
   justify-content: space-between;
   width: 100%;
   padding: 10px 14px;
-  background: #f8f8f8;
-  border: 1px solid #e5e5e5;
+  background: var(--surface-soft);
+  border: 1px solid var(--surface-border);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -959,8 +968,8 @@
 }
 
 .hintsDropdownHeader:hover {
-  border-color: #d5d5d5;
-  background: #f5f5f5;
+  border-color: var(--surface-border-strong);
+  background: var(--surface-subtle);
 }
 
 .hintsDropdownLeft {
@@ -1048,8 +1057,8 @@
 .hintChip {
   flex-shrink: 0;
   padding: 6px 12px;
-  background: #f5f5f5;
-  border: 1px solid #e5e5e5;
+  background: var(--surface-subtle);
+  border: 1px solid var(--surface-border);
   border-radius: 16px;
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 13px;
@@ -1083,8 +1092,8 @@
 .customHintInput {
   width: 100%;
   padding: 8px 32px 8px 12px;
-  background: #f5f5f5;
-  border: 1px solid #e5e5e5;
+  background: var(--surface-subtle);
+  border: 1px solid var(--surface-border);
   border-radius: 8px;
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 13px;
@@ -1129,7 +1138,7 @@
   padding: 24px;
   background-color: #ffffff;
   border-radius: 16px;
-  border: 1px dashed #d5d5d5;
+  border: 1px dashed var(--surface-border-strong);
 }
 
 .uploadButton {
@@ -1161,8 +1170,8 @@
   position: relative;
   overflow: hidden;
   /* Clean dotted pattern background - infinite feel */
-  background-color: #e8e8e8;
-  background-image: radial-gradient(circle, #d0d0d0 1px, transparent 1px);
+  background-color: var(--surface-canvas);
+  background-image: radial-gradient(circle, var(--surface-grid-dot) 1px, transparent 1px);
   background-size: 20px 20px;
   /* Prevent browser zoom gestures */
   touch-action: none;
@@ -1340,7 +1349,7 @@
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  border: 1px solid #d5d5d5;
+  border: 1px solid var(--surface-border-strong);
   border-radius: 12px;
   padding: 10px 12px;
   min-width: 650px;
@@ -1405,7 +1414,7 @@
 }
 
 .promptPanelSubmit:disabled {
-  background-color: #d5d5d5;
+  background-color: var(--surface-border-strong);
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -1460,7 +1469,7 @@
 .conversionFormPanel {
   position: absolute;
   background: #ffffff;
-  border: 1px solid #d5d5d5;
+  border: 1px solid var(--surface-border-strong);
   border-radius: 20px;
   min-width: 450px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -1486,7 +1495,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--surface-border);
   user-select: none;
 }
 
@@ -1514,7 +1523,7 @@
 }
 
 .formPanelClose:hover {
-  background-color: #e8e8e8;
+  background-color: var(--surface-muted);
   color: #333;
 }
 
@@ -1542,8 +1551,8 @@
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 14px;
   color: #141414;
-  background: #f8f8f8;
-  border: 1px solid #e5e5e5;
+  background: var(--surface-soft);
+  border: 1px solid var(--surface-border);
   border-radius: 10px;
   padding: 12px 14px;
   outline: none;
@@ -1577,8 +1586,8 @@
   font-size: 14px;
   font-weight: 500;
   color: #666;
-  background: #f8f8f8;
-  border: 2px solid #e5e5e5;
+  background: var(--surface-soft);
+  border: 2px solid var(--surface-border);
   border-radius: 10px;
   padding: 12px;
   cursor: pointer;
@@ -1586,8 +1595,8 @@
 }
 
 .radioButton:hover {
-  background: #e8e8e8;
-  border-color: #d5d5d5;
+  background: var(--surface-muted);
+  border-color: var(--surface-border-strong);
 }
 
 .radioButtonActive {
@@ -1626,7 +1635,7 @@
 }
 
 .formSubmitButton:disabled {
-  background: linear-gradient(135deg, #d5d5d5 0%, #e5e5e5 100%);
+  background: linear-gradient(135deg, var(--surface-border-strong) 0%, var(--surface-border) 100%);
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -1714,7 +1723,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: #fafafa;
+  background: var(--surface-subtle);
   border-radius: 4px;
   gap: 12px;
 }
@@ -1833,7 +1842,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: #fafafa;
+  background: var(--surface-subtle);
   border-radius: 4px;
 }
 
@@ -1853,7 +1862,7 @@
   width: 40px;
   height: 40px;
   background-color: #ffffff;
-  border: 1px solid #d5d5d5;
+  border: 1px solid var(--surface-border-strong);
   border-radius: 10px;
   cursor: pointer;
   display: flex;
@@ -1887,7 +1896,7 @@
   padding: 14px 18px 10px 14px;
   margin-top: 8px;
   background: #ffffff;
-  border: 1px solid #d5d5d5;
+  border: 1px solid var(--surface-border-strong);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: visible;
@@ -1964,8 +1973,8 @@
   display: flex;
   justify-content: center;
   padding: 8px 12px;
-  background: #f8f8f8;
-  border: 1px solid #e5e5e5;
+  background: var(--surface-soft);
+  border: 1px solid var(--surface-border);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
@@ -2003,7 +2012,7 @@
 }
 
 .toolButton:hover {
-  background-color: #e8e8e8;
+  background-color: var(--surface-muted);
   color: #333;
 }
 
@@ -2015,7 +2024,7 @@
 .toolDivider {
   width: 24px;
   height: 1px;
-  background: #e0e0e0;
+  background: var(--surface-border-strong);
   margin: 4px auto;
 }
 
@@ -2052,7 +2061,7 @@
 }
 
 .zoomButton:hover {
-  background-color: #e8e8e8;
+  background-color: var(--surface-muted);
   color: #333;
 }
 
@@ -2068,7 +2077,7 @@
 .zoomDivider {
   width: 1px;
   height: 16px;
-  background: #e0e0e0;
+  background: var(--surface-border-strong);
   margin: 0 6px;
 }
 
@@ -2102,9 +2111,9 @@
 .viewModeCta {
   padding: 20px 16px;
   margin-bottom: 20px;
-  background-color: #f5f5f5;
+  background-color: var(--surface-subtle);
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--surface-border-strong);
 }
 
 .viewModeCtaHeader {
@@ -2844,7 +2853,7 @@
   margin-top: 8px;
   width: 220px;
   background: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 8px;
   padding: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
@@ -2944,7 +2953,7 @@
   overflow-x: auto;
   padding-bottom: 4px;
   scrollbar-width: thin;
-  scrollbar-color: #d5d5d5 transparent;
+  scrollbar-color: var(--surface-border-strong) transparent;
 }
 
 .contentTypeChipsContainer::-webkit-scrollbar {
@@ -2956,7 +2965,7 @@
 }
 
 .contentTypeChipsContainer::-webkit-scrollbar-thumb {
-  background: #d5d5d5;
+  background: var(--surface-border-strong);
   border-radius: 2px;
 }
 
@@ -2966,8 +2975,8 @@
   align-items: center;
   gap: 6px;
   padding: 10px 14px;
-  background: #f8f8f8;
-  border: 2px solid #e5e5e5;
+  background: var(--surface-soft);
+  border: 2px solid var(--surface-border);
   border-radius: 12px;
   cursor: pointer;
   font-family: var(--font-space-grotesk), sans-serif;
@@ -2980,8 +2989,8 @@
 }
 
 .contentTypeChip:hover {
-  background: #e8e8e8;
-  border-color: #d5d5d5;
+  background: var(--surface-muted);
+  border-color: var(--surface-border-strong);
 }
 
 .contentTypeChipActive {
@@ -3014,7 +3023,7 @@
   height: 56px;
   border-radius: 10px;
   overflow: hidden;
-  border: 2px solid #e5e5e5;
+  border: 2px solid var(--surface-border);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -3094,7 +3103,7 @@
   display: flex;
   gap: 6px;
   padding: 4px;
-  background: #f0f0f0;
+  background: var(--surface-hover);
   border-radius: 10px;
 }
 
@@ -3133,9 +3142,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 14px;
-  background: #f8f8f8;
+  background: var(--surface-soft);
   border-radius: 12px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   animation: slideDown 0.2s ease;
 }
 
@@ -3158,7 +3167,7 @@
   font-size: 14px;
   color: #141414;
   background: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 8px;
   padding: 10px 12px;
   outline: none;
@@ -3212,7 +3221,7 @@
 .textOptionChip {
   padding: 6px 10px;
   background: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 6px;
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 12px;
@@ -3285,9 +3294,9 @@
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  background: #f8f8f8;
+  background: var(--surface-soft);
   border-radius: 8px;
-  border: 1px dashed #e5e5e5;
+  border: 1px dashed var(--surface-border);
   color: #888;
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 13px;
@@ -3304,9 +3313,9 @@
   flex-direction: column;
   gap: 14px;
   padding: 14px;
-  background: #f8f8f8;
+  background: var(--surface-soft);
   border-radius: 12px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   animation: slideDown 0.2s ease;
 }
 
@@ -3315,7 +3324,7 @@
   display: flex;
   gap: 6px;
   padding: 4px;
-  background: #e8e8e8;
+  background: var(--surface-muted);
   border-radius: 10px;
 }
 
@@ -3340,7 +3349,7 @@
   flex-direction: column;
   gap: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--surface-border);
 }
 
 .typographySectionLabel {
@@ -3362,7 +3371,7 @@
 .textColorChip {
   width: 28px;
   height: 28px;
-  border: 2px solid #e5e5e5;
+  border: 2px solid var(--surface-border);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -3391,7 +3400,7 @@
   font-size: 13px;
   color: #141414;
   background: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 8px;
   padding: 10px 12px;
   outline: none;
@@ -3441,9 +3450,9 @@
   flex-direction: column;
   gap: 16px;
   padding: 16px;
-  background: #f8f8f8;
+  background: var(--surface-soft);
   border-radius: 12px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   animation: slideDown 0.2s ease;
 }
 
@@ -3460,7 +3469,7 @@
   gap: 5px;
   padding: 8px 12px;
   background: #ffffff;
-  border: 2px solid #e5e5e5;
+  border: 2px solid var(--surface-border);
   border-radius: 20px;
   cursor: pointer;
   font-family: var(--font-space-grotesk), sans-serif;
@@ -3906,7 +3915,7 @@
   width: 44px;
   height: 44px;
   background: #ffffff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--surface-border);
   border-radius: 12px;
   cursor: pointer;
   align-items: center;
@@ -3917,7 +3926,7 @@
 }
 
 .mobileSidebarToggle:hover {
-  background: #f5f5f5;
+  background: var(--surface-subtle);
 }
 
 .darkTheme .mobileSidebarToggle {
@@ -3945,6 +3954,7 @@
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     width: 320px;
+    margin-left: 0;
     padding: 20px 12px;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
   }

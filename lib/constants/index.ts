@@ -1,6 +1,5 @@
 // Re-export all constants from a single entry point
 export * from './navigation';
-export * from './templates';
 export * from './models';
 export * from './smartMerge';
 

@@ -352,8 +352,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
     const promptImageInputRef = useRef<HTMLInputElement>(null);
     const hasPerformedInitialFit = useRef(false);
     const hasTrackedEditorOpen = useRef(false); // Track if we've sent the editor_open analytics event
-    const pendingTemplateRef = useRef<{ type: string; prompt?: string; imageURL?: string; category?: string; tone?: string } | null>(null);
-    const pendingAutoGenerateRef = useRef(false); // Track if we need to auto-generate after template load
+    const lastClipboardImportAtRef = useRef(0);
 
     // Resolution Constants
     const RESOLUTION_MAP: Record<string, number> = {
@@ -849,102 +848,6 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         }
     }, [isLoadingProject, canvasElements]);
 
-    // Handle template data from sessionStorage (when creating from a template)
-    // Prompt-based templates are handled immediately; YouTube templates stored in ref for later
-    useEffect(() => {
-        if (isLoadingProject || !projectId) return;
-
-        const templateKey = `template_${projectId}`;
-        const templateData = sessionStorage.getItem(templateKey);
-
-        if (!templateData) return;
-
-        // Clean up sessionStorage immediately
-        sessionStorage.removeItem(templateKey);
-
-        try {
-            const template = JSON.parse(templateData);
-            console.log('[Template] Loading template data:', template);
-
-            if (template.type === 'youtube_thumbnail' && template.imageURL) {
-                // Store for later processing once addElementAtViewportCenter is available
-                pendingTemplateRef.current = template;
-            } else {
-                // Prompt-based template: Preload prompt and options immediately
-                if (template.prompt) {
-                    setPromptText(template.prompt);
-                }
-                // Handle category - check if it matches a preset or should be custom
-                if (template.category) {
-                    const categoryLower = template.category.toLowerCase();
-                    const matchesPreset = CATEGORY_OPTIONS.some(opt => opt.id === categoryLower);
-                    if (matchesPreset) {
-                        setSelectedCategory(categoryLower);
-                    } else {
-                        setSelectedCategory('custom');
-                        setCustomCategory(template.category);
-                    }
-                }
-                // Handle tone - check if it matches a preset or should be custom
-                if (template.tone) {
-                    const toneLower = template.tone.toLowerCase();
-                    const matchesPreset = TONE_OPTIONS.some(opt => opt.id === toneLower);
-                    if (matchesPreset) {
-                        setSelectedTone(toneLower);
-                    } else {
-                        setSelectedTone('custom');
-                        setCustomTone(template.tone);
-                    }
-                }
-
-                // Handle attached images from template customization
-                if (template.attachedImages && Array.isArray(template.attachedImages)) {
-                    const loadedImages: { id: string; file: File; preview: string }[] = [];
-
-                    template.attachedImages.forEach((imgData: { id: string; preview: string; name: string; type: string }) => {
-                        try {
-                            // Convert base64 preview back to File object
-                            const base64Data = imgData.preview.split(',')[1];
-                            if (base64Data) {
-                                const byteString = atob(base64Data);
-                                const ab = new ArrayBuffer(byteString.length);
-                                const ia = new Uint8Array(ab);
-                                for (let i = 0; i < byteString.length; i++) {
-                                    ia[i] = byteString.charCodeAt(i);
-                                }
-                                const blob = new Blob([ab], { type: imgData.type || 'image/jpeg' });
-                                const file = new File([blob], imgData.name || 'template-image.jpg', {
-                                    type: imgData.type || 'image/jpeg'
-                                });
-
-                                loadedImages.push({
-                                    id: imgData.id,
-                                    file,
-                                    preview: imgData.preview
-                                });
-                            }
-                        } catch (err) {
-                            console.error('[Template] Failed to convert image:', err);
-                        }
-                    });
-
-                    if (loadedImages.length > 0) {
-                        console.log('[Template] Loaded', loadedImages.length, 'attached images');
-                        setAttachedImages(loadedImages);
-                    }
-                }
-
-                // Check if auto-generation is requested
-                if (template.autoGenerate && template.prompt) {
-                    console.log('[Template] Auto-generate requested, will trigger after state settles');
-                    pendingAutoGenerateRef.current = true;
-                }
-            }
-        } catch (error) {
-            console.error('[Template] Failed to parse template data:', error);
-        }
-    }, [isLoadingProject, projectId]);
-
     // Handlers
     const handleBack = useCallback(() => {
         router.push('/dashboard');
@@ -1237,92 +1140,6 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
 
         return newElementId;
     }, [screenToCanvas, findNonOverlappingPosition, viewport, animateViewportTo]);
-
-    // Process pending YouTube thumbnail template (after addElementAtViewportCenter is defined)
-    useEffect(() => {
-        const template = pendingTemplateRef.current;
-        if (!template || !template.imageURL || isLoadingProject) return;
-
-        // Clear the ref immediately to prevent re-processing
-        pendingTemplateRef.current = null;
-
-        console.log('[Template] Processing pending YouTube template:', template);
-
-        const extractVideoIdFromUrl = (url: string): string | null => {
-            // Try to extract from YouTube image URL
-            const ytImgMatch = url.match(/img\.youtube\.com\/vi\/([^/]+)/);
-            if (ytImgMatch) return ytImgMatch[1];
-
-            // Try standard YouTube URL patterns
-            const patterns = [
-                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/
-            ];
-            for (const pattern of patterns) {
-                const match = url.match(pattern);
-                if (match) return match[1];
-            }
-            return null;
-        };
-
-        const videoId = extractVideoIdFromUrl(template.imageURL);
-        const thumbnailUrl = videoId
-            ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-            : template.imageURL;
-
-        // Load the YouTube thumbnail onto canvas
-        const img = new window.Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = async () => {
-            if (!canvasContainerRef.current) return;
-
-            const newElementId = addElementAtViewportCenter(
-                thumbnailUrl,
-                'youtube-thumbnail',
-                img.naturalWidth,
-                img.naturalHeight,
-                'complete',
-                false
-            );
-
-            // Select the new element to show the edit panel
-            setSelectedElementIds([newElementId]);
-
-            // Persist to backend
-            if (projectId) {
-                try {
-                    const maxDisplayWidth = 600;
-                    const scale = Math.min(1, maxDisplayWidth / img.naturalWidth);
-
-                    const response = await addThumbnail(projectId, {
-                        thumbnailUrl,
-                        type: 'youtube-thumbnail',
-                        x: 0, // Position is calculated in addElementAtViewportCenter
-                        y: 0,
-                        width: img.naturalWidth * scale,
-                        height: img.naturalHeight * scale,
-                        naturalWidth: img.naturalWidth,
-                        naturalHeight: img.naturalHeight,
-                        youtubeVideoId: videoId || undefined
-                    });
-
-                    if (response.success && response.thumbnail) {
-                        // Store backend ID without changing the element's id (which is used as React key)
-                        // Changing the id would cause CanvasItem to remount, resetting isLoaded state
-                        setCanvasElements(prev => prev.map(el =>
-                            el.id === newElementId ? { ...el, backendId: response.thumbnail.id } : el
-                        ));
-                        // Note: selectedElementIds doesn't need updating since id stays the same
-                    }
-                } catch (error) {
-                    console.error('Failed to save template thumbnail:', error);
-                }
-            }
-        };
-        img.onerror = () => {
-            console.error('Failed to load YouTube thumbnail from template');
-        };
-        img.src = thumbnailUrl;
-    }, [isLoadingProject, projectId, addElementAtViewportCenter]);
 
     const handleYoutubeLinkSubmit = useCallback(() => {
         if (!validateYoutubeLink(youtubeLink)) return;
@@ -1705,19 +1522,6 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         trackBatchCountChange(count, 'free');
     }, []);
 
-    // Auto-trigger generation when template with autoGenerate flag is loaded
-    useEffect(() => {
-        if (pendingAutoGenerateRef.current && promptText && user?.email && !isGenerating && !isLoadingProject) {
-            console.log('[Template] Auto-triggering generation for template');
-            pendingAutoGenerateRef.current = false;
-            // Small delay to ensure all state is settled
-            const timer = setTimeout(() => {
-                handlePromptSubmit();
-            }, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [promptText, user?.email, isGenerating, isLoadingProject, handlePromptSubmit]);
-
     const handleCreateNewStyle = useCallback(() => {
         console.log('Create new style clicked');
         // TODO: Implement style creation logic
@@ -1741,10 +1545,14 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         }
     }, []);
 
-    // Image upload handler - registers with backend
-    const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files || files.length === 0 || !projectId) return;
+    const resetCanvasImageInput = useCallback(() => {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }, []);
+
+    const processCanvasImageFiles = useCallback((files: File[]) => {
+        if (files.length === 0 || !projectId || viewMode) return;
 
         // Track asset upload
         trackAssetUpload('image');
@@ -1757,7 +1565,6 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         // Validate number of files
         if (files.length > MAX_FILES) {
             setToast({ message: `Maximum ${MAX_FILES} files allowed per upload`, type: 'error' });
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
 
@@ -1765,19 +1572,19 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         let totalSize = 0;
         const oversizedFiles: string[] = [];
 
-        for (const file of Array.from(files)) {
+        files.forEach((file, index) => {
             totalSize += file.size;
             if (file.size > MAX_FILE_SIZE) {
-                oversizedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+                const displayName = file.name || `Pasted image ${index + 1}`;
+                oversizedFiles.push(`${displayName} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
             }
-        }
+        });
 
         if (oversizedFiles.length > 0) {
             setToast({
                 message: `File(s) too large (max 10MB each): ${oversizedFiles.slice(0, 2).join(', ')}${oversizedFiles.length > 2 ? '...' : ''}`,
                 type: 'error'
             });
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
 
@@ -1786,16 +1593,22 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                 message: `Total upload size too large (${(totalSize / 1024 / 1024).toFixed(1)}MB, max 50MB)`,
                 type: 'error'
             });
-            if (fileInputRef.current) fileInputRef.current.value = '';
             return;
         }
 
         // Use a local copy of elements to track position for concurrent uploads
         const runningElements = [...canvasElements];
+        const batchTimestamp = Date.now();
 
-        Array.from(files).forEach(async (file) => {
+        files.forEach(async (file, index) => {
             // Use URL.createObjectURL for instant optimistic display (0ms latency)
             const objectUrl = URL.createObjectURL(file);
+            const fileExtension = file.type === 'image/jpeg'
+                ? 'jpg'
+                : file.type === 'image/webp'
+                    ? 'webp'
+                    : 'png';
+            const fileName = file.name || `pasted-image-${batchTimestamp}-${index + 1}.${fileExtension}`;
 
             // Convert to base64 in background for the actual upload
             const toBase64 = (f: File): Promise<string> => new Promise((resolve, reject) => {
@@ -1870,7 +1683,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                             height,
                             naturalWidth: img.naturalWidth,
                             naturalHeight: img.naturalHeight,
-                            fileName: file.name,
+                            fileName,
                         });
 
                         if (response.success && response.thumbnail) {
@@ -1902,17 +1715,131 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                 URL.revokeObjectURL(objectUrl);
             }
         });
+    }, [projectId, viewMode, canvasElements, addElementAtViewportCenter, findNonOverlappingPosition, screenToCanvas]);
 
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    }, [projectId, addElementAtViewportCenter, canvasElements, findNonOverlappingPosition, screenToCanvas]);
+    // Image upload handler - registers with backend
+    const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files ? Array.from(e.target.files) : [];
+        processCanvasImageFiles(files);
+        resetCanvasImageInput();
+    }, [processCanvasImageFiles, resetCanvasImageInput]);
 
 
 
     const triggerImageUpload = useCallback(() => {
         fileInputRef.current?.click();
     }, []);
+
+    const isEditablePasteTarget = useCallback((target: EventTarget | null) => {
+        if (!(target instanceof HTMLElement)) return false;
+
+        return target.isContentEditable || Boolean(target.closest('input, textarea, [contenteditable="true"]'));
+    }, []);
+
+    const isModalOrOverlayTarget = useCallback((target: EventTarget | null) => {
+        if (!(target instanceof HTMLElement)) return false;
+
+        return Boolean(target.closest('[class*="Modal"], [class*="Overlay"]'));
+    }, []);
+
+    const getClipboardImageFiles = useCallback((clipboardData: DataTransfer | null) => {
+        if (!clipboardData) return [] as File[];
+
+        const clipboardFiles = Array.from(clipboardData.files || []).filter(file => file.type.startsWith('image/'));
+        if (clipboardFiles.length > 0) {
+            return clipboardFiles;
+        }
+
+        return Array.from(clipboardData.items || [])
+            .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+            .map(item => item.getAsFile())
+            .filter((file): file is File => Boolean(file));
+    }, []);
+
+    const importClipboardImageFiles = useCallback((files: File[]) => {
+        if (files.length === 0) return false;
+
+        const now = Date.now();
+        if (now - lastClipboardImportAtRef.current < 750) {
+            return false;
+        }
+
+        lastClipboardImportAtRef.current = now;
+        processCanvasImageFiles(files);
+        return true;
+    }, [processCanvasImageFiles]);
+
+    const readClipboardImages = useCallback(async () => {
+        if (!window.isSecureContext || !navigator.clipboard?.read) {
+            return [] as File[];
+        }
+
+        try {
+            const items = await navigator.clipboard.read();
+            const timestamp = Date.now();
+            const imageFiles: File[] = [];
+
+            for (const [index, item] of items.entries()) {
+                const imageType = item.types.find(type => type.startsWith('image/'));
+                if (!imageType) continue;
+
+                const blob = await item.getType(imageType);
+                const extension = imageType.split('/')[1] || 'png';
+                imageFiles.push(new File(
+                    [blob],
+                    `pasted-image-${timestamp}-${index + 1}.${extension}`,
+                    { type: imageType, lastModified: timestamp }
+                ));
+            }
+
+            return imageFiles;
+        } catch (error) {
+            console.error('Failed to read clipboard images:', error);
+            return [];
+        }
+    }, []);
+
+    useEffect(() => {
+        if (viewMode) return;
+
+        const handlePaste = (e: ClipboardEvent) => {
+            const target = e.target as HTMLElement | null;
+            if (isEditablePasteTarget(target)) return;
+            if (isModalOrOverlayTarget(target)) return;
+
+            const imageFiles = getClipboardImageFiles(e.clipboardData);
+            if (importClipboardImageFiles(imageFiles)) {
+                e.preventDefault();
+            }
+        };
+
+        window.addEventListener('paste', handlePaste);
+        return () => {
+            window.removeEventListener('paste', handlePaste);
+        };
+    }, [viewMode, isEditablePasteTarget, isModalOrOverlayTarget, getClipboardImageFiles, importClipboardImageFiles]);
+
+    useEffect(() => {
+        if (viewMode) return;
+
+        const handleClipboardShortcut = (e: KeyboardEvent) => {
+            if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'v') return;
+
+            const activeTarget = document.activeElement;
+            if (isEditablePasteTarget(activeTarget)) return;
+            if (isModalOrOverlayTarget(activeTarget)) return;
+
+            void (async () => {
+                const imageFiles = await readClipboardImages();
+                importClipboardImageFiles(imageFiles);
+            })();
+        };
+
+        window.addEventListener('keydown', handleClipboardShortcut);
+        return () => {
+            window.removeEventListener('keydown', handleClipboardShortcut);
+        };
+    }, [viewMode, isEditablePasteTarget, isModalOrOverlayTarget, readClipboardImages, importClipboardImageFiles]);
 
     // Check if element is inside selection box
     const isElementInSelectionBox = useCallback((element: CanvasElement, box: SelectionBox) => {
@@ -2267,6 +2194,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
             // Check if user is typing in an input field
             const isTyping = document.activeElement?.tagName === 'INPUT' ||
                 document.activeElement?.tagName === 'TEXTAREA';
+            const hasPrimaryModifier = e.ctrlKey || e.metaKey;
 
             // Track modifier keys (always track these)
             if (e.key === 'Shift') setShiftPressed(true);
@@ -2284,19 +2212,19 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
             }
 
             // H for hand tool
-            if (e.key === 'h' || e.key === 'H') {
+            if (!hasPrimaryModifier && (e.key === 'h' || e.key === 'H')) {
                 setToolMode('hand');
                 e.preventDefault();
             }
 
             // V for select tool
-            if (e.key === 'v' || e.key === 'V') {
+            if (!hasPrimaryModifier && (e.key === 'v' || e.key === 'V')) {
                 setToolMode('select');
                 e.preventDefault();
             }
 
             // Space for temporary hand tool
-            if (e.code === 'Space' && !e.repeat) {
+            if (!hasPrimaryModifier && e.code === 'Space' && !e.repeat) {
                 setIsHandToolActive(true);
                 e.preventDefault();
             }
@@ -2330,7 +2258,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
             }
 
             // Duplicate (Ctrl+D)
-            if (e.ctrlKey && e.key === 'd' && selectedElementIds.length > 0) {
+            if (hasPrimaryModifier && e.key.toLowerCase() === 'd' && selectedElementIds.length > 0) {
                 e.preventDefault();
                 const newElements: CanvasElement[] = [];
 
@@ -2351,7 +2279,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
             }
 
             // Select all (Ctrl+A)
-            if (e.ctrlKey && e.key === 'a') {
+            if (hasPrimaryModifier && e.key.toLowerCase() === 'a') {
                 e.preventDefault();
                 setSelectedElementIds(canvasElements.map(el => el.id));
             }
@@ -2398,19 +2326,19 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
             }
 
             // Zoom shortcuts
-            if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
+            if (hasPrimaryModifier && (e.key === '=' || e.key === '+')) {
                 e.preventDefault();
                 setViewport(prev => ({ ...prev, zoom: Math.min(10, prev.zoom * 1.2) }));
             }
-            if (e.ctrlKey && e.key === '-') {
+            if (hasPrimaryModifier && e.key === '-') {
                 e.preventDefault();
                 setViewport(prev => ({ ...prev, zoom: Math.max(0.05, prev.zoom / 1.2) }));
             }
-            if (e.ctrlKey && e.key === '0') {
+            if (hasPrimaryModifier && e.key === '0') {
                 e.preventDefault();
                 setViewport({ x: 0, y: 0, zoom: 1 });
             }
-            if (e.ctrlKey && e.key === '1') {
+            if (hasPrimaryModifier && e.key === '1') {
                 e.preventDefault();
                 setViewport(prev => ({ ...prev, zoom: 1 }));
             }
@@ -3729,11 +3657,19 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
             <main
                 ref={canvasMainRef}
                 className={styles.canvas}
+                tabIndex={0}
                 style={{ cursor: getCursorStyle() }}
                 onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseUp={handleCanvasMouseUp}
                 onMouseLeave={handleCanvasMouseUp}
+                onPaste={(e) => {
+                    if (isEditablePasteTarget(e.target) || isModalOrOverlayTarget(e.target)) return;
+
+                    if (importClipboardImageFiles(getClipboardImageFiles(e.clipboardData))) {
+                        e.preventDefault();
+                    }
+                }}
                 onContextMenu={(e) => e.preventDefault()}
             >
                 {/* Top Right Controls (Credits + Export) */}
@@ -4642,7 +4578,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                     <button
                         className={styles.toolButton}
                         onClick={triggerImageUpload}
-                        title="Add image"
+                        title="Add image or paste from clipboard"
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                             <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />

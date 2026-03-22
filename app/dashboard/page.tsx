@@ -10,18 +10,16 @@ import dynamicImport from 'next/dynamic';
 // Types
 import {
   EditProjectModalState,
-  ProjectActionModalState,
-  Template
+  ProjectActionModalState
 } from '@/types';
 
 // Hooks
-import { useAuth, useUserData, useTheme, useMobile, useTemplates } from '@/hooks';
+import { useAuth, useUserData, useTheme, useMobile } from '@/hooks';
 import { useProjectsContext } from '@/contexts';
 
 // Constants
 import {
   getNavItemsForRoute,
-  TEMPLATES_PER_PAGE,
   MAX_PROJECTS_DISPLAY,
   MAX_PROJECTS_DISPLAY_MOBILE
 } from '@/lib/constants';
@@ -51,10 +49,6 @@ const ProfileModal = dynamicImport(
   () => import('@/components/modals/ProfileModal'),
   { ssr: false }
 );
-const TemplateCustomizationModal = dynamicImport(
-  () => import('@/components/modals/TemplateCustomizationModal'),
-  { ssr: false }
-);
 const ShareModal = dynamicImport(
   () => import('@/components/modals/ShareModal'),
   { ssr: false }
@@ -75,7 +69,6 @@ export default function DashboardPage() {
   const { userData } = useUserData(user);
   const { theme, setTheme } = useTheme({ userId: user?.uid });
   const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
-  const { templates, loading: _templatesLoading } = useTemplates(); // eslint-disable-line @typescript-eslint/no-unused-vars
   const {
     projects,
     loading: _projectsLoading, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -104,14 +97,10 @@ export default function DashboardPage() {
     projectId: null,
     projectName: ''
   });
-  const [viewingAllTemplates, setViewingAllTemplates] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [projectMenuOpen, setProjectMenuOpen] = useState<string | null>(null);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [shareModalState, setShareModalState] = useState<{
     isOpen: boolean;
     projectId: string;
@@ -134,16 +123,6 @@ export default function DashboardPage() {
   // Edit project state
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
-
-  // Memoized values
-  const totalPages = Math.ceil(templates.length / TEMPLATES_PER_PAGE);
-
-  const displayedTemplates = useMemo(() =>
-    viewingAllTemplates
-      ? templates.slice((currentPage - 1) * TEMPLATES_PER_PAGE, currentPage * TEMPLATES_PER_PAGE)
-      : templates,
-    [viewingAllTemplates, currentPage, templates]
-  );
 
   const filteredProjects = useMemo(() =>
     projects.filter(project =>
@@ -231,91 +210,11 @@ export default function DashboardPage() {
   const handleCreateProject = useCallback(async (name: string, isPublic: boolean) => {
     const newProject = await createNewProject(name, isPublic);
     if (newProject) {
-      // Track empty project creation
-      trackProjectCreate('empty', null, 'free');
+      trackProjectCreate(getUserPlan(userData).type);
       setIsModalOpen(false);
       router.push(`/project/${newProject.id}`);
     }
-  }, [createNewProject, router]);
-
-  const handleSeeAllClick = useCallback(() => {
-    setViewingAllTemplates(prev => !prev);
-    setCurrentPage(1);
-  }, []);
-
-  // Direct create without customization (for templates without variables)
-  const handleTemplateDirectCreate = useCallback(async (template: Template) => {
-    const newProject = await createNewProject('untitled', true);
-    if (!newProject) return;
-
-    trackProjectCreate('template', template.title, 'free');
-
-    // Store template data for project page to consume
-    sessionStorage.setItem(`template_${newProject.id}`, JSON.stringify({
-      type: template.type || 'prompt',
-      prompt: template.prompt || '',
-      imageURL: template.image,
-      category: template.category || null,
-      tone: template.tone || null,
-    }));
-
-    router.push(`/project/${newProject.id}`);
-  }, [createNewProject, router]);
-
-  const handleTemplateClick = useCallback((template: Template) => {
-    // If template has variables, show customization modal
-    if (template.variables && template.variables.length > 0) {
-      setSelectedTemplate(template);
-      setTemplateModalOpen(true);
-    } else {
-      // No variables - create project directly with original flow
-      handleTemplateDirectCreate(template);
-    }
-  }, [handleTemplateDirectCreate]);
-
-  // Handle customization modal submission
-  const handleTemplateCustomizationSubmit = useCallback(async (
-    customizedPrompt: string,
-    attachedImages: { id: string; file: File; preview: string }[],
-    category: string | null,
-    tone: string | null
-  ) => {
-    if (!selectedTemplate) return;
-
-    const newProject = await createNewProject('untitled', true);
-    if (!newProject) return;
-
-    trackProjectCreate('template', selectedTemplate.title, 'free');
-
-    // Store the customized prompt and images for project page
-    // Images will be stored as base64 in sessionStorage (for small images)
-    // or as file references that the project page can access
-    const imageData = attachedImages.map(img => ({
-      id: img.id,
-      preview: img.preview, // base64 preview
-      name: img.file.name,
-      type: img.file.type
-    }));
-
-    sessionStorage.setItem(`template_${newProject.id}`, JSON.stringify({
-      type: 'prompt',
-      prompt: customizedPrompt,
-      imageURL: selectedTemplate.image,
-      category: category,
-      tone: tone,
-      attachedImages: imageData,
-      autoGenerate: true // Trigger generation immediately on project load
-    }));
-
-    // Close modal and navigate
-    setTemplateModalOpen(false);
-    setSelectedTemplate(null);
-    router.push(`/project/${newProject.id}`);
-  }, [selectedTemplate, createNewProject, router]);
-
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
-  }, []);
+  }, [createNewProject, router, userData]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -591,135 +490,6 @@ export default function DashboardPage() {
               onShareProject={handleShareProject}
             />
           </section>
-
-
-          {/* Templates Section */}
-          <section className={`${styles.templatesSection} ${viewingAllTemplates ? styles.viewingAll : ''}`}>
-            <div className={styles.templatesHeader}>
-              <div>
-                <h2 className={styles.sectionTitle}>Templates</h2>
-                <span className={styles.templatesBadge}>
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                    <path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Proven for CTR
-                </span>
-              </div>
-              <button
-                onClick={handleSeeAllClick}
-                className={styles.seeAll}
-                aria-label={viewingAllTemplates ? 'Show less templates' : 'See all templates'}
-                aria-expanded={viewingAllTemplates}
-              >
-                {viewingAllTemplates ? 'Show less' : 'See all'}
-              </button>
-            </div>
-
-            <div className={styles.templatesGrid}>
-              {displayedTemplates.map((template, index) => (
-                <article
-                  key={template.id}
-                  className={styles.templateCard}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleTemplateClick(template);
-                    }
-                  }}
-                  aria-label={`Use ${template.title} template`}
-                >
-                  <div className={styles.templateImage}>
-                    {template.image ? (
-                      <Image
-                        src={template.image}
-                        alt={template.title}
-                        fill
-                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px"
-                        priority={index < 4}
-                        loading={index < 4 ? undefined : 'lazy'}
-                        fetchPriority={index < 2 ? 'high' : 'auto'}
-                        style={{ objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div className={styles.templatePlaceholder} />
-                    )}
-                    {/* Hover overlay with action button */}
-                    <div className={styles.templateOverlay}>
-                      <button
-                        className={styles.templateActionButton}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTemplateClick(template);
-                        }}
-                      >
-                        Create from this
-                      </button>
-                    </div>
-                  </div>
-                  {/* Template Info Row */}
-                  <div className={styles.templateInfoRow}>
-                    <h3 className={styles.templateTitle}>{template.title}</h3>
-                    {/* Template Type Badge */}
-                    <span
-                      className={`${styles.templateTypeBadge} ${template.type === 'youtube_thumbnail'
-                        ? styles.templateTypeBadgeYouTube
-                        : styles.templateTypeBadgePrompt
-                        }`}
-                    >
-                      {template.type === 'youtube_thumbnail' ? (
-                        <>
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
-                          </svg>
-                          Edit
-                        </>
-                      ) : (
-                        <>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z" />
-                          </svg>
-                          Prompt
-                        </>
-                      )}
-                    </span>
-                  </div>
-                  <p className={styles.templateDescription}>{template.description}</p>
-                </article>
-              ))}
-            </div>
-
-            {viewingAllTemplates && totalPages > 1 && (
-              <div className={styles.paginationControls}>
-                <button
-                  className={styles.paginationButton}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  aria-label="Previous page"
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-
-                <span className={styles.paginationInfo}>
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <button
-                  className={styles.paginationButton}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  aria-label="Next page"
-                >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </section>
         </div>
       </main >
 
@@ -781,18 +551,6 @@ export default function DashboardPage() {
         projectName={shareModalState.projectName}
         privacy={shareModalState.privacy}
         onMakePublic={handleMakePublic}
-        theme={theme}
-      />
-
-      {/* Template Customization Modal */}
-      < TemplateCustomizationModal
-        isOpen={templateModalOpen}
-        onClose={() => {
-          setTemplateModalOpen(false);
-          setSelectedTemplate(null);
-        }}
-        onSubmit={handleTemplateCustomizationSubmit}
-        template={selectedTemplate}
         theme={theme}
       />
 

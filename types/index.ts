@@ -32,29 +32,6 @@ export interface LegacyProject {
     isFavorite: boolean;
 }
 
-// Template variable types (for guided template customization)
-export interface TemplateVariable {
-    id: string;
-    label: string;
-    type: 'text' | 'image';
-    placeholder?: string;
-    required: boolean;
-    description?: string;
-}
-
-// Template types
-export interface Template {
-    id: string;
-    title: string;
-    description: string;
-    image: string;
-    prompt?: string;
-    type?: 'prompt' | 'prompt_based' | 'youtube_thumbnail';
-    category?: string;
-    tone?: string;
-    variables?: TemplateVariable[];
-}
-
 // Style types
 export interface Style {
     id: string;

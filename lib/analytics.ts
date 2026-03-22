@@ -179,13 +179,10 @@ export const trackLoginSuccess = (isNewUser: boolean) =>
 // ============================================
 
 export const trackProjectCreate = (
-    source: 'template' | 'empty',
-    templateName: string | null,
     userPlan: UserPlan
 ) =>
     trackEvent('project_create', {
-        source,
-        template_name: templateName,
+        source: 'empty',
         user_plan: userPlan,
     });
 
