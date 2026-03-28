@@ -119,11 +119,19 @@ const paidFeatures = [
     { icon: LockIcon, text: "Keep thumbnails private" },
 ];
 
-const weeksPerMonth = 52 / 12;
+const pricingDisplay = {
+    starter: {
+        weekly: '~$1',
+        monthly: 5,
+    },
+    creator: {
+        weekly: '~$2.3',
+        monthly: 9.99,
+    },
+} as const;
+
 const formatMonthlyPrice = (price: number) =>
     Number.isInteger(price) ? `$${price}` : `$${price.toFixed(2)}`;
-const formatWeeklyPrice = (monthlyPrice: number) =>
-    `$${(monthlyPrice / weeksPerMonth).toFixed(2)}`;
 
 interface PricingModalProps {
     open: boolean;
@@ -296,10 +304,12 @@ export default function PricingModal({
                                 <div className={styles.priceSection}>
                                     <p className={styles.planLabelFree}>Starter Plan</p>
                                     <div className={styles.priceRow}>
-                                        <span className={styles.price}>{formatWeeklyPrice(4)}</span>
+                                        <span className={styles.price}>{pricingDisplay.starter.weekly}</span>
                                         <span className={styles.period}>/wk</span>
                                     </div>
-                                    <p className={styles.billedLine}>Billed {formatMonthlyPrice(4)}/mo</p>
+                                    <p className={styles.billedLine}>
+                                        Billed {formatMonthlyPrice(pricingDisplay.starter.monthly)}/month
+                                    </p>
                                     <p className={styles.creditsFree}>590 credits/mo</p>
                                 </div>
 
@@ -339,11 +349,13 @@ export default function PricingModal({
                                 <div className={styles.priceSection}>
                                     <div className={styles.priceRow}>
                                         <span className={styles.price}>
-                                            {formatWeeklyPrice(9.99)}
+                                            {pricingDisplay.creator.weekly}
                                         </span>
                                         <span className={styles.period}>/wk</span>
                                     </div>
-                                    <p className={styles.billedLine}>Billed {formatMonthlyPrice(9.99)}/mo</p>
+                                    <p className={styles.billedLine}>
+                                        Billed {formatMonthlyPrice(pricingDisplay.creator.monthly)}/month
+                                    </p>
                                     <p className={styles.creditsPaid}>
                                         1,475 credits/mo
                                     </p>
