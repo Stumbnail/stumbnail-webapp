@@ -320,6 +320,7 @@ export interface SmartMergeRequest {
 export const MODEL_IMAGE_LIMITS: Record<string, number> = {
     'nano-banana': 10,
     'nano-banana-pro': 14,
+    'nano-banana-2': 14,
     'flux-2-pro': 8,
     'seedream-4': 10,
 };

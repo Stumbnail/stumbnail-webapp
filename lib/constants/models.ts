@@ -3,6 +3,7 @@ import { Model } from '@/types';
 // Common aspect ratios
 export const COMMON_ASPECT_RATIOS = ['1:1', '4:3', '3:4', '16:9', '9:16', '21:9'];
 export const EXTENDED_ASPECT_RATIOS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'];
+export const EXTREME_ASPECT_RATIOS = ['4:1', '1:4', '8:1', '1:8'];
 
 // Default model for thumbnail generation
 export const DEFAULT_MODEL: Model = {
@@ -42,6 +43,24 @@ export const AVAILABLE_MODELS: Model[] = [
         }
     },
     DEFAULT_MODEL,
+    {
+        id: 'nano-banana-2',
+        name: 'Nano Banana 2',
+        description: 'Next-generation Google image generation and editing',
+        featureTag: 'Gen 2',
+        credits: 19, // Default 2K price, resolution-dependent
+        logo: '/assets/dashboard/icons/nano-banana-model.webp',
+        maxImages: 14,
+        baseModel: 'nano-banana-2',
+        resolution: '2K',
+        defaultAspectRatio: '16:9',
+        defaultResolution: '2K',
+        options: {
+            aspectRatios: [...EXTENDED_ASPECT_RATIOS, ...EXTREME_ASPECT_RATIOS, 'match_input_image'],
+            resolutions: ['0.5K', '1K', '2K', '4K'],
+            outputFormats: ['jpg', 'png', 'webp']
+        }
+    },
     {
         id: 'seedream-4',
         name: 'Seedream 4',

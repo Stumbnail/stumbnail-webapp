@@ -1287,21 +1287,61 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
     // Only Nano Banana Pro credits change based on resolution (2K/4K)
     const getGenerationCredits = useCallback((model: Model | null, res?: string) => {
         if (!model) return 0;
+        const normalizedResolution = model.options?.resolutions?.includes(res || '')
+            ? res
+            : model.defaultResolution;
 
         // Only Nano Banana Pro - resolution affects credits
         if (model.id === 'nano-banana-pro' || model.baseModel === 'nano-banana-pro') {
-            const r = res || model.defaultResolution || '2K';
+            const r = normalizedResolution || '2K';
             if (r === '4K') return 47;
             // 1K and 2K both cost 24 credits
             return 24;
+        }
+
+        // Nano Banana 2 - pricing follows Fal.ai resolution tiers
+        if (model.id === 'nano-banana-2' || model.baseModel === 'nano-banana-2') {
+            const r = normalizedResolution || '2K';
+            switch (r) {
+                case '0.5K':
+                    return 10;
+                case '1K':
+                    return 13;
+                case '4K':
+                    return 26;
+                case '2K':
+                default:
+                    return 19;
+            }
         }
 
         // All other models have fixed credits
         return model.credits;
     }, []);
 
+    const getResolutionForModel = useCallback((model: Model | null, currentResolution?: string) => {
+        if (!model?.options?.resolutions?.length) return undefined;
+        if (currentResolution && model.options.resolutions.includes(currentResolution)) {
+            return currentResolution;
+        }
+        return model.defaultResolution || model.options.resolutions[0];
+    }, []);
+
     // Memoized credits for sidebar (only pass resolution for nano-banana-pro)
-    const sidebarCredits = getGenerationCredits(promptModel, resolution);
+    const sidebarCredits = getGenerationCredits(promptModel, getResolutionForModel(promptModel, resolution));
+    const smartMergeSelectedModel = AVAILABLE_MODELS.find(model => model.id === smartMergeModel) || null;
+    const smartMergeCredits = getGenerationCredits(
+        smartMergeSelectedModel,
+        getResolutionForModel(smartMergeSelectedModel, resolution)
+    );
+
+    const handlePromptModelSelect = useCallback((model: Model) => {
+        setPromptModel(model);
+        setAspectRatio(model.defaultAspectRatio || '16:9');
+        setResolution(model.defaultResolution);
+        setSize(model.defaultSize);
+        setMegapixels(model.defaultMegapixels);
+    }, []);
 
     // Prompt mode handlers
     const handlePromptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1384,7 +1424,9 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                     gen_model: promptModel?.baseModel || promptModel?.id || 'nano-banana-pro',
                     aspectRatio: aspectRatio,
                     // Model-specific options
-                    ...(promptModel?.options?.resolutions && resolution && { resolution }),
+                    ...(promptModel?.options?.resolutions && {
+                        resolution: getResolutionForModel(promptModel, resolution)
+                    }),
                     ...(promptModel?.options?.sizes && size && { size }),
                     ...(promptModel?.options?.megapixels && megapixels && { resolution: megapixels }), // Flux uses resolution field for MP
                     // Optional hints for intelligence layer
@@ -1515,7 +1557,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                 }
             }
         }
-    }, [promptText, promptModel, thumbnailCount, addElementAtViewportCenter, fitElementsInView, user, projectId, isPublic, attachedImages, isGenerating, aspectRatio, resolution, size, megapixels]);
+    }, [promptText, promptModel, thumbnailCount, addElementAtViewportCenter, fitElementsInView, user, projectId, isPublic, attachedImages, isGenerating, aspectRatio, resolution, size, megapixels, selectedCategory, customCategory, selectedTone, customTone, getResolutionForModel]);
 
     const handleThumbnailCountChange = useCallback((count: number) => {
         setThumbnailCount(count);
@@ -2480,7 +2522,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
 
         // Get per-element options or use defaults
         const elAspectRatio = elementAspectRatios[elementId] || model.defaultAspectRatio || '16:9';
-        const elResolution = elementResolutions[elementId] || model.defaultResolution;
+        const elResolution = getResolutionForModel(model, elementResolutions[elementId]);
         const elSize = elementSizes[elementId] || model.defaultSize;
         const elMegapixels = elementMegapixels[elementId] || model.defaultMegapixels;
 
@@ -2658,7 +2700,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                 }));
             }
         }
-    }, [elementPrompts, elementModels, modifyAttachedImages, canvasElements, user, isGenerating, projectId, isPublic, addElementAtViewportCenter, fitElementsInView, elementAspectRatios, elementResolutions, elementSizes, elementMegapixels]);
+    }, [elementPrompts, elementModels, modifyAttachedImages, canvasElements, user, isGenerating, projectId, isPublic, addElementAtViewportCenter, fitElementsInView, elementAspectRatios, elementResolutions, elementSizes, elementMegapixels, getResolutionForModel]);
 
     const handleModifyPromptKeyDown = useCallback((elementId: string, e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
@@ -2671,6 +2713,22 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         setElementModels(prev => ({
             ...prev,
             [elementId]: model,
+        }));
+        setElementAspectRatios(prev => ({
+            ...prev,
+            [elementId]: model.defaultAspectRatio || '16:9',
+        }));
+        setElementResolutions(prev => ({
+            ...prev,
+            [elementId]: model.defaultResolution || '',
+        }));
+        setElementSizes(prev => ({
+            ...prev,
+            [elementId]: model.defaultSize || '',
+        }));
+        setElementMegapixels(prev => ({
+            ...prev,
+            [elementId]: model.defaultMegapixels || '',
         }));
     }, []);
 
@@ -2786,8 +2844,9 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
             const assetUrls = selectedElements.map(el => el.src);
 
             // Get resolution from model options
-            const targetModel = AVAILABLE_MODELS.find(m => m.id === promptModel?.id) || AVAILABLE_MODELS[0];
-            const dims = getDimensionsFromAspectRatio(aspectRatio || '16:9', resolution || (targetModel.options?.resolutions?.[0] || '2K'));
+            const targetModel = AVAILABLE_MODELS.find(m => m.id === smartMergeModel) || AVAILABLE_MODELS[0];
+            const targetResolution = getResolutionForModel(targetModel, resolution) || '2K';
+            const dims = getDimensionsFromAspectRatio(aspectRatio || '16:9', targetResolution);
             const defaultWidth = dims.width;
             const defaultHeight = dims.height;
 
@@ -2823,7 +2882,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                 },
                 reference_images: assetUrls,
                 aspect_ratio: aspectRatio || '16:9',
-                resolution: resolution || '2K',
+                resolution: targetResolution,
                 model: smartMergeModel,
                 width: defaultWidth,
                 height: defaultHeight,
@@ -2919,7 +2978,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
         } finally {
             setIsSmartMergeGenerating(false);
         }
-    }, [smartMergeConfig, canvasElements, selectedElementIds, projectId, promptModel, aspectRatio, resolution, addElementAtViewportCenter, fitElementsInView, handleCloseSmartMerge]);
+    }, [smartMergeConfig, canvasElements, selectedElementIds, projectId, smartMergeModel, aspectRatio, resolution, addElementAtViewportCenter, fitElementsInView, handleCloseSmartMerge, getResolutionForModel]);
 
     // Compute cursor style
     const getCursorStyle = () => {
@@ -3363,7 +3422,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                             <div className={styles.promptDropdownWrapper}>
                                                 <ModelDropdown
                                                     selectedModel={promptModel}
-                                                    onSelectModel={setPromptModel}
+                                                    onSelectModel={handlePromptModelSelect}
                                                     theme={theme}
                                                     openUpward
                                                     showLabel
@@ -4303,6 +4362,20 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                                 </div>
                                                             </button>
                                                             <button
+                                                                className={`${styles.textOptionButton} ${smartMergeModel === 'nano-banana-2' ? styles.textOptionButtonActive : ''}`}
+                                                                onClick={() => setSmartMergeModel('nano-banana-2')}
+                                                                title="Next-gen quality (19 credits at 2K)"
+                                                            >
+                                                                Gen 2
+                                                                <div className={styles.inlineCreditsIcon}>
+                                                                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                                        <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
+                                                                        <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                                                                    </svg>
+                                                                    19
+                                                                </div>
+                                                            </button>
+                                                            <button
                                                                 className={`${styles.textOptionButton} ${smartMergeModel === 'nano-banana-pro' ? styles.textOptionButtonActive : ''}`}
                                                                 onClick={() => setSmartMergeModel('nano-banana-pro')}
                                                                 title="Pro quality (24 credits)"
@@ -4337,7 +4410,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                                                 <circle cx="7" cy="7" r="6.5" fill="#DA9A28" stroke="#DA9A28" />
                                                                 <path d="M7 3.5V10.5M4.5 7H9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
                                                             </svg>
-                                                            {smartMergeModel === 'nano-banana' ? 6 : 24}
+                                                            {smartMergeCredits}
                                                         </div>
                                                     </>
                                                 )}
@@ -4695,7 +4768,7 @@ export function ProjectCanvas(props: ProjectCanvasPageProps) {
                                 <div className={styles.promptDropdownWrapper}>
                                     <ModelDropdown
                                         selectedModel={promptModel}
-                                        onSelectModel={setPromptModel}
+                                        onSelectModel={handlePromptModelSelect}
                                         theme={theme}
                                         openUpward
                                         showLabel

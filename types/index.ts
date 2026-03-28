@@ -43,7 +43,7 @@ export interface Style {
 // Model parameter options (model-specific capabilities)
 export interface ModelOptions {
     aspectRatios: string[];
-    resolutions?: string[];           // nano-banana-pro: '1K' | '2K' | '4K'
+    resolutions?: string[];           // e.g. '0.5K' | '1K' | '2K' | '4K'
     sizes?: string[];                 // seedream-4: '1K' | '2K' | '4K'
     megapixels?: string[];            // flux-2-pro: '0.25 MP' | '0.5 MP' | '1 MP' | '2 MP'
     outputFormats?: string[];
@@ -58,7 +58,7 @@ export interface Model {
     credits: number;
     logo: string;
     maxImages?: number;                   // Max reference images for generation
-    resolution?: '1K' | '2K' | '4K';      // Selected resolution for models with options
+    resolution?: '0.5K' | '1K' | '2K' | '4K'; // Selected resolution for models with options
     baseModel?: string;                   // Actual API model name
     hasResolutionOptions?: boolean;       // True if model supports 2K/4K toggle
     isPro?: boolean;                      // Show PRO badge
