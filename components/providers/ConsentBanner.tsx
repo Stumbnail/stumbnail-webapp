@@ -49,17 +49,7 @@ export function ConsentBanner() {
 
   if (!isLoaded) return null;
 
-  if (!showBanner) {
-    return (
-      <button
-        type="button"
-        className={styles.manageButton}
-        onClick={openPreferences}
-      >
-        Privacy choices
-      </button>
-    );
-  }
+  if (!showBanner) return null;
 
   const handleToggle = (key: keyof DraftPreferences) => {
     setDraftPreferences((current) => ({
@@ -82,18 +72,30 @@ export function ConsentBanner() {
         aria-labelledby="consent-banner-title"
       >
         <h2 id="consent-banner-title" className={styles.title}>
-          {consent ? 'Update your privacy choices' : 'Your privacy choices'}
+          Privacy settings
         </h2>
 
         <p className={styles.description}>
-          We use <strong>essential storage</strong> to keep the app secure and working.
-          Optional consent lets us use <strong>analytics</strong> and Google&apos;s
-          <strong> ad-related signals</strong> only when you allow them.
+          Essential cookies stay on. You can choose analytics and marketing.
         </p>
 
-        <div className={styles.badgeRow}>
-          <span className={styles.badge}>Essential always on</span>
-          <span className={styles.badge}>Google Consent Mode v2</span>
+        <div className={styles.links}>
+          <a
+            href="http://stumbnail.com/cookies"
+            target="_blank"
+            rel="noreferrer"
+            className={styles.link}
+          >
+            Cookies
+          </a>
+          <a
+            href="http://stumbnail.com/privacy"
+            target="_blank"
+            rel="noreferrer"
+            className={styles.link}
+          >
+            Privacy
+          </a>
         </div>
 
         {!isCustomizing ? (
@@ -111,8 +113,7 @@ export function ConsentBanner() {
                 <div>
                   <div className={styles.preferenceLabel}>Essential</div>
                   <p className={styles.preferenceCopy}>
-                    Security and functionality storage required to authenticate,
-                    protect sessions, and keep the site operating.
+                    Required for security and core app features.
                   </p>
                 </div>
 
@@ -132,8 +133,7 @@ export function ConsentBanner() {
                 <div>
                   <div className={styles.preferenceLabel}>Analytics</div>
                   <p className={styles.preferenceCopy}>
-                    Helps us understand usage patterns and improve product flows with
-                    Firebase and Vercel analytics.
+                    Helps us understand product usage.
                   </p>
                 </div>
 
@@ -153,8 +153,7 @@ export function ConsentBanner() {
                 <div>
                   <div className={styles.preferenceLabel}>Marketing</div>
                   <p className={styles.preferenceCopy}>
-                    Controls ad storage, user data, personalization, and related Google
-                    consent signals.
+                    Allows marketing and ad-related consent signals.
                   </p>
                 </div>
 
@@ -185,7 +184,7 @@ export function ConsentBanner() {
             className={`${styles.button} ${styles.buttonGhost}`}
             onClick={rejectNonEssential}
           >
-            Reject optional
+            Reject all
           </button>
 
           <button
