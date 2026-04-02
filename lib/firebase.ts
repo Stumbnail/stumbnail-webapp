@@ -4,6 +4,7 @@
 import type { Auth, User } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import type { Analytics } from 'firebase/analytics';
+import { buildGoogleConsentSettings, hasAnalyticsConsent, type ConsentPreferences } from './consent';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -148,10 +149,28 @@ export async function getFirebaseAnalytics(): Promise<Analytics | null> {
 }
 
 /**
+ * Apply the current user consent choices to Firebase Analytics / gtag.
+ * This keeps Firebase aligned with the consent mode bootstrap script.
+ */
+export async function setFirebaseConsent(preferences: ConsentPreferences): Promise<void> {
+  try {
+    const analytics = await getFirebaseAnalytics();
+    if (!analytics) return;
+
+    const { setConsent } = await import('firebase/analytics');
+    setConsent(buildGoogleConsentSettings(preferences));
+  } catch (error) {
+    console.warn('Failed to apply Firebase consent:', error);
+  }
+}
+
+/**
  * Log a custom analytics event
  */
 export async function logAnalyticsEvent(eventName: string, eventParams?: Record<string, unknown>): Promise<void> {
   try {
+    if (!hasAnalyticsConsent()) return;
+
     const analytics = await getFirebaseAnalytics();
     if (analytics) {
       const { logEvent } = await import('firebase/analytics');

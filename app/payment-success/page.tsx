@@ -2,14 +2,23 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { trackSubscriptionSuccess } from '@/lib/googleAds';
 import styles from './payment-success.module.css';
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
+  const hasTrackedSubscription = useRef(false);
+
+  useEffect(() => {
+    if (hasTrackedSubscription.current) return;
+
+    trackSubscriptionSuccess();
+    hasTrackedSubscription.current = true;
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {

@@ -6,6 +6,7 @@
 
 import { track } from '@vercel/analytics/react';
 import { apiPost } from './api';
+import { hasAnalyticsConsent } from './consent';
 
 // Event properties type
 type EventProperties = Record<string, string | number | boolean | null | undefined>;
@@ -92,6 +93,7 @@ export function trackFirestoreEvent(
     } = {}
 ): void {
     if (typeof window === 'undefined') return;
+    if (!hasAnalyticsConsent()) return;
 
     const payload: FirestoreEventPayload = {
         event_name: eventName,
@@ -118,6 +120,7 @@ export function trackFirestoreEventsBatch(
     events: Array<{ eventName: string; properties?: EventProperties }>
 ): void {
     if (typeof window === 'undefined' || events.length === 0) return;
+    if (!hasAnalyticsConsent()) return;
 
     const sessionId = getSessionId();
     const genCount = getGenerationCount();
@@ -145,6 +148,7 @@ export function trackFirestoreEventsBatch(
 export function trackEvent(eventName: string, properties?: EventProperties): void {
     // Only track on client side
     if (typeof window === 'undefined') return;
+    if (!hasAnalyticsConsent()) return;
 
     // Send to Vercel Analytics
     try {

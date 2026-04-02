@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Space_Grotesk, Lexend } from 'next/font/google';
+import Script from 'next/script';
 import { Providers } from './providers';
+import { getConsentModeBootstrapScript } from '@/lib/consent';
+import { GOOGLE_ADS_ID } from '@/lib/googleAds';
 import './globals.css';
 
 // Force all pages to use dynamic rendering
@@ -35,6 +38,23 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
+            __html: getConsentModeBootstrapScript(),
+          }}
+        />
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads-tag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = window.gtag || function(){ window.dataLayer.push(arguments); };
+            window.gtag('js', new Date());
+            window.gtag('config', '${GOOGLE_ADS_ID}');
+          `}
+        </Script>
+        <script
+          dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
@@ -58,4 +78,3 @@ export default function RootLayout({
     </html>
   );
 }
-

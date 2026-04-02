@@ -1,8 +1,9 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { ProjectsProvider } from '@/contexts';
+import { ConsentProvider, ProjectsProvider } from '@/contexts';
 import { AnalyticsProvider } from '@/components/providers/AnalyticsProvider';
+import { ConsentBanner } from '@/components/providers/ConsentBanner';
 
 interface ProvidersProps {
     children: ReactNode;
@@ -10,8 +11,11 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
     return (
-        <ProjectsProvider>
-            <AnalyticsProvider>{children}</AnalyticsProvider>
-        </ProjectsProvider>
+        <ConsentProvider>
+            <ProjectsProvider>
+                <AnalyticsProvider>{children}</AnalyticsProvider>
+            </ProjectsProvider>
+            <ConsentBanner />
+        </ConsentProvider>
     );
 }
