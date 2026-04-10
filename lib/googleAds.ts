@@ -1,6 +1,6 @@
 import { hasMarketingConsent } from './consent';
 
-export const GOOGLE_ADS_ID = 'AW-17277705517';
+export const GOOGLE_TAG_ID = 'GT-T5P2FWBK';
 
 export function trackSubscriptionSuccess(): void {
   if (typeof window === 'undefined') return;

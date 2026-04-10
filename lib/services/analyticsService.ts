@@ -413,7 +413,7 @@ export async function trackExportSucceeded(
  * Track paywall viewed event
  */
 export async function trackPaywallViewed(
-    source: 'sidebar' | 'credits' | 'generate' | 'exhausted',
+    source: 'sidebar' | 'credits' | 'generate' | 'exhausted' | 'dashboard',
     currentPlan: string
 ): Promise<void> {
     try {

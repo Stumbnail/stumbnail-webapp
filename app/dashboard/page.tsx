@@ -66,7 +66,7 @@ export default function DashboardPage() {
 
   // Custom hooks
   const { user, loading: authLoading, signOut } = useAuth();
-  const { userData } = useUserData(user);
+  const { userData, loading: userDataLoading } = useUserData(user);
   const { theme, setTheme } = useTheme({ userId: user?.uid });
   const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useMobile();
   const {
@@ -82,6 +82,9 @@ export default function DashboardPage() {
 
   // Navigation
   const navItems = useMemo(() => getNavItemsForRoute('dashboard'), []);
+  const userPlan = useMemo(() => getUserPlan(userData), [userData]);
+  const isPaidUser = userPlan.type !== 'free';
+  const isHardPaywallActive = Boolean(user) && !authLoading && !userDataLoading && !isPaidUser;
 
   // UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -171,13 +174,12 @@ export default function DashboardPage() {
   // Set analytics user context when user data is available
   useEffect(() => {
     if (userData) {
-      const plan = getUserPlan(userData);
       setAnalyticsUserContext({
         creditsRemaining: userData.subscriptionCredits + userData.toppedUpBalance + userData.trialCredits,
-        planTier: plan.type,
+        planTier: userPlan.type,
       });
     }
-  }, [userData]);
+  }, [userData, userPlan.type]);
 
   // Click outside handling for project menu
   useEffect(() => {
@@ -210,11 +212,11 @@ export default function DashboardPage() {
   const handleCreateProject = useCallback(async (name: string, isPublic: boolean) => {
     const newProject = await createNewProject(name, isPublic);
     if (newProject) {
-      trackProjectCreate(getUserPlan(userData).type);
+      trackProjectCreate(userPlan.type);
       setIsModalOpen(false);
       router.push(`/project/${newProject.id}`);
     }
-  }, [createNewProject, router, userData]);
+  }, [createNewProject, router, userPlan.type]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -366,7 +368,7 @@ export default function DashboardPage() {
   }, []);
 
   // Show loading state
-  if (authLoading) {
+  if (authLoading || (user && userDataLoading)) {
     return (
       <LoadingSpinner theme={theme} text="Loading..." fullScreen />
     );
@@ -375,6 +377,29 @@ export default function DashboardPage() {
   // Don't render if not authenticated
   if (!user) {
     return null;
+  }
+
+  if (isHardPaywallActive) {
+    return (
+      <div className={`${styles.container} ${theme === 'dark' ? styles.darkTheme : styles.lightTheme}`}>
+        {!isMobile && (
+          <>
+            <div className={styles.blurTopRight} />
+            <div className={styles.blurSidebarBottom} />
+          </>
+        )}
+
+        <PricingModal
+          open={true}
+          onClose={handleSignOut}
+          theme={theme}
+          userEmail={user.email || undefined}
+          source="dashboard"
+          currentPlan={userPlan.type}
+          hardPaywall
+        />
+      </div>
+    );
   }
 
   return (
@@ -500,7 +525,7 @@ export default function DashboardPage() {
         }
         onCreateProject={handleCreateProject}
         theme={theme}
-        isPaidUser={getUserPlan(userData).type !== 'free'}
+        isPaidUser={isPaidUser}
         onUpgradeClick={() => setPricingModalOpen(true)}
       />
 
@@ -512,7 +537,7 @@ export default function DashboardPage() {
         initialName={editProjectModal.projectName}
         initialIsPublic={editProjectModal.isPublic}
         theme={theme}
-        isPaidUser={getUserPlan(userData).type !== 'free'}
+        isPaidUser={isPaidUser}
         onUpgradeClick={() => setPricingModalOpen(true)}
       />
 
@@ -532,6 +557,7 @@ export default function DashboardPage() {
         onClose={() => setPricingModalOpen(false)}
         theme={theme}
         userEmail={user?.email || undefined}
+        currentPlan={userPlan.type}
       />
 
       < ProfileModal

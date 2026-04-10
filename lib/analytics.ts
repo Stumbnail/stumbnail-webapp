@@ -262,7 +262,7 @@ export const trackCreditsExhausted = (userPlan: UserPlan, actionAttempted: strin
     });
 
 export const trackPricingModalOpen = (
-    source: 'sidebar' | 'credits' | 'generate' | 'exhausted',
+    source: 'sidebar' | 'credits' | 'generate' | 'exhausted' | 'dashboard',
     currentPlan: UserPlan
 ) =>
     trackEvent('pricing_modal_open', {

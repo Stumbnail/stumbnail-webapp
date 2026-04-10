@@ -138,8 +138,9 @@ interface PricingModalProps {
     onClose: () => void;
     theme: Theme;
     userEmail?: string;
-    source?: 'sidebar' | 'credits' | 'generate' | 'exhausted';
+    source?: 'sidebar' | 'credits' | 'generate' | 'exhausted' | 'dashboard';
     currentPlan?: 'free' | 'starter' | 'creator' | 'automation';
+    hardPaywall?: boolean;
 }
 
 export default function PricingModal({
@@ -148,7 +149,8 @@ export default function PricingModal({
     theme,
     userEmail,
     source = 'sidebar',
-    currentPlan = 'free'
+    currentPlan = 'free',
+    hardPaywall = false
 }: PricingModalProps) {
     const isDark = theme === 'dark';
     const [loadingPlan, setLoadingPlan] = useState<PlanType | null>(null);
@@ -169,6 +171,11 @@ export default function PricingModal({
 
     // Handle close with optional paywall reason prompt
     const handleClose = async () => {
+        if (hardPaywall) {
+            onClose();
+            return;
+        }
+
         // Don't show reason modal if user started checkout
         if (didStartCheckout.current) {
             onClose();
@@ -250,7 +257,7 @@ export default function PricingModal({
     }
 
     return (
-        <div className={styles.overlay} onClick={handleClose}>
+        <div className={styles.overlay} onClick={hardPaywall ? undefined : handleClose}>
             {/* Backdrop */}
             <div className={`${styles.backdrop} ${isDark ? styles.backdropDark : styles.backdropLight}`} />
 

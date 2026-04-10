@@ -3,7 +3,7 @@ import { Space_Grotesk, Lexend } from 'next/font/google';
 import Script from 'next/script';
 import { Providers } from './providers';
 import { getConsentModeBootstrapScript } from '@/lib/consent';
-import { GOOGLE_ADS_ID } from '@/lib/googleAds';
+import { GOOGLE_TAG_ID } from '@/lib/googleAds';
 import './globals.css';
 
 // Force all pages to use dynamic rendering
@@ -42,15 +42,16 @@ export default function RootLayout({
           }}
         />
         <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`}
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_TAG_ID}`}
           strategy="afterInteractive"
         />
-        <Script id="google-ads-tag" strategy="afterInteractive">
+        <Script id="google-tag" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
-            window.gtag = window.gtag || function(){ window.dataLayer.push(arguments); };
-            window.gtag('js', new Date());
-            window.gtag('config', '${GOOGLE_ADS_ID}');
+            function gtag(){dataLayer.push(arguments);}
+            window.gtag = gtag;
+            gtag('js', new Date());
+            gtag('config', '${GOOGLE_TAG_ID}');
           `}
         </Script>
         <script
