@@ -6,7 +6,7 @@ import { apiPost, apiGet } from '../api';
 
 // Product IDs from environment variables
 export const STRIPE_STARTER_PRODUCT_ID =
-    process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_STARTER || 'prod_TufaAq6ft8sKfpE';
+    process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_STARTER || 'prod_TufaAw6f8sKfpE';
 export const STRIPE_CREATOR_PRODUCT_ID = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_CREATOR || '';
 export const STRIPE_MORECREDITS_PRODUCT_ID = process.env.NEXT_PUBLIC_STRIPE_PRODUCT_ID_MORECREDITS || '';
 

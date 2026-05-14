@@ -41,6 +41,13 @@ export function useUserData(user: User | null) {
     // Subscribe to user data changes
     const initSubscription = async () => {
       try {
+        setState({
+          userData: null,
+          totalCredits: 0,
+          loading: true,
+          error: null,
+        });
+
         // SECURITY: user.uid comes from Firebase Auth, not user input
         unsubscribe = await subscribeToUserData(user.uid, (userData) => {
           if (userData) {
@@ -80,5 +87,17 @@ export function useUserData(user: User | null) {
     };
   }, [user]);
 
-  return state;
+  const currentUid = user?.uid ?? null;
+  const currentUserData = currentUid && state.userData?.uid === currentUid ? state.userData : null;
+  const isLoadingCurrentUser = Boolean(currentUid) && (
+    state.loading ||
+    (!state.error && state.userData?.uid !== currentUid)
+  );
+
+  return {
+    ...state,
+    userData: currentUserData,
+    totalCredits: currentUserData ? calculateTotalCredits(currentUserData) : 0,
+    loading: isLoadingCurrentUser,
+  };
 }

@@ -4,6 +4,43 @@
 import { getFirestore } from '@/lib/firebase';
 import type { UserData, PlanInfo } from '@/types';
 
+function normalizeTimestamp(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && value !== null && 'toDate' in value && typeof value.toDate === 'function') {
+    return value.toDate().toISOString();
+  }
+  return null;
+}
+
+function mapUserData(uid: string, data: Record<string, unknown>): UserData {
+  const subscription = data.subscription as Record<string, unknown> | undefined;
+
+  return {
+    uid,
+    email: typeof data.email === 'string' ? data.email : '',
+    displayName: typeof data.displayName === 'string' ? data.displayName : '',
+    subscription: subscription ? {
+      id: typeof subscription.id === 'string' ? subscription.id : undefined,
+      status: typeof subscription.status === 'string' ? subscription.status : undefined,
+      productId: typeof subscription.productId === 'string' ? subscription.productId : undefined,
+      productName: typeof subscription.productName === 'string' ? subscription.productName : undefined,
+      itemId: typeof subscription.itemId === 'string' ? subscription.itemId : undefined,
+      monthlyCredits: typeof subscription.monthlyCredits === 'number' ? subscription.monthlyCredits : 0,
+      currentPeriodStart: normalizeTimestamp(subscription.currentPeriodStart) || undefined,
+      currentPeriodEnd: normalizeTimestamp(subscription.currentPeriodEnd) || undefined,
+      cancelAtPeriodEnd: typeof subscription.cancelAtPeriodEnd === 'boolean' ? subscription.cancelAtPeriodEnd : false,
+      cancelAt: normalizeTimestamp(subscription.cancelAt),
+    } : null,
+    subscriptionCredits: typeof data.subscriptionCredits === 'number' ? data.subscriptionCredits : 0,
+    toppedUpBalance: typeof data.toppedUpBalance === 'number' ? data.toppedUpBalance : 0,
+    trialCredits: typeof data.trialCredits === 'number' ? data.trialCredits : 0,
+    hasTakenTour: typeof data.hasTakenTour === 'boolean' ? data.hasTakenTour : false,
+    createdAt: normalizeTimestamp(data.createdAt) || '',
+    updatedAt: normalizeTimestamp(data.updatedAt) || '',
+  };
+}
+
 /**
  * Get user data from Firestore
  * SECURITY: Only fetches data for the authenticated user's UID
@@ -32,18 +69,7 @@ export async function getUserData(uid: string): Promise<UserData | null> {
 
     const data = userDocSnap.data();
 
-    // Validate and return typed user data
-    return {
-      uid: uid,
-      email: data.email || '',
-      displayName: data.displayName || '',
-      subscriptionCredits: data.subscriptionCredits || 0,
-      toppedUpBalance: data.toppedUpBalance || 0,
-      trialCredits: data.trialCredits || 0,
-      hasTakenTour: data.hasTakenTour || false,
-      createdAt: data.createdAt || '',
-      updatedAt: data.updatedAt || '',
-    };
+    return mapUserData(uid, data);
   } catch (error) {
     console.error('Error fetching user data:', error);
     throw error;
@@ -85,18 +111,7 @@ export async function subscribeToUserData(
 
         const data = docSnap.data();
 
-        // Validate and return typed user data
-        callback({
-          uid: uid,
-          email: data.email || '',
-          displayName: data.displayName || '',
-          subscriptionCredits: data.subscriptionCredits || 0,
-          toppedUpBalance: data.toppedUpBalance || 0,
-          trialCredits: data.trialCredits || 0,
-          hasTakenTour: data.hasTakenTour || false,
-          createdAt: data.createdAt || '',
-          updatedAt: data.updatedAt || '',
-        });
+        callback(mapUserData(uid, data));
       },
       (error) => {
         console.error('Error subscribing to user data:', error);
@@ -155,13 +170,23 @@ export function getUserPlan(userData: UserData | null): PlanInfo {
     return { type: 'free', name: 'Free', monthlyCredits: 0 };
   }
 
-  const subCredits = userData.subscriptionCredits || 0;
+  const subscription = userData.subscription;
+  const activeSubscription = subscription?.status === 'active' || subscription?.status === 'trialing';
+  const monthlyCredits = activeSubscription ? (subscription?.monthlyCredits || 0) : 0;
+  const productName = activeSubscription ? (subscription?.productName || '').toLowerCase() : '';
 
+  if (monthlyCredits >= 1475 || productName.includes('creator')) {
+    return { type: 'creator', name: 'Creator', monthlyCredits: 1475 };
+  } else if (monthlyCredits >= 590 || productName.includes('starter')) {
+    return { type: 'starter', name: 'Starter', monthlyCredits: 590 };
+  }
+
+  const subCredits = userData.subscriptionCredits || 0;
   if (subCredits >= 1475) {
     return { type: 'creator', name: 'Creator', monthlyCredits: 1475 };
   } else if (subCredits >= 590) {
     return { type: 'starter', name: 'Starter', monthlyCredits: 590 };
-  } else {
-    return { type: 'free', name: 'Free', monthlyCredits: 0 };
   }
+
+  return { type: 'free', name: 'Free', monthlyCredits: 0 };
 }

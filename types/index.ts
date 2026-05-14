@@ -119,10 +119,24 @@ export interface AuthState {
 }
 
 // User data from Firestore (matches Firestore document structure)
+export interface UserSubscription {
+    id?: string;
+    status?: string;
+    productId?: string;
+    productName?: string;
+    itemId?: string;
+    monthlyCredits?: number;
+    currentPeriodStart?: string;
+    currentPeriodEnd?: string;
+    cancelAtPeriodEnd?: boolean;
+    cancelAt?: string | null;
+}
+
 export interface UserData {
     uid: string;
     email: string;
     displayName: string;
+    subscription?: UserSubscription | null;
     subscriptionCredits: number;
     toppedUpBalance: number;
     trialCredits: number;
