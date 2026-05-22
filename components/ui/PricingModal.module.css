@@ -288,6 +288,16 @@
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
+.ctaFree:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.ctaFree:disabled:hover {
+    background-color: #10b981;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
 /* Paid Plans Card */
 .cardPaid {
     position: relative;
@@ -559,15 +569,19 @@
     box-shadow: 0 4px 14px rgba(255, 111, 97, 0.3);
 }
 
-/* Error message */
-.errorMessage {
-    background-color: rgba(220, 38, 38, 0.1);
-    border: 1px solid rgba(220, 38, 38, 0.3);
-    color: #dc2626;
+/* Checkout notice */
+.noticeMessage {
+    background-color: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #b45309;
     padding: 12px 16px;
     border-radius: 8px;
     margin-bottom: 24px;
     text-align: center;
     font-family: var(--font-poppins), sans-serif;
     font-size: 14px;
+}
+
+.modalDark .noticeMessage {
+    color: #fcd34d;
 }

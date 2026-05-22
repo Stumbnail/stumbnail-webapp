@@ -3,12 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Theme } from '@/types';
-import { redirectToCheckout, PlanType } from '@/lib/services/subscriptionService';
 import styles from './PricingModal.module.css';
-import { trackPricingModalOpen, trackPricingModalPlanClick } from '@/lib/analytics';
+import { trackPricingModalOpen } from '@/lib/analytics';
 import {
     trackPaywallViewed,
-    trackUpgradeClicked,
     needsPaywallReason,
     submitPaywallReason
 } from '@/lib/services/analyticsService';
@@ -101,14 +99,7 @@ function CrownIcon({ className = "w-4 h-4" }: { className?: string }) {
     );
 }
 
-function LoadingSpinner() {
-    return (
-        <svg className={styles.spinner} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-            <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
-        </svg>
-    );
-}
+const paymentsClosedMessage = 'Stumbnail is winding up. We are not accepting any new payments.';
 
 const paidFeatures = [
     { icon: MergeIcon, text: "Smart Merge: combine assets with AI" },
@@ -147,14 +138,11 @@ export default function PricingModal({
     open,
     onClose,
     theme,
-    userEmail,
     source = 'sidebar',
     currentPlan = 'free',
     hardPaywall = false
 }: PricingModalProps) {
     const isDark = theme === 'dark';
-    const [loadingPlan, setLoadingPlan] = useState<PlanType | null>(null);
-    const [error, setError] = useState<string | null>(null);
     const [showPaywallReason, setShowPaywallReason] = useState(false);
     const hasCheckedPaywallReason = useRef(false);
     const didStartCheckout = useRef(false);
@@ -214,34 +202,6 @@ export default function PricingModal({
         onClose();
     };
 
-    const handleGetPlan = async (plan: PlanType) => {
-        if (!userEmail) {
-            setError('Please sign in to purchase a subscription');
-            return;
-        }
-
-        // Track plan click
-        trackPricingModalPlanClick(plan, currentPlan);
-        trackUpgradeClicked(source, currentPlan, plan);
-
-        // Mark that checkout was started (don't show paywall reason on close)
-        didStartCheckout.current = true;
-
-        setLoadingPlan(plan);
-        setError(null);
-
-        try {
-            await redirectToCheckout(plan, userEmail);
-            // User will be redirected to Stripe checkout
-        } catch (err) {
-            console.error('Checkout error:', err);
-            setError(err instanceof Error ? err.message : 'Failed to start checkout');
-            setLoadingPlan(null);
-            // Reset checkout flag on error
-            didStartCheckout.current = false;
-        }
-    };
-
     if (!open && !showPaywallReason) return null;
 
     // Show paywall reason modal if triggered
@@ -286,16 +246,13 @@ export default function PricingModal({
                     <div className={styles.header}>
                         <h2 className={styles.title}>Simple, Credit-Based Pricing</h2>
                         <p className={styles.subtitle}>
-                            Prices shown per week. Billed monthly.
+                            {paymentsClosedMessage}
                         </p>
                     </div>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className={styles.errorMessage}>
-                            {error}
-                        </div>
-                    )}
+                    <div className={styles.noticeMessage}>
+                        New purchases are closed while we wind up the service.
+                    </div>
 
                     {/* Pricing Cards */}
                     <div className={styles.cardsContainer}>
@@ -334,13 +291,9 @@ export default function PricingModal({
 
                                 <button
                                     className={styles.ctaFree}
-                                    onClick={() => handleGetPlan('starter')}
-                                    disabled={loadingPlan !== null}
+                                    disabled
                                 >
-                                    {loadingPlan === 'starter'
-                                        ? <LoadingSpinner />
-                                        : 'Choose Starter'
-                                    }
+                                    Payments Closed
                                 </button>
                             </div>
                         </div>
@@ -382,13 +335,9 @@ export default function PricingModal({
 
                                 <button
                                     className={styles.ctaPaid}
-                                    onClick={() => handleGetPlan('creator')}
-                                    disabled={loadingPlan !== null}
+                                    disabled
                                 >
-                                    {loadingPlan === 'creator'
-                                        ? <LoadingSpinner />
-                                        : 'Choose Creator'
-                                    }
+                                    Payments Closed
                                 </button>
                             </div>
                         </div>
