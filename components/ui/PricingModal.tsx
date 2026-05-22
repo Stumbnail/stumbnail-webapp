@@ -99,7 +99,7 @@ function CrownIcon({ className = "w-4 h-4" }: { className?: string }) {
     );
 }
 
-const paymentsClosedMessage = 'Stumbnail is winding up. We are not accepting any new payments.';
+const paymentsClosedMessage = 'We have temporarily stopped accepting new payments.';
 
 const paidFeatures = [
     { icon: MergeIcon, text: "Smart Merge: combine assets with AI" },
@@ -251,7 +251,7 @@ export default function PricingModal({
                     </div>
 
                     <div className={styles.noticeMessage}>
-                        New purchases are closed while we wind up the service.
+                        New purchases are temporarily unavailable.
                     </div>
 
                     {/* Pricing Cards */}
